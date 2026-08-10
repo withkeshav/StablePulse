@@ -1,13 +1,14 @@
 {
   "name": "stablescope",
-  "version": "1.0.0",
-  "private": true,
+  "version": "2.0.0",
+  "private": false,
   "type": "module",
   "description": "StableScope - Professional USDT & USDC Intelligence Platform. Standalone edition.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "dependencies": {
     "chart.js": "^4.5.1",
@@ -18,6 +19,9 @@
     "vite": "^8.0.10",
     "vitest": "^4.1.10"
   },
+  "license": "SEE LICENSE IN LICENSE",
   "author": "Keshav Maheshwari (https://www.linkedin.com/in/withkeshav)",
-  "license": "ISC"
+  "engines": {
+    "node": ">=18"
+  }
 }

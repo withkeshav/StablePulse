@@ -102,14 +102,14 @@ export function buildShareSeries(supplyByCoin, targetCoin) {
   const byDate = {};
   for (const [coin, series] of Object.entries(supplyByCoin || {})) {
     (series || []).forEach((p) => {
-      if (!byDate[p.date]) byDate[p.date] = {};
+      if (!byDate[p.date]) byDate[p.date] = { date: p.date };
       byDate[p.date][coin] = p.value;
     });
   }
   return Object.values(byDate)
     .sort((a, b) => a.date - b.date)
     .map((p) => {
-      const total = Object.values(p).reduce((sum, v) => sum + (Number(v) || 0), 0);
+      const total = Object.entries(p).reduce((sum, [k, v]) => (k === 'date' ? sum : sum + (Number(v) || 0)), 0);
       return { date: p.date, share: total ? ((Number(p[targetCoin]) || 0) / total) * 100 : 0 };
     });
 }
