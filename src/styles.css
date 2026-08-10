@@ -50,7 +50,7 @@ a{color:inherit;text-decoration:none}
 #app{display:flex;flex-direction:column;height:100dvh}
 #header{
   height:var(--header-h);background:var(--surface);border-bottom:1px solid var(--border);
-  display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;
+  display:flex;align-items:center;padding:0 16px;padding-top:env(safe-area-inset-top);gap:12px;flex-shrink:0;
   position:sticky;top:0;z-index:100
 }
 .logo{display:flex;align-items:center;gap:8px;font-size:var(--md);font-weight:700;color:var(--accent);white-space:nowrap;letter-spacing:-.02em;flex-shrink:0}
@@ -61,7 +61,7 @@ a{color:inherit;text-decoration:none}
 .hdr-actions{display:flex;align-items:center;gap:4px;margin-left:auto}
 .hdr-btn{width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--text2);transition:background var(--tr),color var(--tr)}
 .hdr-btn:hover{background:var(--hover);color:var(--text)}
-#last-update{font-size:var(--xs);color:var(--text3);white-space:nowrap}
+.hdr-btn:disabled{opacity:.5;cursor:default}
 #body-row{display:flex;flex:1;overflow:hidden}
 
 /* â”€â”€ SIDEBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -85,7 +85,7 @@ a{color:inherit;text-decoration:none}
 .tab-content.active{display:block}
 
 /* â”€â”€ MOBILE NAV â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-#mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:var(--mob-nav-h);background:var(--surface);border-top:1px solid var(--border);z-index:100}
+#mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:calc(var(--mob-nav-h) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:var(--surface);border-top:1px solid var(--border);z-index:100}
 .mob-nav-items{display:flex;height:100%}
 .mob-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;font-size:10px;color:var(--text2);transition:color var(--tr);min-height:44px;position:relative}
 .mob-nav-item.active{color:var(--accent)}
@@ -101,15 +101,12 @@ a{color:inherit;text-decoration:none}
 .card-body.p0{padding:0}
 .mb-3{margin-bottom:12px}.mb-4{margin-bottom:16px}.mt-3{margin-top:12px}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 
 /* â”€â”€ STAT CARDS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;margin-bottom:16px}
 .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;box-shadow:var(--shadow)}
 .stat-label{font-size:var(--xs);color:var(--text2);font-weight:500;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
 .stat-value{font-family:var(--mono);font-size:var(--lg);font-weight:600;color:var(--text);line-height:1.2}
-.stat-change{display:flex;align-items:center;gap:3px;font-size:var(--xs);font-family:var(--mono);margin-top:2px}
-.stat-change.up{color:var(--ok)}.stat-change.down{color:var(--crit)}.stat-change.neutral{color:var(--text3)}
 
 /* â”€â”€ TABLES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .data-table th{padding:8px 12px;text-align:left;font-size:var(--xs);font-weight:600;color:var(--text2);background:var(--hover);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
@@ -126,15 +123,8 @@ a{color:inherit;text-decoration:none}
 .chart-wrap canvas{display:block}
 
 /* â”€â”€ TOGGLE BUTTONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-.toggle-group{display:flex;gap:4px;background:var(--hover);border-radius:6px;padding:3px}
-.toggle-btn{padding:4px 10px;border-radius:4px;font-size:var(--xs);font-weight:500;color:var(--text2);transition:all var(--tr)}
-.toggle-btn.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
-
 /* â”€â”€ MARKET BAND â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .market-band{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 16px;margin-bottom:16px;font-size:var(--xs)}
-.band-item{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.band-label{color:var(--text3);text-transform:uppercase;letter-spacing:.04em;font-size:10px;font-weight:600}
-.band-val{font-family:var(--mono);color:var(--text);font-weight:500}
 .sep{width:1px;height:16px;background:var(--border);flex-shrink:0}
 
 /* â”€â”€ CHAIN BARS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -147,14 +137,7 @@ a{color:inherit;text-decoration:none}
 .chain-bar-total{width:60px;text-align:right;font-family:var(--mono);font-size:var(--xs);color:var(--text2);flex-shrink:0}
 
 /* â”€â”€ EXCHANGE HEATMAP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-.heatmap-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px}
-.heatmap-cell{border-radius:6px;padding:8px;border:1px solid var(--border-s);cursor:default;transition:transform var(--tr)}
-.heatmap-cell:hover{transform:scale(1.02)}
-.hm-name{font-size:var(--xs);font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hm-vol{font-family:var(--mono);font-size:var(--xs);color:var(--text2);margin-top:2px}
-.hm-chg{font-size:10px;color:var(--text3);margin-top:2px}
-
-/* â”€â”€ MIGRATION CARDS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â”€â”€ MIGRATION CARDS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .migration-card{background:var(--hover);border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px}
 .migration-card .chain-from{color:var(--crit);font-weight:600;font-size:var(--sm);min-width:80px}
 .migration-card .chain-to{color:var(--ok);font-weight:600;font-size:var(--sm);min-width:80px;text-align:right}
@@ -164,13 +147,7 @@ a{color:inherit;text-decoration:none}
 .mig-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 
 /* â”€â”€ NARRATIVE SIGNAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-.narrative-box{background:color-mix(in oklch,var(--accent) 8%,transparent);border:1px solid color-mix(in oklch,var(--accent) 25%,transparent);border-radius:8px;padding:14px 16px;margin-bottom:16px}
-.narrative-title{font-size:var(--xs);font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
-.narrative-item{font-size:var(--sm);color:var(--text);line-height:1.6;padding:4px 0;border-bottom:1px solid color-mix(in oklch,var(--accent) 10%,transparent)}
-.narrative-item:last-child{border-bottom:none}
-.narrative-item strong{color:var(--accent)}
-
-/* â”€â”€ ALERTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â”€â”€ ALERTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .alert-card{border-radius:8px;border:1px solid var(--border);margin-bottom:8px;overflow:hidden}
 .alert-card.crit{border-left:4px solid var(--crit)}
 .alert-card.high{border-left:4px solid var(--high)}
@@ -193,14 +170,9 @@ a{color:inherit;text-decoration:none}
 .export-btn:hover{background:var(--border);color:var(--text)}
 
 /* â”€â”€ ALERTS STRIP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-#alerts-strip{background:var(--surface);border-bottom:1px solid var(--border);padding:6px 16px;font-size:var(--xs);color:var(--text2);overflow:hidden;white-space:nowrap;display:none}
-#alerts-strip.visible{display:block}
-
 /* â”€â”€ SETTINGS PANEL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .settings-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:150}
 .settings-overlay.open{display:block}
-#overlay{display:none}
-#overlay.open{display:none}
 .settings-panel,#settings-panel{position:fixed;top:0;right:-340px;max-width:100vw;width:320px;height:100%;background:var(--surface);border-left:1px solid var(--border);z-index:200;transition:right var(--tr);display:flex;flex-direction:column;overflow-y:auto}
 .settings-panel.open,#settings-panel.open{right:0}
 .settings-header{display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--border);font-weight:600;font-size:var(--md);flex-shrink:0}
@@ -215,10 +187,6 @@ a{color:inherit;text-decoration:none}
 .toggle-track::before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform var(--tr)}
 .toggle-switch input:checked + .toggle-track{background:var(--accent)}
 .toggle-switch input:checked + .toggle-track::before{transform:translateX(16px)}
-.settings-btn{padding:8px 12px;background:var(--hover);border:1px solid var(--border);border-radius:6px;font-size:var(--sm);color:var(--text2);cursor:pointer;transition:all var(--tr);text-align:left}
-.settings-btn:hover{background:var(--border);color:var(--text)}
-.settings-btn.danger{color:var(--crit)}
-.settings-btn.danger:hover{background:var(--crit-bg)}
 
 /* â”€â”€ TRON/ETH COMPARE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .tron-eth-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
@@ -228,30 +196,23 @@ a{color:inherit;text-decoration:none}
 .compare-stat .cs-coin{font-size:var(--xs);color:var(--text3);margin-top:2px}
 
 /* â”€â”€ SEARCH â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-.search-input{padding:6px 10px;background:var(--hover);border:1px solid var(--border);border-radius:6px;font-size:var(--sm);color:var(--text);width:200px;outline:none;transition:border-color var(--tr)}
-.search-input:focus{border-color:var(--accent)}
-
 /* â”€â”€ MISC â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .info-empty{padding:32px;text-align:center;color:var(--text3);font-size:var(--sm)}
 .sk{background:linear-gradient(90deg,var(--hover) 25%,var(--border) 50%,var(--hover) 75%);background-size:200% 100%;animation:sk 1.4s infinite;border-radius:6px;display:block}
 @keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
-.animate-in{animation:countUp .3s ease-out}
-@keyframes countUp{from{opacity:.4;transform:translateY(2px)}to{opacity:1;transform:translateY(0)}}
 body.compact .stat-card{padding:8px 12px}
 body.compact .card-body{padding:8px 12px}
 body.compact .data-table td{padding:5px 12px}
 body.compact .tab-content{padding:8px}
-#sound-indicator{font-size:10px;color:var(--text3);font-family:var(--mono)}
 
 /* â”€â”€ RESPONSIVE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media(max-width:768px){
   #sidebar{display:none}
   #mobile-nav{display:block}
-  #main{padding-bottom:var(--mob-nav-h)}
+  #main{padding-bottom:calc(var(--mob-nav-h) + env(safe-area-inset-bottom))}
   .tab-content{padding:12px}
   .stats-grid{grid-template-columns:repeat(2,1fr);gap:8px}
   .grid-2{grid-template-columns:1fr}
-  .grid-3{grid-template-columns:1fr 1fr}
   .tron-eth-grid{grid-template-columns:1fr 1fr}
   .settings-panel,#settings-panel{max-width:100vw;width:320px}
   .mig-grid{grid-template-columns:1fr}
@@ -307,6 +268,7 @@ body.compact .tab-content{padding:8px}
 
 .whale-watch-head{margin-bottom:12px}
 .whale-watch-table th{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--text3)}
+.grid-2, .whale-watch { content-visibility: auto; contain-intrinsic-size: auto 480px; }
 
 .chart-card-body{padding-top:8px;padding-bottom:12px}
 

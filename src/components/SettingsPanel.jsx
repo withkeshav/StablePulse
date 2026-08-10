@@ -1,4 +1,5 @@
-﻿import ThemeToggle from './ThemeToggle.jsx';
+﻿import { useEffect, useRef } from 'preact/hooks';
+import ThemeToggle from './ThemeToggle.jsx';
 
 export default function SettingsPanel({
   isOpen,
@@ -10,10 +11,30 @@ export default function SettingsPanel({
   theme,
   setTheme,
 }) {
+  const panelRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    const firstFocusable = panelRef.current?.querySelector('button, select, input');
+    firstFocusable?.focus();
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isOpen, onClose]);
+
   return (
     <>
       <div class={`settings-overlay ${isOpen ? 'open' : ''}`} onClick={onClose} aria-hidden={isOpen ? 'false' : 'true'}></div>
-      <aside class={`settings-panel ${isOpen ? 'open' : ''}`} style="max-width: 100vw; width: 320px;">
+      <aside
+        ref={panelRef}
+        class={`settings-panel ${isOpen ? 'open' : ''}`}
+        style="max-width: 100vw; width: 320px;"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Settings"
+      >
         <div class="settings-header">
           Settings
           <button type="button" class="hdr-btn" onClick={onClose} aria-label="Close settings">✕</button>

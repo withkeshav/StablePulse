@@ -1,8 +1,14 @@
-﻿import AlertCard from '../Alerts/AlertCard.jsx';
+﻿import { useMemo } from 'preact/hooks';
+import AlertCard from '../Alerts/AlertCard.jsx';
 import { buildAlertSparkSeries } from '../../lib/derive.js';
 
 export default function SignalSummary({ data, alerts, apiBase, onViewAll }) {
   const top = (alerts || []).slice(0, 3);
+  const sparks = useMemo(() => {
+    const m = {};
+    for (const alert of top) m[alert.id] = buildAlertSparkSeries(alert, data);
+    return m;
+  }, [top, data]);
   return (
     <section class="card mb-4">
       <div class="card-header">
@@ -17,7 +23,7 @@ export default function SignalSummary({ data, alerts, apiBase, onViewAll }) {
               alert={alert}
               apiBase={apiBase}
               compact
-              spark={buildAlertSparkSeries(alert, data)}
+              spark={sparks[alert.id]}
             />
           ))
         ) : (

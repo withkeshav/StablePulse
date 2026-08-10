@@ -67,13 +67,19 @@ export default function AlertsTab({ alerts, intelligence, apiBase, data }) {
     return Object.entries(m).sort(([ra], [rb]) => ra.localeCompare(rb));
   }, [filtered, groupByRule]);
 
+  const sparks = useMemo(() => {
+    const m = {};
+    for (const a of filtered) m[a.id] = buildAlertSparkSeries(a, data);
+    return m;
+  }, [filtered, data]);
+
   const renderCard = (a) => (
     <AlertCard
       key={a.id}
       alert={a}
       apiBase={apiBase}
       compact={false}
-      spark={buildAlertSparkSeries(a, data)}
+      spark={sparks[a.id]}
     />
   );
 

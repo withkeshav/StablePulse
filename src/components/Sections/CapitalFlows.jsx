@@ -1,6 +1,10 @@
 ﻿import { fmtB } from '../../utils/formatters.js';
+import { getActiveCoins } from '../../utils/coin-config.js';
 
 export default function CapitalFlows({ migrationPairs, chainFlows }) {
+  const coins = getActiveCoins();
+  const maxAbs = Math.max(1, Math.abs(chainFlows[0]?.totalDelta || 1));
+
   return (
     <section class="grid-2 mb-4">
       <div class="card">
@@ -25,8 +29,16 @@ export default function CapitalFlows({ migrationPairs, chainFlows }) {
             <div class="chain-bar-row" key={f.chain}>
               <div class="chain-bar-label">{f.chain}</div>
               <div class="chain-bar-track">
-                <div class="chain-bar-usdt" style={`width:${Math.min(100, Math.max(0, (Math.abs(f.usdtDelta) / (Math.abs(chainFlows[0]?.totalDelta) || 1)) * 100))}%`}></div>
-                <div class="chain-bar-usdc" style={`width:${Math.min(100, Math.max(0, (Math.abs(f.usdcDelta) / (Math.abs(chainFlows[0]?.totalDelta) || 1)) * 100))}%`}></div>
+                {coins.map((c) => (
+                  <div
+                    key={c.symbol}
+                    class={`chain-bar-${c.symbol.toLowerCase()}`}
+                    style={{
+                      width: `${Math.min(100, Math.max(0, (Math.abs(f.deltas?.[c.symbol] || 0) / maxAbs) * 100))}%`,
+                      background: c.color,
+                    }}
+                  ></div>
+                ))}
               </div>
               <div class="chain-bar-total">{f.totalDelta >= 0 ? 'Mint' : 'Burn'} {fmtB(Math.abs(f.totalDelta))}</div>
             </div>

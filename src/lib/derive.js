@@ -13,22 +13,24 @@ export function buildSupplySeries(detail) {
   return Object.entries(byDate).map(([date, value]) => ({ date: Number(date), value })).sort((a, b) => a.date - b.date).slice(-90);
 }
 
-export function rankChainFlows(usdtDetail, usdcDetail) {
+/**
+ * Rank chains by combined 24h mint/burn deltas across all tracked stablecoins.
+ * @param {Object<string, object>} detailsByCoin Map of coin symbol -> chain detail payload.
+ * @returns {Array<object>} Chains sorted by absolute total delta, with per-coin `deltas`.
+ */
+export function rankChainFlows(detailsByCoin) {
   const map = {};
-  const add = (detail, coin) => {
+  for (const [coin, detail] of Object.entries(detailsByCoin || {})) {
     for (const [chain, chainData] of Object.entries(detail?.chainBalances || {})) {
       const tokens = chainData?.tokens || [];
       const cur = tokens[tokens.length - 1]?.circulating?.peggedUSD || 0;
       const pd = tokens[tokens.length - 2]?.circulating?.peggedUSD || cur;
       const delta = cur - pd;
-      if (!map[chain]) map[chain] = { chain, usdtDelta: 0, usdcDelta: 0, totalDelta: 0 };
-      if (coin === 'USDT') map[chain].usdtDelta += delta;
-      else map[chain].usdcDelta += delta;
+      if (!map[chain]) map[chain] = { chain, deltas: {}, totalDelta: 0 };
+      map[chain].deltas[coin] = (map[chain].deltas[coin] || 0) + delta;
       map[chain].totalDelta += delta;
     }
-  };
-  add(usdtDetail, 'USDT');
-  add(usdcDetail, 'USDC');
+  }
   return Object.values(map).sort((a, b) => Math.abs(b.totalDelta) - Math.abs(a.totalDelta));
 }
 
@@ -42,11 +44,11 @@ export function buildMigrationPairs(flows) {
   }));
 }
 
-export function computePegStress({ usdtPrice, usdcPrice, alerts, topChainFlow }) {
+export function computePegStress({ pricesByCoin, alerts, topChainFlow }) {
   const critical = (alerts || []).filter((a) => a.severity === 'CRITICAL').length;
   const high = (alerts || []).filter((a) => a.severity === 'HIGH').length;
   const warning = (alerts || []).filter((a) => a.severity === 'WARNING').length;
-  const pegDriftBps = Math.max(Math.abs(bps(usdtPrice)), Math.abs(bps(usdcPrice)));
+  const pegDriftBps = Math.max(0, ...Object.values(pricesByCoin || {}).map((p) => Math.abs(bps(p))));
   const score = Math.min(100, Math.round(pegDriftBps * 0.7 + critical * 25 + high * 10 + warning * 4 + Math.min(35, Math.round((Math.abs(topChainFlow) / 1e9) * 2))));
   const level = score >= 70 ? 'HIGH' : score >= 40 ? 'WATCH' : 'LOW';
   return { score, level, pegDriftBps, critical, high, warning };
@@ -63,9 +65,9 @@ function stddev(values, avg) {
   return Math.sqrt(variance);
 }
 
-export function buildWhaleWatchRows(usdtDetail, usdcDetail, limit = 8) {
+export function buildWhaleWatchRows(detailsByCoin, limit = 8) {
   const rows = [];
-  const scan = (detail, coin) => {
+  for (const [coin, detail] of Object.entries(detailsByCoin || {})) {
     for (const [chain, chainData] of Object.entries(detail?.chainBalances || {})) {
       const tokens = chainData?.tokens || [];
       if (tokens.length < 8) continue;
@@ -86,29 +88,30 @@ export function buildWhaleWatchRows(usdtDetail, usdcDetail, limit = 8) {
         });
       }
     }
-  };
-  scan(usdtDetail, 'USDT');
-  scan(usdcDetail, 'USDC');
+  }
   return rows.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, limit);
 }
 
-function dominancePercentSeries(usdtSupplySeries, usdcSupplySeries) {
+/**
+ * Build a share-of-total percentage series for a target coin over time.
+ * @param {Object<string, Array<{date:number,value:number}>>} supplyByCoin Per-coin supply series.
+ * @param {string} targetCoin Symbol whose share percentage is returned.
+ * @returns {Array<{date:number, share:number}>} Share series (0..100).
+ */
+export function buildShareSeries(supplyByCoin, targetCoin) {
   const byDate = {};
-  usdtSupplySeries.forEach((p) => {
-    byDate[p.date] = byDate[p.date] || { date: p.date, usdt: 0, usdc: 0 };
-    byDate[p.date].usdt = p.value;
-  });
-  usdcSupplySeries.forEach((p) => {
-    byDate[p.date] = byDate[p.date] || { date: p.date, usdt: 0, usdc: 0 };
-    byDate[p.date].usdc = p.value;
-  });
+  for (const [coin, series] of Object.entries(supplyByCoin || {})) {
+    (series || []).forEach((p) => {
+      if (!byDate[p.date]) byDate[p.date] = {};
+      byDate[p.date][coin] = p.value;
+    });
+  }
   return Object.values(byDate)
     .sort((a, b) => a.date - b.date)
     .map((p) => {
-      const total = p.usdt + p.usdc;
-      return { date: p.date, usdtDom: total ? (p.usdt / total) * 100 : 0 };
-    })
-    .slice(-60);
+      const total = Object.values(p).reduce((sum, v) => sum + (Number(v) || 0), 0);
+      return { date: p.date, share: total ? ((Number(p[targetCoin]) || 0) / total) * 100 : 0 };
+    });
 }
 
 export function buildAlertSparkSeries(alert, data) {
@@ -136,13 +139,15 @@ export function buildAlertSparkSeries(alert, data) {
     };
   }
   if (rule === 'DOM_SHIFT') {
-    const usdtS = buildSupplySeries(data?.usdtDetail);
-    const usdcS = buildSupplySeries(data?.usdcDetail);
-    const dom = dominancePercentSeries(usdtS, usdcS).slice(-14);
+    const supplyByCoin = {
+      USDT: buildSupplySeries(data?.usdtDetail),
+      USDC: buildSupplySeries(data?.usdcDetail),
+    };
+    const dom = buildShareSeries(supplyByCoin, alert.coin === 'USDC' ? 'USDC' : 'USDT').slice(-14);
     if (!dom.length) return null;
     return {
       labels: dom.map((_, i) => String(i)),
-      values: dom.map((p) => p.usdtDom),
+      values: dom.map((p) => p.share),
       color: '#3b82f6',
     };
   }

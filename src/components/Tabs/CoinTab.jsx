@@ -1,44 +1,59 @@
+import { useMemo } from 'preact/hooks';
 import { fmtB, fmtPct, fmtPrice, pctChange } from '../../utils/formatters.js';
 import { STABLECOIN_REGISTRY } from '../../utils/coin-config.js';
+import { buildSupplySeries } from '../../lib/derive.js';
 import ChartWrapper from '../ui/ChartWrapper.jsx';
 
 export default function CoinTab({ coin, data }) {
-  const isUSDT = coin === 'usdt';
-  const symbol = isUSDT ? 'USDT' : 'USDC';
+  const symbol = (coin || '').toUpperCase();
   const cfg = STABLECOIN_REGISTRY[symbol];
-  const cgKey = cfg?.coingeckoId || (isUSDT ? 'tether' : 'usd-coin');
-  const detail = isUSDT ? data?.usdtDetail : data?.usdcDetail;
-  const chartData = isUSDT ? data?.cgUSDTChart : data?.cgUSDCChart;
-  const cgTickers = isUSDT ? data?.cgUSDT : data?.cgUSDC;
+  const cgKey = cfg?.coingeckoId;
+  const detail = data?.[`${symbol.toLowerCase()}Detail`];
+  const chartData = data?.[`cg${symbol}Chart`];
+  const cgTickers = data?.[`cg${symbol}`];
   const asset = data?.allStables?.peggedAssets?.find((x) => x.symbol === symbol);
   const price = data?.cgSimple?.[cgKey]?.usd || 1;
   const chg = data?.cgSimple?.[cgKey]?.usd_24h_change || 0;
   const supply = asset?.circulating?.peggedUSD || 0;
   const prev = asset?.circulatingPrevDay?.peggedUSD || supply;
+  const color = cfg?.color || '#3b82f6';
 
-  const rows = Object.entries(detail?.chainBalances || {}).slice(0, 10).map(([chain, chainData]) => {
-    const tokens = chainData?.tokens || [];
-    const cur = tokens[tokens.length - 1]?.circulating?.peggedUSD || 0;
-    const pd = tokens[tokens.length - 2]?.circulating?.peggedUSD || cur;
-    return { chain, cur, pd, d1: pctChange(cur, pd) };
-  });
-
-  const series = (chartData?.prices || []).slice(-90);
-  const labels = series.map((p) =>
-    new Date(p[0]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const rows = useMemo(
+    () =>
+      Object.entries(detail?.chainBalances || {}).slice(0, 10).map(([chain, chainData]) => {
+        const tokens = chainData?.tokens || [];
+        const cur = tokens[tokens.length - 1]?.circulating?.peggedUSD || 0;
+        const pd = tokens[tokens.length - 2]?.circulating?.peggedUSD || cur;
+        return { chain, cur, pd, d1: pctChange(cur, pd) };
+      }),
+    [detail]
   );
-  const priceLineData = {
-    labels,
-    datasets: [{ label: `${symbol} Price`, data: series.map((p) => p[1]), borderColor: cfg?.color || (isUSDT ? '#26A17B' : '#2775CA'), tension: 0.2 }],
-  };
-  const supplyLineData = {
-    labels,
-    datasets: [{ label: `${symbol} Supply`, data: labels.map(() => supply), borderColor: cfg?.color || (isUSDT ? '#26A17B' : '#2775CA'), tension: 0.2 }],
-  };
-  const exchBars = {
-    labels: (cgTickers?.tickers || []).slice(0, 8).map((t) => t.market?.name || 'Unknown'),
-    datasets: [{ label: '24h Volume', data: (cgTickers?.tickers || []).slice(0, 8).map((t) => t.converted_volume?.usd || 0), backgroundColor: (cfg?.color || (isUSDT ? '#26A17B' : '#2775CA')) + 'AA' }],
-  };
+
+  const supplySeries = useMemo(() => buildSupplySeries(detail), [detail]);
+
+  const priceLineData = useMemo(() => {
+    const series = (chartData?.prices || []).slice(-90);
+    return {
+      labels: series.map((p) => new Date(p[0]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+      datasets: [{ label: `${symbol} Price`, data: series.map((p) => p[1]), borderColor: color, tension: 0.2 }],
+    };
+  }, [chartData, symbol, color]);
+
+  const supplyLineData = useMemo(
+    () => ({
+      labels: supplySeries.map((p) => new Date(p.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+      datasets: [{ label: `${symbol} Supply`, data: supplySeries.map((p) => p.value), borderColor: color, tension: 0.2 }],
+    }),
+    [supplySeries, symbol, color]
+  );
+
+  const exchBars = useMemo(
+    () => ({
+      labels: (cgTickers?.tickers || []).slice(0, 8).map((t) => t.market?.name || 'Unknown'),
+      datasets: [{ label: '24h Volume', data: (cgTickers?.tickers || []).slice(0, 8).map((t) => t.converted_volume?.usd || 0), backgroundColor: color + 'AA' }],
+    }),
+    [cgTickers, color]
+  );
 
   return (
     <div class="tab-content active">

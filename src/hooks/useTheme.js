@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'preact/hooks';
+﻿import { useEffect, useState } from 'preact/hooks';
 
 const THEME_KEY = 'stablescope:theme';
 
@@ -18,7 +18,12 @@ export default function useTheme() {
     }
   });
 
-  const effectiveTheme = useMemo(() => resolveTheme(theme), [theme]);
+  const [effectiveTheme, setEffectiveTheme] = useState(() => resolveTheme(theme));
+
+  useEffect(() => {
+    setEffectiveTheme(resolveTheme(theme));
+    document.documentElement.setAttribute('data-theme', resolveTheme(theme));
+  }, [theme]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', effectiveTheme);
@@ -33,12 +38,10 @@ export default function useTheme() {
   }, [theme]);
 
   useEffect(() => {
-    if (!window.matchMedia) return undefined;
+    if (typeof window === 'undefined' || !window.matchMedia) return undefined;
     const media = window.matchMedia('(prefers-color-scheme: dark)');
     const onChange = () => {
-      if (theme === 'system') {
-        document.documentElement.setAttribute('data-theme', media.matches ? 'dark' : 'light');
-      }
+      if (theme === 'system') setEffectiveTheme(media.matches ? 'dark' : 'light');
     };
     media.addEventListener('change', onChange);
     return () => media.removeEventListener('change', onChange);

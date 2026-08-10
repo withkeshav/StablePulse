@@ -1,7 +1,41 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { Chart, registerables } from 'chart.js';
 
-Chart.register(...registerables);
+let chartPromise;
+function getChart() {
+  if (!chartPromise) {
+    chartPromise = import('chart.js').then((m) => {
+      const Chart = m.Chart;
+      Chart.register(
+        m.LineController, m.BarController,
+        m.LineElement, m.PointElement, m.BarElement,
+        m.CategoryScale, m.LinearScale,
+        m.Tooltip, m.Legend
+      );
+      return Chart;
+    });
+  }
+  return chartPromise;
+}
+
+let themeEpochCounter = 0;
+const themeSubscribers = new Set();
+
+if (typeof document !== 'undefined') {
+  const themeObserver = new MutationObserver(() => {
+    themeEpochCounter += 1;
+    themeSubscribers.forEach((fn) => fn());
+  });
+  themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-theme'],
+  });
+}
+
+function subscribeTheme(fn) {
+  if (typeof document === 'undefined') return () => {};
+  themeSubscribers.add(fn);
+  return () => themeSubscribers.delete(fn);
+}
 
 function readCssVar(name, fallback) {
   if (typeof document === 'undefined') return fallback;
@@ -27,59 +61,88 @@ function tintScales(base = {}, grid, tick) {
   return out;
 }
 
+const EMPTY_OPTIONS = {};
+
 export default function ChartWrapper({ type, data, options = {}, height = 220, aspectRatio = null }) {
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
-  const keyRef = useRef(null);
+  const lastRef = useRef({ type: null, data: null, options: null, aspectRatio: null, height: null, themeEpoch: -1 });
   const [themeEpoch, setThemeEpoch] = useState(0);
 
-  useEffect(() => {
-    const el = document.documentElement;
-    const obs = new MutationObserver(() => setThemeEpoch((n) => n + 1));
-    obs.observe(el, { attributes: true, attributeFilter: ['data-theme'] });
-    return () => obs.disconnect();
-  }, []);
+  const resolvedOptions = Object.keys(options).length === 0 ? EMPTY_OPTIONS : options;
+
+  useEffect(() => subscribeTheme(() => setThemeEpoch((n) => n + 1)), []);
 
   useEffect(() => {
     if (!canvasRef.current || !data) return;
 
-    const grid = readCssVar('--border', '#e5e7eb');
-    const tick = readCssVar('--text2', '#6b7280');
-    const surface = readCssVar('--surface', '#ffffff');
-    const text = readCssVar('--text', '#111827');
+    const prev = lastRef.current;
+    const changed =
+      prev.type !== type ||
+      prev.data !== data ||
+      prev.options !== resolvedOptions ||
+      prev.aspectRatio !== aspectRatio ||
+      prev.height !== height ||
+      prev.themeEpoch !== themeEpoch;
 
-    const themedScales = tintScales(options?.scales, grid, tick);
+    if (!changed && chartRef.current) return;
 
-    const mergedOptions = {
-      animation: false,
-      responsive: true,
-      ...options,
-      maintainAspectRatio: aspectRatio ? false : (options.maintainAspectRatio ?? true),
-      plugins: {
-        ...options.plugins,
-        tooltip: {
-          backgroundColor: surface,
-          titleColor: tick,
-          bodyColor: text,
-          borderColor: grid,
-          borderWidth: 1,
-          ...options.plugins?.tooltip,
+    let cancelled = false;
+
+    getChart().then((Chart) => {
+      if (cancelled || !canvasRef.current) return;
+
+      const prevNow = lastRef.current;
+      if (
+        chartRef.current &&
+        prevNow.type === type &&
+        prevNow.data === data &&
+        prevNow.options === resolvedOptions &&
+        prevNow.aspectRatio === aspectRatio &&
+        prevNow.height === height &&
+        prevNow.themeEpoch === themeEpoch
+      ) return;
+
+      const grid = readCssVar('--border', '#e5e7eb');
+      const tick = readCssVar('--text2', '#6b7280');
+      const surface = readCssVar('--surface', '#ffffff');
+      const text = readCssVar('--text', '#111827');
+
+      const themedScales = tintScales(options?.scales, grid, tick);
+
+      const mergedOptions = {
+        animation: false,
+        responsive: true,
+        ...options,
+        maintainAspectRatio: aspectRatio ? false : (options.maintainAspectRatio ?? true),
+        plugins: {
+          ...options.plugins,
+          tooltip: {
+            backgroundColor: surface,
+            titleColor: tick,
+            bodyColor: text,
+            borderColor: grid,
+            borderWidth: 1,
+            ...options.plugins?.tooltip,
+          },
         },
-      },
-      scales: themedScales,
-    };
+        scales: themedScales,
+      };
 
-    const key = JSON.stringify({ type, data, themeEpoch, aspectRatio, height });
-    if (keyRef.current === key && chartRef.current) return;
-    keyRef.current = key;
+      if (chartRef.current) chartRef.current.destroy();
+      chartRef.current = new Chart(canvasRef.current, {
+        type,
+        data,
+        options: mergedOptions,
+      });
 
-    if (chartRef.current) chartRef.current.destroy();
-    chartRef.current = new Chart(canvasRef.current, {
-      type,
-      data,
-      options: mergedOptions,
+      lastRef.current = { type, data, options: resolvedOptions, aspectRatio, height, themeEpoch };
     });
-  });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [type, data, resolvedOptions, aspectRatio, height, themeEpoch]);
 
   useEffect(() => () => {
     if (chartRef.current) {

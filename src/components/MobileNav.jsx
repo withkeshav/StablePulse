@@ -1,7 +1,8 @@
-﻿const ITEMS = [
+﻿import { ACTIVE_STABLECOINS, coinTabId } from '../utils/coin-config.js';
+
+const ITEMS = [
   { id: 'home', label: 'Home' },
-  { id: 'usdt', label: 'USDT' },
-  { id: 'usdc', label: 'USDC' },
+  ...ACTIVE_STABLECOINS.map((symbol) => ({ id: coinTabId(symbol), label: symbol })),
   { id: 'chains', label: 'Chains' },
   { id: 'alerts', label: 'Alerts' },
 ];

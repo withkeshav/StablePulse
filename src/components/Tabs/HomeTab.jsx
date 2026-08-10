@@ -1,4 +1,6 @@
-﻿import { fmtB, fmtPrice } from '../../utils/formatters.js';
+﻿import { useMemo } from 'preact/hooks';
+import { fmtB, fmtPrice } from '../../utils/formatters.js';
+import { getActiveCoins } from '../../utils/coin-config.js';
 import StatCard from '../ui/StatCard.jsx';
 import { buildMigrationPairs, buildSupplySeries, buildWhaleWatchRows, computePegStress, rankChainFlows } from '../../lib/derive.js';
 import SignalHero from '../Sections/SignalHero.jsx';
@@ -9,46 +11,86 @@ import WhaleWatch from '../Sections/WhaleWatch.jsx';
 
 export default function HomeTab({ data, alerts, apiBase, setActiveTab, refreshIntervalSec = 900 }) {
   const cg = data?.cgSimple;
-  const assets = data?.allStables?.peggedAssets || [];
-  const usdt = assets.find((x) => x.symbol === 'USDT');
-  const usdc = assets.find((x) => x.symbol === 'USDC');
-  const usdtP = cg?.tether?.usd || data?.prices?.USDT?.price || 1;
-  const usdcP = cg?.['usd-coin']?.usd || data?.prices?.USDC?.price || 1;
+  const coins = getActiveCoins();
 
-  const usdtSupplySeries = buildSupplySeries(data?.usdtDetail);
-  const usdcSupplySeries = buildSupplySeries(data?.usdcDetail);
-  const chainFlows = rankChainFlows(data?.usdtDetail, data?.usdcDetail);
-  const migrationPairs = buildMigrationPairs(chainFlows);
+  const priceByCoin = useMemo(() => {
+    const m = {};
+    coins.forEach((c) => {
+      m[c.symbol] = cg?.[c.coingeckoId]?.usd || data?.prices?.[c.symbol]?.price || 1;
+    });
+    return m;
+  }, [coins, cg, data]);
 
-  const supplyLabels = (usdtSupplySeries.length ? usdtSupplySeries : usdcSupplySeries).map((p) => new Date(p.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-  const pegLabels = (data?.cgUSDTChart?.prices || data?.cgUSDCChart?.prices || []).slice(-90).map((p) => new Date(p[0]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-  const supplyChartData = {
-    labels: supplyLabels,
-    datasets: [
-      { label: 'USDT', data: usdtSupplySeries.map((p) => p.value), borderColor: '#26A17B', tension: 0.25 },
-      { label: 'USDC', data: usdcSupplySeries.map((p) => p.value), borderColor: '#2775CA', tension: 0.25 },
-    ],
-  };
-  const pegChartData = {
-    labels: pegLabels,
-    datasets: [
-      { label: 'USDT', data: (data?.cgUSDTChart?.prices || []).slice(-90).map((p) => p[1]), borderColor: '#26A17B', tension: 0.25 },
-      { label: 'USDC', data: (data?.cgUSDCChart?.prices || []).slice(-90).map((p) => p[1]), borderColor: '#2775CA', tension: 0.25 },
-    ],
-  };
+  const detailsByCoin = useMemo(() => {
+    const m = {};
+    coins.forEach((c) => {
+      m[c.symbol] = data?.[`${c.symbol.toLowerCase()}Detail`];
+    });
+    return m;
+  }, [coins, data]);
 
-  const stress = computePegStress({ usdtPrice: usdtP, usdcPrice: usdcP, alerts, topChainFlow: chainFlows[0]?.totalDelta || 0 });
+  const supplySeriesByCoin = useMemo(() => {
+    const m = {};
+    coins.forEach((c) => {
+      m[c.symbol] = buildSupplySeries(detailsByCoin[c.symbol]);
+    });
+    return m;
+  }, [coins, detailsByCoin]);
+
+  const chainFlows = useMemo(() => rankChainFlows(detailsByCoin), [detailsByCoin]);
+  const migrationPairs = useMemo(() => buildMigrationPairs(chainFlows), [chainFlows]);
+  const stress = useMemo(
+    () => computePegStress({ pricesByCoin: priceByCoin, alerts, topChainFlow: chainFlows[0]?.totalDelta || 0 }),
+    [priceByCoin, alerts, chainFlows]
+  );
+  const whaleRows = useMemo(() => buildWhaleWatchRows(detailsByCoin), [detailsByCoin]);
+
+  const supplyLabels = useMemo(() => {
+    const any = coins.map((c) => supplySeriesByCoin[c.symbol]).find((s) => s.length);
+    return (any || []).map((p) => new Date(p.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+  }, [coins, supplySeriesByCoin]);
+
+  const pegLabels = useMemo(() => {
+    const any = coins.map((c) => data?.[`cg${c.symbol}Chart`]?.prices).find((p) => p?.length);
+    return (any || []).slice(-90).map((p) => new Date(p[0]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+  }, [coins, data]);
+
+  const supplyChartData = useMemo(
+    () => ({
+      labels: supplyLabels,
+      datasets: coins.map((c) => ({
+        label: c.symbol,
+        data: supplySeriesByCoin[c.symbol].map((p) => p.value),
+        borderColor: c.color,
+        tension: 0.25,
+      })),
+    }),
+    [coins, supplyLabels, supplySeriesByCoin]
+  );
+
+  const pegChartData = useMemo(
+    () => ({
+      labels: pegLabels,
+      datasets: coins.map((c) => ({
+        label: c.symbol,
+        data: (data?.[`cg${c.symbol}Chart`]?.prices || []).slice(-90).map((p) => p[1]),
+        borderColor: c.color,
+        tension: 0.25,
+      })),
+    }),
+    [coins, pegLabels, data]
+  );
+
   const totalMC = data?.allStables?.totalMarketCap?.peggedUSD || 0;
-  const vol = (cg?.tether?.usd_24h_vol || 0) + (cg?.['usd-coin']?.usd_24h_vol || 0);
-  const whaleRows = buildWhaleWatchRows(data?.usdtDetail, data?.usdcDetail);
+  const vol = useMemo(() => coins.reduce((sum, c) => sum + (cg?.[c.coingeckoId]?.usd_24h_vol || 0), 0), [coins, cg]);
 
   const cadenceMin = Math.max(1, Math.round(Number(refreshIntervalSec) / 60));
 
   return (
     <div class="tab-content active">
       <SignalHero
-        usdtPrice={usdtP}
-        usdcPrice={usdcP}
+        usdtPrice={priceByCoin.USDT}
+        usdcPrice={priceByCoin.USDC}
         stress={stress}
         aiHeadline={data?.intelligence?.headline || ''}
       />
@@ -59,10 +101,13 @@ export default function HomeTab({ data, alerts, apiBase, setActiveTab, refreshIn
 
       <div class="sticky-stats-wrap">
         <div class="stats-grid" id="home-stats">
-          <StatCard label="USDT Price" value={fmtPrice(usdtP)} />
-          <StatCard label="USDC Price" value={fmtPrice(usdcP)} />
-          <StatCard label="USDT Supply" value={fmtB(usdt?.circulating?.peggedUSD)} />
-          <StatCard label="USDC Supply" value={fmtB(usdc?.circulating?.peggedUSD)} />
+          {coins.map((c) => (
+            <StatCard key={c.symbol} label={`${c.symbol} Price`} value={fmtPrice(priceByCoin[c.symbol])} />
+          ))}
+          {coins.map((c) => {
+            const asset = data?.allStables?.peggedAssets?.find((x) => x.symbol === c.symbol);
+            return <StatCard key={`${c.symbol}-supply`} label={`${c.symbol} Supply`} value={fmtB(asset?.circulating?.peggedUSD)} />;
+          })}
           <StatCard label="Total Market Cap" value={fmtB(totalMC)} />
           <StatCard label="24h Volume" value={fmtB(vol)} />
         </div>

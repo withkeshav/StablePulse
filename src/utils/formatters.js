@@ -5,6 +5,7 @@
  * @returns {string} Formatted currency string or em dash on invalid input.
  */
 export function fmtB(n, d = 2) {
+  if (n === null || n === undefined) return '—';
   const value = Number(n);
   if (!Number.isFinite(value)) return '—';
   const decimals = Number.isFinite(Number(d)) ? Math.max(0, Number(d)) : 2;
@@ -23,6 +24,7 @@ export function fmtB(n, d = 2) {
  * @returns {string} Formatted percentage or em dash on invalid input.
  */
 export function fmtPct(n, d = 2) {
+  if (n === null || n === undefined) return '—';
   const value = Number(n);
   if (!Number.isFinite(value)) return '—';
   const decimals = Number.isFinite(Number(d)) ? Math.max(0, Number(d)) : 2;
@@ -35,6 +37,7 @@ export function fmtPct(n, d = 2) {
  * @returns {string} Dollar formatted price or em dash on invalid input.
  */
 export function fmtPrice(n) {
+  if (n === null || n === undefined) return '—';
   const value = Number(n);
   if (!Number.isFinite(value)) return '—';
   return '$' + value.toFixed(4);
@@ -47,6 +50,7 @@ export function fmtPrice(n) {
  * @returns {number|null} Percentage change, or null when not computable.
  */
 export function pctChange(cur, prev) {
+  if (cur === null || cur === undefined || prev === null || prev === undefined) return null;
   const current = Number(cur);
   const previous = Number(prev);
   if (!Number.isFinite(current) || !Number.isFinite(previous) || previous === 0) return null;
@@ -70,6 +74,7 @@ export function chgClass(n) {
  * @returns {number} Basis points difference; returns 0 on invalid input.
  */
 export function bps(p) {
+  if (p === null || p === undefined) return 0;
   const price = Number(p);
   if (!Number.isFinite(price)) return 0;
   return Math.round((price - 1) * 10000);
@@ -81,6 +86,7 @@ export function bps(p) {
  * @returns {string} Relative label such as `5m ago`, or `—` on invalid input.
  */
 export function timeAgo(ts) {
+  if (ts === null || ts === undefined) return '—';
   const tsMs = ts instanceof Date ? ts.getTime() : Number(ts);
   if (!Number.isFinite(tsMs)) return '—';
   const s = Math.max(0, Math.floor((Date.now() - tsMs) / 1000));

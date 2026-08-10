@@ -1,14 +1,15 @@
-﻿const TABS = [
+﻿import { ACTIVE_STABLECOINS, coinTabId } from '../utils/coin-config.js';
+
+const TABS = [
   { id: 'home', label: 'Home' },
-  { id: 'usdt', label: 'USDT' },
-  { id: 'usdc', label: 'USDC' },
+  ...ACTIVE_STABLECOINS.map((symbol) => ({ id: coinTabId(symbol), label: symbol })),
   { id: 'chains', label: 'Chains' },
   { id: 'alerts', label: 'Alerts' },
 ];
 
 export default function Sidebar({ activeTab, setActiveTab, alertCount }) {
   return (
-    <nav id="sidebar">
+    <nav id="sidebar" aria-label="Main navigation">
       <div class="sidebar-nav">
         {TABS.map((tab) => (
           <button
@@ -25,7 +26,7 @@ export default function Sidebar({ activeTab, setActiveTab, alertCount }) {
         ))}
       </div>
       <div class="sidebar-footer">
-        <div>StableScope v2</div>
+        <div>StableScope</div>
       </div>
     </nav>
   );
