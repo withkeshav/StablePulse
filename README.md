@@ -8,7 +8,7 @@
 
 Professional **USDT & USDC intelligence platform**: peg stress monitoring, cross-chain mint/burn flows, whale-watch anomaly detection, and AI-generated market narratives. Standalone frontend edition.
 
-Created by [Keshav Maheshwari](https://www.linkedin.com/in/withkeshav)
+Created by [Keshav Maheshwari](https://www.withkeshav.com)
 
 > **Source-available.** Free for personal / non-commercial use. Modification is **not** permitted. See [LICENSE](./LICENSE).
 

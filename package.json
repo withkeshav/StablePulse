@@ -20,7 +20,7 @@
     "vitest": "^4.1.10"
   },
   "license": "SEE LICENSE IN LICENSE",
-  "author": "Keshav Maheshwari (https://www.linkedin.com/in/withkeshav)",
+  "author": "Keshav Maheshwari (https://www.withkeshav.com)",
   "engines": {
     "node": ">=18"
   }
