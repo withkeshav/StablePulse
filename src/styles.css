@@ -38,9 +38,9 @@
   --shadow-md:0 2px 8px rgba(0,0,0,.4);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;-webkit-text-size-adjust:100%}
 body{font-family:var(--font);font-size:var(--base);color:var(--text);background:var(--bg);min-height:100dvh;overflow-x:hidden}
-button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:none;font:inherit;color:inherit;-webkit-tap-highlight-color:transparent}
 input,select{font:inherit;color:inherit}
 table{border-collapse:collapse;width:100%}
 a{color:inherit;text-decoration:none}
@@ -49,7 +49,7 @@ a{color:inherit;text-decoration:none}
 /* â”€â”€ LAYOUT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 #app{display:flex;flex-direction:column;height:100dvh}
 #header{
-  height:var(--header-h);background:var(--surface);border-bottom:1px solid var(--border);
+  height:calc(var(--header-h) + env(safe-area-inset-top));background:var(--surface);border-bottom:1px solid var(--border);
   display:flex;align-items:center;padding:0 16px;padding-top:env(safe-area-inset-top);gap:12px;flex-shrink:0;
   position:sticky;top:0;z-index:100
 }
@@ -268,6 +268,8 @@ body.compact .tab-content{padding:8px}
 
 .whale-watch-head{margin-bottom:12px}
 .whale-watch-table th{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--text3)}
+.table-responsive{overflow-x:auto}
+.whale-watch-table{min-width:320px}
 .grid-2, .whale-watch { content-visibility: auto; contain-intrinsic-size: auto 480px; }
 
 .chart-card-body{padding-top:8px;padding-bottom:12px}
@@ -291,6 +293,9 @@ body.compact .tab-content{padding:8px}
 .alerts-empty-copy{font-size:var(--sm);color:var(--text3);line-height:1.55}
 .filter-select{width:auto!important;min-width:120px}
 
+@media(max-width:400px){
+  .tron-eth-grid{grid-template-columns:1fr}
+}
 @media(max-width:480px){
   .alert-spark{width:88px}
   .sticky-stats-wrap{padding-top:4px}
