@@ -1,0 +1,17 @@
+# Normalize line endings and mark binary/text
+* text=auto eol=lf
+
+# Text files
+*.js text
+*.jsx text
+*.json text
+*.html text
+*.css text
+*.md text
+*.svg text
+*.webmanifest text
+
+# Binaries
+*.png binary
+*.jpg binary
+*.ico binary

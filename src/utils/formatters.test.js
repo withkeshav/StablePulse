@@ -46,16 +46,16 @@ describe('fmtB', () => {
   });
 
   it('returns an em dash for invalid inputs', () => {
-    expect(fmtB(undefined)).toBe('—');
-    expect(fmtB(NaN)).toBe('—');
-    expect(fmtB('abc')).toBe('—');
-    expect(fmtB(Infinity)).toBe('—');
-    expect(fmtB(-Infinity)).toBe('—');
+    expect(fmtB(undefined)).toBe('-');
+    expect(fmtB(NaN)).toBe('-');
+    expect(fmtB('abc')).toBe('-');
+    expect(fmtB(Infinity)).toBe('-');
+    expect(fmtB(-Infinity)).toBe('-');
   });
 
   it('returns an em dash for null and undefined inputs', () => {
-    expect(fmtB(null)).toBe('—');
-    expect(fmtB(undefined)).toBe('—');
+    expect(fmtB(null)).toBe('-');
+    expect(fmtB(undefined)).toBe('-');
   });
 });
 
@@ -85,15 +85,15 @@ describe('fmtPct', () => {
   });
 
   it('returns an em dash for invalid inputs', () => {
-    expect(fmtPct(undefined)).toBe('—');
-    expect(fmtPct(NaN)).toBe('—');
-    expect(fmtPct('abc')).toBe('—');
-    expect(fmtPct(Infinity)).toBe('—');
+    expect(fmtPct(undefined)).toBe('-');
+    expect(fmtPct(NaN)).toBe('-');
+    expect(fmtPct('abc')).toBe('-');
+    expect(fmtPct(Infinity)).toBe('-');
   });
 
   it('returns an em dash for null and undefined inputs', () => {
-    expect(fmtPct(null)).toBe('—');
-    expect(fmtPct(undefined)).toBe('—');
+    expect(fmtPct(null)).toBe('-');
+    expect(fmtPct(undefined)).toBe('-');
   });
 });
 
@@ -113,15 +113,15 @@ describe('fmtPrice', () => {
   });
 
   it('returns an em dash for invalid inputs', () => {
-    expect(fmtPrice(undefined)).toBe('—');
-    expect(fmtPrice(NaN)).toBe('—');
-    expect(fmtPrice('abc')).toBe('—');
-    expect(fmtPrice(Infinity)).toBe('—');
+    expect(fmtPrice(undefined)).toBe('-');
+    expect(fmtPrice(NaN)).toBe('-');
+    expect(fmtPrice('abc')).toBe('-');
+    expect(fmtPrice(Infinity)).toBe('-');
   });
 
   it('returns an em dash for null and undefined inputs', () => {
-    expect(fmtPrice(null)).toBe('—');
-    expect(fmtPrice(undefined)).toBe('—');
+    expect(fmtPrice(null)).toBe('-');
+    expect(fmtPrice(undefined)).toBe('-');
   });
 });
 
@@ -261,13 +261,13 @@ describe('timeAgo', () => {
   });
 
   it('returns an em dash for invalid inputs', () => {
-    expect(timeAgo('nope')).toBe('—');
-    expect(timeAgo(undefined)).toBe('—');
-    expect(timeAgo(NaN)).toBe('—');
+    expect(timeAgo('nope')).toBe('-');
+    expect(timeAgo(undefined)).toBe('-');
+    expect(timeAgo(NaN)).toBe('-');
   });
 
   it('returns an em dash for null and undefined inputs', () => {
-    expect(timeAgo(null)).toBe('—');
-    expect(timeAgo(undefined)).toBe('—');
+    expect(timeAgo(null)).toBe('-');
+    expect(timeAgo(undefined)).toBe('-');
   });
 });

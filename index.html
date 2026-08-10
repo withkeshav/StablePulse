@@ -3,9 +3,9 @@
 <head>
   <script>
     (function () {
-      var key = 'stablescope:theme';
-      var mode = 'system';
-      try { mode = localStorage.getItem(key) || 'system'; } catch (e) {}
+      var key = 'stablepulse:theme';
+      var mode = 'light';
+      try { mode = localStorage.getItem(key) || 'light'; } catch (e) {}
       var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
       var effective = mode === 'system' ? (dark ? 'dark' : 'light') : mode;
       document.documentElement.setAttribute('data-theme', effective);
@@ -16,8 +16,14 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0C0D12">
-  <meta name="description" content="StableScope - Professional USDT & USDC Intelligence Platform">
-  <title>StableScope</title>
+  <meta name="description" content="StablePulse - Professional USDT & USDC Intelligence Platform">
+  <meta property="og:title" content="StablePulse">
+  <meta property="og:description" content="Peg stress, cross-chain flows, whale-watch anomalies and AI narratives for USDT & USDC.">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
+  <title>StablePulse</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.webmanifest">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -26,8 +32,8 @@
   <div id="app"></div>
   <script>
     // Runtime config override (optional). Set apiBase to point the app at a
-    // different backend, e.g.: window.STABLESCOPE_CONFIG = { apiBase: 'https://your-host/api' };
-    window.STABLESCOPE_CONFIG = window.STABLESCOPE_CONFIG || {};
+    // different backend, e.g.: window.STABLEPULSE_CONFIG = { apiBase: 'https://your-host/api' };
+    window.STABLEPULSE_CONFIG = window.STABLEPULSE_CONFIG || {};
   </script>
   <script type="module" src="./src/main.jsx"></script>
 </body>

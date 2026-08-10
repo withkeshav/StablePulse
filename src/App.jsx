@@ -14,8 +14,8 @@ import { apiBase, APP_VERSION } from './config.js';
 import { coinFromTabId } from './utils/coin-config.js';
 
 const REFRESH_OPTIONS = [60, 180, 300, 600, 900];
-const REFRESH_KEY = 'stablescope:refresh';
-const COMPACT_KEY = 'stablescope:compact';
+const REFRESH_KEY = 'stablepulse:refresh';
+const COMPACT_KEY = 'stablepulse:compact';
 const FETCH_TIMEOUT_MS = 20000;
 
 function readStoredRefresh() {

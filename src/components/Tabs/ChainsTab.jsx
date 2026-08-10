@@ -48,11 +48,11 @@ export default function ChainsTab({ data }) {
           <div class="mig-grid">
             {migrations.length ? migrations.map((m) => (
               <div class="migration-card" key={m.coin}>
-                <div class="chain-from">↓ {m.from?.chain || '—'}<br /><span>{fmtB(Math.abs(m.from?.delta || 0))}</span></div>
+                <div class="chain-from">↓ {m.from?.chain || '-'}<br /><span>{fmtB(Math.abs(m.from?.delta || 0))}</span></div>
                 <div class="arrow-mid"></div>
                 <div class="mig-amount">{m.coin}</div>
                 <div class="arrow-mid" style="transform:scaleX(-1)"></div>
-                <div class="chain-to">↑ {m.to?.chain || '—'}<br /><span>{fmtB(m.to?.delta || 0)}</span></div>
+                <div class="chain-to">↑ {m.to?.chain || '-'}<br /><span>{fmtB(m.to?.delta || 0)}</span></div>
               </div>
             )) : <div class="info-empty">No significant cross-chain migrations detected.</div>}
           </div>

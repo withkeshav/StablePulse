@@ -1,10 +1,10 @@
 ﻿import { useEffect, useState } from 'preact/hooks';
 
-const THEME_KEY = 'stablescope:theme';
+const THEME_KEY = 'stablepulse:theme';
 
 export function resolveTheme(mode) {
   if (mode === 'light' || mode === 'dark') return mode;
-  if (typeof window === 'undefined' || !window.matchMedia) return 'dark';
+  if (typeof window === 'undefined' || !window.matchMedia) return 'light';
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
@@ -12,9 +12,9 @@ export default function useTheme() {
   const [theme, setTheme] = useState(() => {
     try {
       const stored = localStorage.getItem(THEME_KEY);
-      return stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system';
+      return stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'light';
     } catch {
-      return 'system';
+      return 'light';
     }
   });
 

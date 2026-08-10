@@ -26,7 +26,7 @@ export default function Sidebar({ activeTab, setActiveTab, alertCount }) {
         ))}
       </div>
       <div class="sidebar-footer">
-        <div>StableScope</div>
+        <div>StablePulse</div>
       </div>
     </nav>
   );

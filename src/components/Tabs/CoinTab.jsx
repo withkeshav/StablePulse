@@ -91,7 +91,7 @@ export default function CoinTab({ coin, data }) {
                     <td class="td-name">{r.chain}</td>
                     <td class="mono">{fmtB(r.cur)}</td>
                     <td class="mono">{fmtB(r.pd)}</td>
-                    <td class={`mono ${r.d1 > 0 ? 'td-pos' : r.d1 < 0 ? 'td-neg' : ''}`}>{r.d1 == null ? '—' : fmtPct(r.d1)}</td>
+                    <td class={`mono ${r.d1 > 0 ? 'td-pos' : r.d1 < 0 ? 'td-neg' : ''}`}>{r.d1 == null ? '-' : fmtPct(r.d1)}</td>
                   </tr>
                 )) : <tr><td colspan="4" class="info-empty">No chain rows</td></tr>}
               </tbody>
@@ -111,7 +111,7 @@ export default function CoinTab({ coin, data }) {
                 </div>
                 <div>
                   <div class="cm-label">1d %</div>
-                  <div class={`cm-val ${r.d1 > 0 ? 'td-pos' : r.d1 < 0 ? 'td-neg' : ''}`}>{r.d1 == null ? '—' : fmtPct(r.d1)}</div>
+                  <div class={`cm-val ${r.d1 > 0 ? 'td-pos' : r.d1 < 0 ? 'td-neg' : ''}`}>{r.d1 == null ? '-' : fmtPct(r.d1)}</div>
                 </div>
               </div>
             )) : <div class="info-empty">No chain rows</div>}

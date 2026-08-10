@@ -1,9 +1,9 @@
 {
-  "name": "stablescope",
+  "name": "stablepulse",
   "version": "2.0.0",
   "private": false,
   "type": "module",
-  "description": "StableScope - Professional USDT & USDC Intelligence Platform. Standalone edition.",
+  "description": "StablePulse - Professional USDT & USDC Intelligence Platform. Standalone edition.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
