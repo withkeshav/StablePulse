@@ -33,3 +33,7 @@ docs/tmp/
 *.scratch.md
 .notes/
 *.md.tmp
+
+# Local agent instructions (internal, not published)
+AGENTS.md
+CLAUDE.md
