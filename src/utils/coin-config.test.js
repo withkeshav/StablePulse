@@ -23,6 +23,16 @@ describe('coin-config', () => {
     expect(STABLECOIN_REGISTRY.USDC).toBeDefined();
   });
 
+  it('registers the top-5 coverage set with correct upstream ids', () => {
+    expect(ACTIVE_STABLECOINS).toEqual(['USDT', 'USDC', 'DAI', 'USDE', 'PYUSD']);
+    expect(STABLECOIN_REGISTRY.DAI.llamaStablecoinId).toBe(5);
+    expect(STABLECOIN_REGISTRY.DAI.coingeckoId).toBe('dai');
+    expect(STABLECOIN_REGISTRY.USDE.llamaStablecoinId).toBe(146);
+    expect(STABLECOIN_REGISTRY.USDE.coingeckoId).toBe('ethena-usde');
+    expect(STABLECOIN_REGISTRY.PYUSD.llamaStablecoinId).toBe(120);
+    expect(STABLECOIN_REGISTRY.PYUSD.coingeckoId).toBe('paypal-usd');
+  });
+
   it('coinTabId returns correct lowercased id', () => {
     expect(coinTabId('USDT')).toBe('usdt');
     expect(coinTabId('USDC')).toBe('usdc');

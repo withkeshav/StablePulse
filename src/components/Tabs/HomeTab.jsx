@@ -90,8 +90,8 @@ export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec
   return (
     <div class="tab-content active">
       <SignalHero
-        usdtPrice={priceByCoin.USDT}
-        usdcPrice={priceByCoin.USDC}
+        coins={coins}
+        priceByCoin={priceByCoin}
         stress={stress}
         aiHeadline={data?.intelligence?.headline || ''}
       />

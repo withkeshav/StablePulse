@@ -28,13 +28,55 @@ export const STABLECOIN_REGISTRY = {
       megaSupplyUsd: 1e9,
     },
   },
+  DAI: {
+    symbol: 'DAI',
+    coingeckoId: 'dai',
+    llamaStablecoinId: 5,
+    color: '#F3BA2F',
+    thresholds: {
+      pegCriticalBps: 60,
+      pegWarnBps: 12,
+      chainSpikeUsd: 200e6,
+      megaSupplyUsd: 5e9,
+    },
+  },
+  USDE: {
+    symbol: 'USDE',
+    coingeckoId: 'ethena-usde',
+    llamaStablecoinId: 146,
+    color: '#8B5CF6',
+    thresholds: {
+      pegCriticalBps: 60,
+      pegWarnBps: 12,
+      chainSpikeUsd: 200e6,
+      megaSupplyUsd: 4e9,
+    },
+  },
+  PYUSD: {
+    symbol: 'PYUSD',
+    coingeckoId: 'paypal-usd',
+    llamaStablecoinId: 120,
+    color: '#003087',
+    thresholds: {
+      pegCriticalBps: 60,
+      pegWarnBps: 12,
+      chainSpikeUsd: 200e6,
+      megaSupplyUsd: 4e9,
+    },
+  },
 };
 
 /**
  * Expansion-ready switch: add more symbols here when enabling additional stablecoins.
  * The frontend nav, home stats, charts and derive logic all follow this list.
+ *
+ * Coverage rationale (top 5 by market cap + transaction volume + adoption + momentum):
+ * - USDT, USDC: the two giants, ~83% of all stablecoin value.
+ * - DAI: the leading decentralized stablecoin and DeFi benchmark.
+ * - USDE: the largest yield-bearing synthetic dollar (Ethena).
+ * - PYUSD: the fastest-rising regulated payments stablecoin (PayPal).
  */
-export const ACTIVE_STABLECOINS = ['USDT', 'USDC'];
+export const ACTIVE_STABLECOINS = ['USDT', 'USDC', 'DAI', 'USDE', 'PYUSD'];
 
 /**
  * Resolved active coin configs (registry entries in ACTIVE_STABLECOINS order).

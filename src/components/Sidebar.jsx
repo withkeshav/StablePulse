@@ -5,6 +5,7 @@ const TABS = [
   ...ACTIVE_STABLECOINS.map((symbol) => ({ id: coinTabId(symbol), label: symbol })),
   { id: 'chains', label: 'Chains' },
   { id: 'alerts', label: 'Alerts' },
+  { id: 'about', label: 'About' },
 ];
 
 export default function Sidebar({ activeTab, setActiveTab, alertCount }) {

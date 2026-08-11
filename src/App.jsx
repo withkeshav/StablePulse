@@ -6,6 +6,7 @@ import HomeTab from './components/Tabs/HomeTab.jsx';
 import CoinTab from './components/Tabs/CoinTab.jsx';
 import ChainsTab from './components/Tabs/ChainsTab.jsx';
 import AlertsTab from './components/Tabs/AlertsTab.jsx';
+import AboutTab from './components/Tabs/AboutTab.jsx';
 import SkeletonLoader from './components/ui/SkeletonLoader.jsx';
 import RefreshCountdown from './components/ui/RefreshCountdown.jsx';
 import SettingsPanel from './components/SettingsPanel.jsx';
@@ -192,6 +193,7 @@ export default function App() {
                 {activeTab === 'alerts' && (
                   <AlertsTab alerts={alerts} intelligence={data?.intelligence} data={data} />
                 )}
+                {activeTab === 'about' && <AboutTab />}
               </>
             )}
           </ErrorBoundary>

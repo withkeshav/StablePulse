@@ -5,6 +5,7 @@ const ITEMS = [
   ...ACTIVE_STABLECOINS.map((symbol) => ({ id: coinTabId(symbol), label: symbol })),
   { id: 'chains', label: 'Chains' },
   { id: 'alerts', label: 'Alerts' },
+  { id: 'about', label: 'About' },
 ];
 
 export default function MobileNav({ activeTab, setActiveTab, alertCount }) {

@@ -367,3 +367,57 @@ body.compact .tab-content{padding:8px}
 .skip-link:focus {
   top: 0;
 }
+
+/* ── COVERAGE / ABOUT ─────────────────────────────────────────────────────── */
+.coin-pair-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.coverage-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.coverage-row:last-child { border-bottom: 0; }
+.coverage-coin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.coverage-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.coverage-symbol {
+  font-family: var(--mono);
+  font-weight: 700;
+  color: var(--text);
+}
+.coverage-id {
+  font-size: 10px;
+  color: var(--text3);
+}
+.coverage-role {
+  font-size: var(--sm);
+  font-weight: 600;
+  color: var(--text2);
+}
+.coverage-why {
+  font-size: var(--xs);
+  line-height: 1.5;
+}
+.coverage-list {
+  padding-left: 18px;
+  margin: 0 0 12px;
+}
+.coverage-list li { margin-bottom: 6px; }
+
+@media (max-width: 480px) {
+  .coin-pair-grid { grid-template-columns: 1fr 1fr; }
+}
