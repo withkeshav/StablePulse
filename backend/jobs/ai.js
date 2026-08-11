@@ -73,7 +73,7 @@ async function callModel(model) {
         { role: 'user', content: `StablePulse snapshot data:\n${buildContext()}` },
       ],
       temperature: 0.4,
-      max_tokens: 500,
+      max_tokens: 2048,
     }),
   });
   if (!res.ok) throw new Error(`model ${model} returned ${res.status}`);
