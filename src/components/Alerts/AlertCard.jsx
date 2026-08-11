@@ -1,8 +1,9 @@
 import { useState } from 'preact/hooks';
 import { timeAgo } from '../../utils/formatters.js';
 import Sparkline from '../ui/Sparkline.jsx';
+import { apiBase } from '../../config.js';
 
-export default function AlertCard({ alert, apiBase, compact = false, spark = null }) {
+export default function AlertCard({ alert, compact = false, spark = null }) {
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(false);

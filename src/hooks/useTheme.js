@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 
 const THEME_KEY = 'stablepulse:theme';
 
@@ -22,7 +22,6 @@ export default function useTheme() {
 
   useEffect(() => {
     setEffectiveTheme(resolveTheme(theme));
-    document.documentElement.setAttribute('data-theme', resolveTheme(theme));
   }, [theme]);
 
   useEffect(() => {
@@ -38,13 +37,15 @@ export default function useTheme() {
   }, [theme]);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return undefined;
-    const media = window.matchMedia('(prefers-color-scheme: dark)');
-    const onChange = () => {
-      if (theme === 'system') setEffectiveTheme(media.matches ? 'dark' : 'light');
-    };
-    media.addEventListener('change', onChange);
-    return () => media.removeEventListener('change', onChange);
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      const media = window.matchMedia('(prefers-color-scheme: dark)');
+      const onChange = () => {
+        if (theme === 'system') setEffectiveTheme(media.matches ? 'dark' : 'light');
+      };
+      media.addEventListener('change', onChange);
+      return () => media.removeEventListener('change', onChange);
+    }
+    return undefined;
   }, [theme]);
 
   return { theme, setTheme, effectiveTheme };

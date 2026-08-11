@@ -74,6 +74,12 @@ describe('rankChainFlows', () => {
     const flows = rankChainFlows(detailsByCoin);
     expect(flows[0].totalDelta).toBe(0);
   });
+
+  it('handles zero-supply edge case properly', () => {
+    const detailsByCoin = { USDT: { chainBalances: { Solana: { tokens: [token(1, 100), token(2, 0)] } } } };
+    const flows = rankChainFlows(detailsByCoin);
+    expect(flows[0].totalDelta).toBe(-100);
+  });
 });
 
 describe('buildMigrationPairs', () => {
@@ -134,6 +140,17 @@ describe('computePegStress', () => {
     expect(stress.level).toBe('HIGH');
   });
 
+  it('assigns WATCH level when score is between 40 and 69', () => {
+    const stress = computePegStress({
+      pricesByCoin: { USDT: 1.002 },
+      alerts: [{ severity: 'HIGH' }, { severity: 'WARNING' }], // 14 + 14 = 28 score + chain flow
+      topChainFlow: 12.5e9, // 25
+    });
+    expect(stress.score).toBeGreaterThanOrEqual(40);
+    expect(stress.score).toBeLessThan(70);
+    expect(stress.level).toBe('WATCH');
+  });
+
   it('handles missing prices gracefully', () => {
     const stress = computePegStress({ pricesByCoin: {}, alerts: [], topChainFlow: 0 });
     expect(stress.pegDriftBps).toBe(0);
@@ -163,6 +180,13 @@ describe('buildWhaleWatchRows', () => {
     ]);
     const rows = buildWhaleWatchRows({ USDT: spike(1e9), USDC: spike(1e9) }, 1);
     expect(rows).toHaveLength(1);
+  });
+
+  it('returns empty when chain balances are steady', () => {
+    const tokens = [];
+    for (let i = 0; i < 30; i += 1) tokens.push(token(i + 1, i * 1000));
+    const rows = buildWhaleWatchRows({ USDT: chainDetail([...tokens, token(31, 30000)]) });
+    expect(rows).toHaveLength(0);
   });
 });
 

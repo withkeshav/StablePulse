@@ -20,14 +20,15 @@ describe('fmtB', () => {
   });
 
   it('formats negative numbers with a leading minus', () => {
-    expect(fmtB(-999)).toBe('$-999.00');
-    expect(fmtB(-1000)).toBe('$-1.00K');
-    expect(fmtB(-2_500_000)).toBe('$-2.50M');
+    expect(fmtB(-999)).toBe('-$999.00');
+    expect(fmtB(-1000)).toBe('-$1.00K');
+    expect(fmtB(-2_500_000)).toBe('-$2.50M');
   });
 
   it('respects the decimals parameter', () => {
     expect(fmtB(1234567, 1)).toBe('$1.2M');
     expect(fmtB(1234567, 0)).toBe('$1M');
+    expect(fmtB(500, 3)).toBe('$500.000');
   });
 
   it('accepts numeric strings', () => {
@@ -45,7 +46,7 @@ describe('fmtB', () => {
     expect(fmtB(1234567, -2)).toBe('$1M');
   });
 
-  it('returns an em dash for invalid inputs', () => {
+  it('returns a hyphen placeholder for invalid inputs', () => {
     expect(fmtB(undefined)).toBe('-');
     expect(fmtB(NaN)).toBe('-');
     expect(fmtB('abc')).toBe('-');
@@ -53,7 +54,7 @@ describe('fmtB', () => {
     expect(fmtB(-Infinity)).toBe('-');
   });
 
-  it('returns an em dash for null and undefined inputs', () => {
+  it('returns a hyphen placeholder for null and undefined inputs', () => {
     expect(fmtB(null)).toBe('-');
     expect(fmtB(undefined)).toBe('-');
   });
@@ -84,14 +85,14 @@ describe('fmtPct', () => {
     expect(fmtPct('-1.5')).toBe('-1.50%');
   });
 
-  it('returns an em dash for invalid inputs', () => {
+  it('returns a hyphen placeholder for invalid inputs', () => {
     expect(fmtPct(undefined)).toBe('-');
     expect(fmtPct(NaN)).toBe('-');
     expect(fmtPct('abc')).toBe('-');
     expect(fmtPct(Infinity)).toBe('-');
   });
 
-  it('returns an em dash for null and undefined inputs', () => {
+  it('returns a hyphen placeholder for null and undefined inputs', () => {
     expect(fmtPct(null)).toBe('-');
     expect(fmtPct(undefined)).toBe('-');
   });
@@ -112,14 +113,14 @@ describe('fmtPrice', () => {
     expect(fmtPrice('1.5')).toBe('$1.5000');
   });
 
-  it('returns an em dash for invalid inputs', () => {
+  it('returns a hyphen placeholder for invalid inputs', () => {
     expect(fmtPrice(undefined)).toBe('-');
     expect(fmtPrice(NaN)).toBe('-');
     expect(fmtPrice('abc')).toBe('-');
     expect(fmtPrice(Infinity)).toBe('-');
   });
 
-  it('returns an em dash for null and undefined inputs', () => {
+  it('returns a hyphen placeholder for null and undefined inputs', () => {
     expect(fmtPrice(null)).toBe('-');
     expect(fmtPrice(undefined)).toBe('-');
   });
@@ -255,18 +256,23 @@ describe('timeAgo', () => {
     expect(timeAgo(new Date(NOW - 5 * 60_000))).toBe('5m ago');
   });
 
+  it('accepts a numeric string timestamp', () => {
+    expect(timeAgo(String(NOW - 30_000))).toBe('30s ago');
+    expect(timeAgo(String(NOW - 5 * 60_000))).toBe('5m ago');
+  });
+
   it('clamps future timestamps to 0s ago', () => {
     expect(timeAgo(NOW + 60_000)).toBe('0s ago');
     expect(timeAgo(NOW)).toBe('0s ago');
   });
 
-  it('returns an em dash for invalid inputs', () => {
+  it('returns a hyphen placeholder for invalid inputs', () => {
     expect(timeAgo('nope')).toBe('-');
     expect(timeAgo(undefined)).toBe('-');
     expect(timeAgo(NaN)).toBe('-');
   });
 
-  it('returns an em dash for null and undefined inputs', () => {
+  it('returns a hyphen placeholder for null and undefined inputs', () => {
     expect(timeAgo(null)).toBe('-');
     expect(timeAgo(undefined)).toBe('-');
   });

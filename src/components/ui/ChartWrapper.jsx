@@ -61,6 +61,25 @@ function tintScales(base = {}, grid, tick) {
   return out;
 }
 
+function areOptionsEqual(a, b) {
+  if (a === b) return true;
+  if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+  if (keysA.length !== keysB.length) return false;
+  for (const key of keysA) {
+    const valA = a[key];
+    const valB = b[key];
+    if (valA === valB) continue;
+    if (typeof valA === 'object' && typeof valB === 'object' && valA !== null && valB !== null) {
+      if (!areOptionsEqual(valA, valB)) return false;
+    } else {
+      return false;
+    }
+  }
+  return true;
+}
+
 const EMPTY_OPTIONS = {};
 
 export default function ChartWrapper({ type, data, options = {}, height = 220, aspectRatio = null }) {
@@ -80,7 +99,7 @@ export default function ChartWrapper({ type, data, options = {}, height = 220, a
     const changed =
       prev.type !== type ||
       prev.data !== data ||
-      prev.options !== resolvedOptions ||
+      !areOptionsEqual(prev.options, resolvedOptions) ||
       prev.aspectRatio !== aspectRatio ||
       prev.height !== height ||
       prev.themeEpoch !== themeEpoch;
@@ -97,7 +116,7 @@ export default function ChartWrapper({ type, data, options = {}, height = 220, a
         chartRef.current &&
         prevNow.type === type &&
         prevNow.data === data &&
-        prevNow.options === resolvedOptions &&
+        areOptionsEqual(prevNow.options, resolvedOptions) &&
         prevNow.aspectRatio === aspectRatio &&
         prevNow.height === height &&
         prevNow.themeEpoch === themeEpoch
@@ -156,7 +175,7 @@ export default function ChartWrapper({ type, data, options = {}, height = 220, a
     : `height:${height}px`;
 
   return (
-    <div class="chart-wrap" style={wrapStyle}>
+    <div class="chart-wrap" style={wrapStyle} aria-label={`${type} chart`} role="img">
       <canvas ref={canvasRef}></canvas>
     </div>
   );

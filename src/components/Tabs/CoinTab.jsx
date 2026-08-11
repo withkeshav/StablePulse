@@ -55,6 +55,8 @@ export default function CoinTab({ coin, data }) {
     [cgTickers, color]
   );
 
+  const chartOptions = useMemo(() => ({ responsive: true, maintainAspectRatio: false }), []);
+
   return (
     <div class="tab-content active">
       <div class="stats-grid">
@@ -68,13 +70,13 @@ export default function CoinTab({ coin, data }) {
         <div class="card">
           <div class="card-header"><div class="card-title">{symbol} Supply History</div></div>
           <div class="card-body chart-card-body">
-            <ChartWrapper type="line" data={supplyLineData} height={220} aspectRatio={16 / 10} options={{ responsive: true, maintainAspectRatio: false }} />
+            <ChartWrapper type="line" data={supplyLineData} height={220} aspectRatio={16 / 10} options={chartOptions} />
           </div>
         </div>
         <div class="card">
           <div class="card-header"><div class="card-title">{symbol} Price</div></div>
           <div class="card-body chart-card-body">
-            <ChartWrapper type="line" data={priceLineData} height={220} aspectRatio={16 / 10} options={{ responsive: true, maintainAspectRatio: false }} />
+            <ChartWrapper type="line" data={priceLineData} height={220} aspectRatio={16 / 10} options={chartOptions} />
           </div>
         </div>
       </div>
@@ -122,7 +124,7 @@ export default function CoinTab({ coin, data }) {
       <div class="card">
         <div class="card-header"><div class="card-title">{symbol} Exchange Volume</div></div>
         <div class="card-body chart-card-body">
-          <ChartWrapper type="bar" data={exchBars} height={220} aspectRatio={16 / 10} options={{ responsive: true, maintainAspectRatio: false }} />
+          <ChartWrapper type="bar" data={exchBars} height={220} aspectRatio={16 / 10} options={chartOptions} />
         </div>
       </div>
     </div>

@@ -14,7 +14,22 @@ export default function WhaleWatch({ rows }) {
               <p class="text-muted small mb-0">Highlighted chains where recent mint/burn drift cleared volatility thresholds.</p>
             </div>
           </div>
-          <div class="table-responsive">
+          <div class="whale-cards-mobile">
+            {rows.map((row, idx) => (
+              <div class="whale-mobile-card" key={`mob-${row.coin}-${row.chain}-${idx}`}>
+                <div class="wm-main">{row.coin} &middot; {row.chain}</div>
+                <div>
+                  <div class="wm-label">Δ Supply</div>
+                  <div class="wm-val">{fmtB(row.delta)}</div>
+                </div>
+                <div>
+                  <div class="wm-label">Z-score</div>
+                  <div class="wm-val">{row.z.toFixed(1)}σ</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div class="table-responsive whale-table-desktop">
             <table class="table table-sm mb-0 whale-watch-table">
               <thead>
                 <tr>

@@ -1,3 +1,4 @@
+import { useMemo } from 'preact/hooks';
 import { fmtB, fmtPct, pctChange } from '../../utils/formatters.js';
 import ChartWrapper from '../ui/ChartWrapper.jsx';
 
@@ -27,6 +28,8 @@ export default function ChainsTab({ data }) {
     if (deltas.length >= 2) migrations.push({ coin: asset.symbol, from: deltas.find((d) => d.delta < 0), to: deltas.find((d) => d.delta > 0) });
   });
 
+  const chartOptions = useMemo(() => ({ responsive: true, maintainAspectRatio: false }), []);
+
   return (
     <div class="tab-content active">
       <div class="card mb-4">
@@ -37,7 +40,7 @@ export default function ChainsTab({ data }) {
             <div class="compare-stat"><div class="cs-label">Ethereum Supply</div><div class="cs-val">{fmtB(ethCur)}</div><div class="cs-coin">{fmtPct(pctChange(ethCur, ethPd))} 24h</div></div>
           </div>
           <div class="chart-card-body">
-            <ChartWrapper type="bar" data={chartData} height={200} aspectRatio={16 / 10} options={{ responsive: true, maintainAspectRatio: false }} />
+            <ChartWrapper type="bar" data={chartData} height={200} aspectRatio={16 / 10} options={chartOptions} />
           </div>
         </div>
       </div>

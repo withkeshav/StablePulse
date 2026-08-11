@@ -1,4 +1,5 @@
-﻿import { bps } from '../utils/formatters.js';
+import { bps } from '../utils/formatters.js';
+import { getActiveCoins } from '../utils/coin-config.js';
 
 export function buildSupplySeries(detail) {
   const chainBalances = detail?.chainBalances || {};
@@ -24,7 +25,7 @@ export function rankChainFlows(detailsByCoin) {
     for (const [chain, chainData] of Object.entries(detail?.chainBalances || {})) {
       const tokens = chainData?.tokens || [];
       const cur = tokens[tokens.length - 1]?.circulating?.peggedUSD || 0;
-      const pd = tokens[tokens.length - 2]?.circulating?.peggedUSD || cur;
+      const pd = tokens[tokens.length - 2]?.circulating?.peggedUSD ?? cur;
       const delta = cur - pd;
       if (!map[chain]) map[chain] = { chain, deltas: {}, totalDelta: 0 };
       map[chain].deltas[coin] = (map[chain].deltas[coin] || 0) + delta;
@@ -117,33 +118,41 @@ export function buildShareSeries(supplyByCoin, targetCoin) {
 export function buildAlertSparkSeries(alert, data) {
   if (!alert || !data) return null;
   const rule = alert.rule;
+  const coin = alert.coin;
+  const coins = getActiveCoins();
+  const activeCoin = coins.find((c) => c.symbol === coin);
+  const color = activeCoin ? activeCoin.color : '#3b82f6';
+
   if (rule === 'PEG_BREAK') {
-    const chart = alert.coin === 'USDC' ? data?.cgUSDCChart : data?.cgUSDTChart;
+    const chart = data?.[`cg${coin}Chart`];
     const prices = (chart?.prices || []).slice(-14);
     if (!prices.length) return null;
     return {
       labels: prices.map((_, i) => String(i)),
       values: prices.map((p) => p[1]),
-      color: alert.coin === 'USDC' ? '#2775CA' : '#26A17B',
+      color,
     };
   }
   if (rule === 'MEGA_SUPPLY' || rule === 'CHAIN_SPIKE') {
-    const detail = alert.coin === 'USDC' ? data?.usdcDetail : data?.usdtDetail;
+    const detail = data?.[`${coin?.toLowerCase()}Detail`];
     const chainData = detail?.chainBalances?.[alert.chain];
     const tokens = (chainData?.tokens || []).slice(-14);
     if (!tokens.length) return null;
     return {
       labels: tokens.map((_, i) => String(i)),
       values: tokens.map((t) => t?.circulating?.peggedUSD || 0),
-      color: alert.coin === 'USDC' ? '#2775CA' : '#26A17B',
+      color,
     };
   }
   if (rule === 'DOM_SHIFT') {
-    const supplyByCoin = {
-      USDT: buildSupplySeries(data?.usdtDetail),
-      USDC: buildSupplySeries(data?.usdcDetail),
-    };
-    const dom = buildShareSeries(supplyByCoin, alert.coin === 'USDC' ? 'USDC' : 'USDT').slice(-14);
+    const supplyByCoin = {};
+    for (const key of Object.keys(data || {})) {
+      if (key.endsWith('Detail')) {
+        const symbol = key.replace('Detail', '').toUpperCase();
+        supplyByCoin[symbol] = buildSupplySeries(data[key]);
+      }
+    }
+    const dom = buildShareSeries(supplyByCoin, coin).slice(-14);
     if (!dom.length) return null;
     return {
       labels: dom.map((_, i) => String(i)),

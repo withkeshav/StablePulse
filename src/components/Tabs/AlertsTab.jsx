@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'preact/hooks';
+import { useMemo, useState } from 'preact/hooks';
 import AlertHero from '../Alerts/AlertHero.jsx';
 import AlertCard from '../Alerts/AlertCard.jsx';
 import { buildAlertSparkSeries } from '../../lib/derive.js';
@@ -23,7 +23,7 @@ function AlertsEmptyState() {
   );
 }
 
-export default function AlertsTab({ alerts, intelligence, apiBase, data }) {
+export default function AlertsTab({ alerts, intelligence, data }) {
   const [severity, setSeverity] = useState('all');
   const [coin, setCoin] = useState('all');
   const [sortBy, setSortBy] = useState('latest');
@@ -77,7 +77,6 @@ export default function AlertsTab({ alerts, intelligence, apiBase, data }) {
     <AlertCard
       key={a.id}
       alert={a}
-      apiBase={apiBase}
       compact={false}
       spark={sparks[a.id]}
     />

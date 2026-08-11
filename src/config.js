@@ -14,5 +14,5 @@ function resolveApiBase() {
   return String(candidate).replace(/\/+$/, '');
 }
 
-export const APP_VERSION = 'v2.0.0';
+export const APP_VERSION = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'v2.0.0';
 export const apiBase = resolveApiBase();

@@ -1,8 +1,8 @@
-﻿import { useMemo } from 'preact/hooks';
+import { useMemo } from 'preact/hooks';
 import AlertCard from '../Alerts/AlertCard.jsx';
 import { buildAlertSparkSeries } from '../../lib/derive.js';
 
-export default function SignalSummary({ data, alerts, apiBase, onViewAll }) {
+export default function SignalSummary({ data, alerts, onViewAll }) {
   const top = (alerts || []).slice(0, 3);
   const sparks = useMemo(() => {
     const m = {};
@@ -21,7 +21,6 @@ export default function SignalSummary({ data, alerts, apiBase, onViewAll }) {
             <AlertCard
               key={alert.id}
               alert={alert}
-              apiBase={apiBase}
               compact
               spark={sparks[alert.id]}
             />

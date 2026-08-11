@@ -1,4 +1,4 @@
-﻿import { useMemo } from 'preact/hooks';
+import { useMemo } from 'preact/hooks';
 import { fmtB, fmtPrice } from '../../utils/formatters.js';
 import { getActiveCoins } from '../../utils/coin-config.js';
 import StatCard from '../ui/StatCard.jsx';
@@ -8,8 +8,9 @@ import MarketPulse from '../Sections/MarketPulse.jsx';
 import CapitalFlows from '../Sections/CapitalFlows.jsx';
 import SignalSummary from '../Sections/SignalSummary.jsx';
 import WhaleWatch from '../Sections/WhaleWatch.jsx';
+import { apiBase } from '../../config.js';
 
-export default function HomeTab({ data, alerts, apiBase, setActiveTab, refreshIntervalSec = 900 }) {
+export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec = 900 }) {
   const cg = data?.cgSimple;
   const coins = getActiveCoins();
 
@@ -117,7 +118,7 @@ export default function HomeTab({ data, alerts, apiBase, setActiveTab, refreshIn
 
       <MarketPulse supplyChartData={supplyChartData} pegChartData={pegChartData} />
       <CapitalFlows migrationPairs={migrationPairs} chainFlows={chainFlows} />
-      <SignalSummary data={data} alerts={alerts} apiBase={apiBase} onViewAll={() => setActiveTab('alerts')} />
+      <SignalSummary data={data} alerts={alerts} onViewAll={() => setActiveTab('alerts')} />
     </div>
   );
 }

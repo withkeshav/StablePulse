@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
+import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
 import Header from './components/Header.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import MobileNav from './components/MobileNav.jsx';
@@ -10,6 +10,7 @@ import SkeletonLoader from './components/ui/SkeletonLoader.jsx';
 import RefreshCountdown from './components/ui/RefreshCountdown.jsx';
 import SettingsPanel from './components/SettingsPanel.jsx';
 import useTheme from './hooks/useTheme.js';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { apiBase, APP_VERSION } from './config.js';
 import { coinFromTabId } from './utils/coin-config.js';
 
@@ -19,12 +20,17 @@ const COMPACT_KEY = 'stablepulse:compact';
 const FETCH_TIMEOUT_MS = 20000;
 
 function readStoredRefresh() {
-  const value = Number(localStorage.getItem(REFRESH_KEY));
-  return REFRESH_OPTIONS.includes(value) ? value : 900;
+  try {
+    const raw = localStorage.getItem(REFRESH_KEY);
+    if (raw === null) return null;
+    const value = Number(raw);
+    return REFRESH_OPTIONS.includes(value) ? value : null;
+  } catch { return null; }
 }
 
 function readStoredCompact() {
-  return localStorage.getItem(COMPACT_KEY) === '1';
+  try { return localStorage.getItem(COMPACT_KEY) === '1'; }
+  catch { return false; }
 }
 
 export default function App() {
@@ -38,9 +44,14 @@ export default function App() {
   const [apiStatus, setApiStatus] = useState({ message: '' });
   const [alerts, setAlerts] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(null);
-  const [refreshIntervalSec, setRefreshIntervalSec] = useState(readStoredRefresh);
+
+  const initialStoredRefresh = readStoredRefresh();
+  const hasUserStoredRefreshRef = useRef(initialStoredRefresh !== null);
+  const [refreshIntervalSec, setRefreshIntervalSec] = useState(initialStoredRefresh ?? 900);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [compactMode, setCompactMode] = useState(readStoredCompact);
+
+  const hasLoadedRef = useRef(false);
 
   const aliveRef = useRef(true);
   const abortRef = useRef(null);
@@ -85,7 +96,12 @@ export default function App() {
         setData({ ...payload.data, intelligence: payload.intelligence || null });
         setAlerts(payload.alerts || []);
         setLastUpdated(payload.lastUpdated || null);
-        setRefreshIntervalSec(payload.refreshIntervalSec || 900);
+        if (!hasLoadedRef.current) {
+          hasLoadedRef.current = true;
+          if (!hasUserStoredRefreshRef.current && payload.refreshIntervalSec) {
+            setRefreshIntervalSec(payload.refreshIntervalSec);
+          }
+        }
         setApiStatus({ message: '' });
       } catch (err) {
         if (!aliveRef.current || err?.name === 'AbortError') return;
@@ -136,6 +152,7 @@ export default function App() {
 
   return (
     <div id="app-layout" class="layout-wrapper">
+      <a href="#main" class="skip-link">Skip to content</a>
       <Header
         loading={loading}
         refreshing={refreshing}
@@ -151,32 +168,33 @@ export default function App() {
       <div id="body-row">
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} alertCount={alerts.length} />
         <main id="main">
-          {loading && !data ? (
-            <SkeletonLoader />
-          ) : (
-            <>
-              {apiStatus.message ? (
-                <div class="card" style="margin: 16px; padding: 14px;">{apiStatus.message}</div>
-              ) : null}
-              {!loading && lastUpdated ? (
-                <RefreshCountdown lastUpdated={lastUpdated} refreshIntervalSec={refreshIntervalSec} refreshing={refreshing} />
-              ) : null}
-              {activeTab === 'home' && (
-                <HomeTab
-                  data={data}
-                  alerts={alerts}
-                  apiBase={apiBase}
-                  setActiveTab={setActiveTab}
-                  refreshIntervalSec={refreshIntervalSec}
-                />
-              )}
-              {coinTab ? <CoinTab coin={activeTab} data={data} /> : null}
-              {activeTab === 'chains' && <ChainsTab data={data} />}
-              {activeTab === 'alerts' && (
-                <AlertsTab alerts={alerts} intelligence={data?.intelligence} apiBase={apiBase} data={data} />
-              )}
-            </>
-          )}
+          <ErrorBoundary>
+            {loading && !data ? (
+              <SkeletonLoader />
+            ) : (
+              <>
+                {apiStatus.message ? (
+                  <div class="card api-status-card">{apiStatus.message}</div>
+                ) : null}
+                {!loading && lastUpdated ? (
+                  <RefreshCountdown lastUpdated={lastUpdated} refreshIntervalSec={refreshIntervalSec} refreshing={refreshing} />
+                ) : null}
+                {activeTab === 'home' && (
+                  <HomeTab
+                    data={data}
+                    alerts={alerts}
+                    setActiveTab={setActiveTab}
+                    refreshIntervalSec={refreshIntervalSec}
+                  />
+                )}
+                {coinTab ? <CoinTab key={activeTab} coin={activeTab} data={data} /> : null}
+                {activeTab === 'chains' && <ChainsTab data={data} />}
+                {activeTab === 'alerts' && (
+                  <AlertsTab alerts={alerts} intelligence={data?.intelligence} data={data} />
+                )}
+              </>
+            )}
+          </ErrorBoundary>
         </main>
       </div>
       <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} alertCount={alerts.length} />
