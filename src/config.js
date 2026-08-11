@@ -1,18 +1,18 @@
-const DEFAULT_API_BASE = 'https://stablescope-cors.keshav-maheshwari.workers.dev';
-const DEV_API_BASE = 'http://127.0.0.1:8787';
-
 /**
- * Resolved API base URL. Priority:
- *   1. window.STABLEPULSE_CONFIG.apiBase   (runtime override, set in index.html or deploy)
- *   2. import.meta.env.STABLEPULSE_API_BASE (build-time env var)
- *   3. Default: dev uses the local wrangler, prod uses the Cloudflare Worker.
+ * Resolved AI/backend API base URL. Priority:
+ *   1. window.STABLEPULSE_CONFIG.aiApiBase  (runtime override, set in index.html or deploy)
+ *   2. import.meta.env.STABLEPULSE_AI_API_BASE (build-time env var)
+ *   3. '' -> same origin (nginx serves /api/ai next to the static frontend)
+ *
+ * An empty base means the AI layer is disabled and the UI degrades to
+ * deterministic, locally computed signals.
  */
-function resolveApiBase() {
-  const fromWindow = typeof window !== 'undefined' ? window.STABLEPULSE_CONFIG?.apiBase : undefined;
-  const fromEnv = import.meta.env?.STABLEPULSE_API_BASE;
-  const candidate = fromWindow || fromEnv || (import.meta.env.DEV ? DEV_API_BASE : DEFAULT_API_BASE);
+function resolveAiApiBase() {
+  const fromWindow = typeof window !== 'undefined' ? window.STABLEPULSE_CONFIG?.aiApiBase : undefined;
+  const fromEnv = import.meta.env?.STABLEPULSE_AI_API_BASE;
+  const candidate = fromWindow || fromEnv || '';
   return String(candidate).replace(/\/+$/, '');
 }
 
 export const APP_VERSION = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'v2.0.0';
-export const apiBase = resolveApiBase();
+export const aiApiBase = resolveAiApiBase();

@@ -162,3 +162,189 @@ export function buildAlertSparkSeries(alert, data) {
   }
   return null;
 }
+
+const SEVERITY_RANK = { CRITICAL: 0, HIGH: 1, WARNING: 2 };
+
+function dayBucket(ts = Date.now()) {
+  const d = new Date(ts);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+function alertId(rule, coin, chain) {
+  const base = `${rule}:${coin}${chain ? `:${chain}` : ''}:${dayBucket()}`;
+  let hash = 0;
+  for (let i = 0; i < base.length; i += 1) {
+    hash = (hash * 31 + base.charCodeAt(i)) >>> 0;
+  }
+  return `${rule.toLowerCase()}-${coin.toLowerCase()}${chain ? `-${chain.toLowerCase()}` : ''}-${hash.toString(36)}`;
+}
+
+function chainDelta(detail, chain) {
+  const tokens = detail?.chainBalances?.[chain]?.tokens || [];
+  const cur = tokens[tokens.length - 1]?.circulating?.peggedUSD;
+  const prev = tokens[tokens.length - 2]?.circulating?.peggedUSD;
+  if (typeof cur !== 'number' || typeof prev !== 'number') return 0;
+  return cur - prev;
+}
+
+function coinTotalDelta(detail) {
+  const chains = Object.keys(detail?.chainBalances || {});
+  return chains.reduce((sum, chain) => sum + chainDelta(detail, chain), 0);
+}
+
+function fmtUsd(n) {
+  return Math.abs(n) >= 1e9 ? `${(Math.abs(n) / 1e9).toFixed(2)}B` : `${(Math.abs(n) / 1e6).toFixed(0)}M`;
+}
+
+/**
+ * Derive alert events from the dashboard payload using the per-coin
+ * thresholds in the stablecoin registry. Deterministic and local: no AI,
+ * no network, no server round-trip. Rules:
+ *   PEG_BREAK   per-coin spot price drift from $1
+ *   CHAIN_SPIKE per-chain 24h supply delta on a single chain
+ *   MEGA_SUPPLY coin-wide 24h mint/burn total
+ *   DOM_SHIFT   weekly change in a coin's share of tracked supply
+ */
+export function generateAlerts(data) {
+  if (!data) return [];
+  const alerts = [];
+  const now = Date.now();
+  const coins = getActiveCoins();
+
+  for (const cfg of coins) {
+    const price = data?.cgSimple?.[cfg.coingeckoId]?.usd;
+    const detail = data?.[`${cfg.symbol.toLowerCase()}Detail`];
+
+    if (typeof price === 'number') {
+      const devBps = bps(price);
+      const absDev = Math.abs(devBps);
+      let severity = null;
+      if (absDev >= cfg.thresholds.pegCriticalBps) severity = 'CRITICAL';
+      else if (absDev >= cfg.thresholds.pegWarnBps) severity = 'HIGH';
+      if (severity) {
+        alerts.push({
+          id: alertId('PEG_BREAK', cfg.symbol),
+          rule: 'PEG_BREAK',
+          coin: cfg.symbol,
+          severity,
+          magnitude: absDev,
+          timestamp: now,
+          rationale: `${cfg.symbol} is ${devBps} bps ${devBps < 0 ? 'below' : 'above'} the $1 peg (price ${price.toFixed(4)}).`,
+        });
+      }
+    }
+
+    const spikes = [];
+    for (const chain of Object.keys(detail?.chainBalances || {})) {
+      const delta = chainDelta(detail, chain);
+      if (Math.abs(delta) >= cfg.thresholds.chainSpikeUsd) spikes.push({ chain, delta });
+    }
+    for (const spike of spikes) {
+      const severity = Math.abs(spike.delta) >= 2 * cfg.thresholds.chainSpikeUsd ? 'HIGH' : 'WARNING';
+      alerts.push({
+        id: alertId('CHAIN_SPIKE', cfg.symbol, spike.chain),
+        rule: 'CHAIN_SPIKE',
+        coin: cfg.symbol,
+        chain: spike.chain,
+        severity,
+        magnitude: Math.abs(spike.delta),
+        timestamp: now,
+        rationale: `${cfg.symbol} supply ${spike.delta > 0 ? 'surged' : 'dropped'} by ${fmtUsd(spike.delta)} on ${spike.chain} in the last 24h.`,
+      });
+    }
+
+    if (detail && Object.keys(detail.chainBalances || {}).length) {
+      const total = coinTotalDelta(detail);
+      if (Math.abs(total) >= cfg.thresholds.megaSupplyUsd) {
+        const severity = Math.abs(total) >= 3 * cfg.thresholds.megaSupplyUsd ? 'CRITICAL' : 'HIGH';
+        alerts.push({
+          id: alertId('MEGA_SUPPLY', cfg.symbol),
+          rule: 'MEGA_SUPPLY',
+          coin: cfg.symbol,
+          severity,
+          magnitude: Math.abs(total),
+          timestamp: now,
+          rationale: `${cfg.symbol} minted or burned ${fmtUsd(total)} across all chains in the last 24h.`,
+        });
+      }
+    }
+  }
+
+  const supplyByCoin = {};
+  for (const cfg of coins) {
+    const detail = data?.[`${cfg.symbol.toLowerCase()}Detail`];
+    const series = buildSupplySeries(detail);
+    if (series.length >= 8) supplyByCoin[cfg.symbol] = series;
+  }
+  if (Object.keys(supplyByCoin).length >= 2) {
+    for (const cfg of coins) {
+      if (!supplyByCoin[cfg.symbol]) continue;
+      const share = buildShareSeries(supplyByCoin, cfg.symbol);
+      if (share.length < 8) continue;
+      const latest = share[share.length - 1].share;
+      const ref = share[share.length - 8].share;
+      const drift = latest - ref;
+      if (Math.abs(drift) >= 1) {
+        const severity = Math.abs(drift) >= 3 ? 'HIGH' : 'WARNING';
+        alerts.push({
+          id: alertId('DOM_SHIFT', cfg.symbol),
+          rule: 'DOM_SHIFT',
+          coin: cfg.symbol,
+          severity,
+          magnitude: Math.abs(drift),
+          timestamp: now,
+          rationale: `${cfg.symbol} dominance ${drift > 0 ? 'gained' : 'lost'} ${Math.abs(drift).toFixed(1)} pts of tracked stablecoin supply over the past week.`,
+        });
+      }
+    }
+  }
+
+  return alerts.sort(
+    (a, b) =>
+      (SEVERITY_RANK[a.severity] ?? 3) - (SEVERITY_RANK[b.severity] ?? 3) ||
+      (b.magnitude || 0) - (a.magnitude || 0)
+  );
+}
+
+/**
+ * Deterministic, rule-based "why it matters" guidance for an alert.
+ * Replaces the on-demand AI explanation endpoint: no network call.
+ */
+export function alertExplanation(alert) {
+  if (!alert) {
+    return { whyItMatters: 'Alert context unavailable.', whatToWatch: 'Monitor the next refresh window.', confidence: null };
+  }
+  switch (alert.rule) {
+    case 'PEG_BREAK':
+      return {
+        whyItMatters: `${alert.coin} is trading ${Math.abs(alert.magnitude)} bps from its $1 target. A move past the critical threshold typically reflects redemption pressure or market dislocations.`,
+        whatToWatch: `Watch whether ${alert.coin} mean-reverts within 24h; sustained drift toward the critical band is the escalation trigger.`,
+        confidence: Math.min(0.9, 0.4 + Math.abs(alert.magnitude) / 100),
+      };
+    case 'CHAIN_SPIKE':
+      return {
+        whyItMatters: `A single-chain 24h supply move this large is usually a coordinated mint or burn, often tied to one venue such as an exchange, treasury, or protocol.`,
+        whatToWatch: 'Check the next daily snapshot: does the chain hold the level or reverse?',
+        confidence: 0.7,
+      };
+    case 'MEGA_SUPPLY':
+      return {
+        whyItMatters: 'A coin-wide mint or burn on this scale shifts total stablecoin liquidity and can precede broader market moves.',
+        whatToWatch: 'Cross-check the affected chains in the chain rankings and watch for follow-on issuance.',
+        confidence: 0.75,
+      };
+    case 'DOM_SHIFT':
+      return {
+        whyItMatters: `${alert.coin} is gaining or losing tracked supply share quickly, which changes the composition of on-chain stablecoin liquidity.`,
+        whatToWatch: 'Confirm whether the shift is driven by new issuance or by migration to another chain.',
+        confidence: 0.6,
+      };
+    default:
+      return {
+        whyItMatters: 'Rule-specific guidance is not available for this alert.',
+        whatToWatch: 'Monitor the next refresh window.',
+        confidence: null,
+      };
+  }
+}

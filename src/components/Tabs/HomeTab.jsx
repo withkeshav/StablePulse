@@ -8,7 +8,6 @@ import MarketPulse from '../Sections/MarketPulse.jsx';
 import CapitalFlows from '../Sections/CapitalFlows.jsx';
 import SignalSummary from '../Sections/SignalSummary.jsx';
 import WhaleWatch from '../Sections/WhaleWatch.jsx';
-import { apiBase } from '../../config.js';
 
 export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec = 900 }) {
   const cg = data?.cgSimple;
@@ -85,8 +84,6 @@ export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec
   const totalMC = data?.allStables?.totalMarketCap?.peggedUSD || 0;
   const vol = useMemo(() => coins.reduce((sum, c) => sum + (cg?.[c.coingeckoId]?.usd_24h_vol || 0), 0), [coins, cg]);
 
-  const cadenceMin = Math.max(1, Math.round(Number(refreshIntervalSec) / 60));
-
   return (
     <div class="tab-content active">
       <SignalHero
@@ -97,7 +94,7 @@ export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec
       />
 
       <p class="sync-cadence-hint">
-        Background sync runs on a ~{cadenceMin}-minute worker schedule; the strip above shows countdown to the next advisory refresh window.
+        Data refreshes on your chosen cadence from live market sources; the strip above shows the countdown to the next refresh.
       </p>
 
       <div class="sticky-stats-wrap">

@@ -37,7 +37,7 @@ export const STABLECOIN_REGISTRY = {
       pegCriticalBps: 60,
       pegWarnBps: 12,
       chainSpikeUsd: 200e6,
-      megaSupplyUsd: 5e9,
+      megaSupplyUsd: 250e6,
     },
   },
   USDE: {
@@ -49,7 +49,7 @@ export const STABLECOIN_REGISTRY = {
       pegCriticalBps: 60,
       pegWarnBps: 12,
       chainSpikeUsd: 200e6,
-      megaSupplyUsd: 4e9,
+      megaSupplyUsd: 250e6,
     },
   },
   PYUSD: {
@@ -61,7 +61,7 @@ export const STABLECOIN_REGISTRY = {
       pegCriticalBps: 60,
       pegWarnBps: 12,
       chainSpikeUsd: 200e6,
-      megaSupplyUsd: 4e9,
+      megaSupplyUsd: 100e6,
     },
   },
 };

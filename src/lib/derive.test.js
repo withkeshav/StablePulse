@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  alertExplanation,
   buildAlertSparkSeries,
   buildMigrationPairs,
   buildShareSeries,
   buildSupplySeries,
   buildWhaleWatchRows,
   computePegStress,
+  generateAlerts,
   rankChainFlows,
 } from './derive.js';
 
@@ -227,5 +229,104 @@ describe('buildAlertSparkSeries', () => {
 
   it('returns null for an unknown rule', () => {
     expect(buildAlertSparkSeries({ rule: 'SOMETHING_ELSE', coin: 'USDT' }, {})).toBeNull();
+  });
+});
+
+describe('generateAlerts', () => {
+  it('returns an empty list for missing data', () => {
+    expect(generateAlerts(null)).toEqual([]);
+    expect(generateAlerts({})).toEqual([]);
+  });
+
+  it('returns no alerts for a steady-state payload', () => {
+    const data = {
+      cgSimple: { tether: { usd: 1.0002 }, 'usd-coin': { usd: 0.9999 } },
+      usdtDetail: { chainBalances: { Ethereum: { tokens: [token(1, 1e10), token(2, 1.002e10)] } } },
+    };
+    expect(generateAlerts(data)).toEqual([]);
+  });
+
+  it('flags a CRITICAL peg break when drift clears the threshold', () => {
+    const data = { cgSimple: { tether: { usd: 0.994 } } };
+    const peg = generateAlerts(data).find((a) => a.rule === 'PEG_BREAK' && a.coin === 'USDT');
+    expect(peg).toBeDefined();
+    expect(peg.severity).toBe('CRITICAL');
+    expect(peg.magnitude).toBe(60);
+    expect(peg.rationale).toContain('60 bps');
+  });
+
+  it('marks peg drift above the warning band as HIGH', () => {
+    const data = { cgSimple: { tether: { usd: 1.002 } } };
+    const peg = generateAlerts(data).find((a) => a.rule === 'PEG_BREAK' && a.coin === 'USDT');
+    expect(peg.severity).toBe('HIGH');
+  });
+
+  it('flags a CHAIN_SPIKE once the per-chain delta clears the threshold', () => {
+    const data = {
+      usdtDetail: { chainBalances: { Tron: { tokens: [token(1, 2e10), token(2, 2.06e10)] } } },
+    };
+    const spike = generateAlerts(data).find((a) => a.rule === 'CHAIN_SPIKE' && a.coin === 'USDT' && a.chain === 'Tron');
+    expect(spike).toBeDefined();
+    expect(spike.severity).toBe('WARNING');
+    expect(spike.magnitude).toBe(600e6);
+  });
+
+  it('escalates CHAIN_SPIKE to HIGH at double the threshold', () => {
+    const data = {
+      usdtDetail: { chainBalances: { Tron: { tokens: [token(1, 2e10), token(2, 3.2e10)] } } },
+    };
+    const spike = generateAlerts(data).find((a) => a.rule === 'CHAIN_SPIKE' && a.coin === 'USDT');
+    expect(spike.severity).toBe('HIGH');
+  });
+
+  it('flags a MEGA_SUPPLY coin-wide mint above the threshold', () => {
+    const data = {
+      usdtDetail: { chainBalances: { Ethereum: { tokens: [token(1, 1e10), token(2, 1.2e10)] } } },
+    };
+    const mega = generateAlerts(data).find((a) => a.rule === 'MEGA_SUPPLY' && a.coin === 'USDT');
+    expect(mega).toBeDefined();
+    expect(mega.severity).toBe('HIGH');
+    expect(mega.magnitude).toBe(2e9);
+  });
+
+  it('flags a DOM_SHIFT when a coin gains tracked supply share', () => {
+    const usdtTokens = [];
+    const usdcTokens = [];
+    for (let i = 1; i <= 10; i += 1) {
+      usdtTokens.push(token(i, 1000));
+      usdcTokens.push(token(i, i <= 3 ? 500 : 1000));
+    }
+    const data = {
+      usdtDetail: { chainBalances: { Ethereum: { tokens: usdtTokens } } },
+      usdcDetail: { chainBalances: { Ethereum: { tokens: usdcTokens } } },
+    };
+    const shift = generateAlerts(data).find((a) => a.rule === 'DOM_SHIFT' && a.coin === 'USDC');
+    expect(shift).toBeDefined();
+    expect(shift.severity).toBe('HIGH');
+    expect(shift.magnitude).toBeGreaterThan(3);
+  });
+
+  it('sorts alerts by severity then magnitude', () => {
+    const data = {
+      cgSimple: { tether: { usd: 0.99 } },
+      usdtDetail: { chainBalances: { Tron: { tokens: [token(1, 2e10), token(2, 2.6e10)] } } },
+    };
+    const alerts = generateAlerts(data);
+    expect(alerts[0].severity).toBe('CRITICAL');
+  });
+});
+
+describe('alertExplanation', () => {
+  it('returns guidance for each supported rule without data', () => {
+    for (const rule of ['PEG_BREAK', 'CHAIN_SPIKE', 'MEGA_SUPPLY', 'DOM_SHIFT']) {
+      const e = alertExplanation({ rule, coin: 'USDT', magnitude: 50 });
+      expect(typeof e.whyItMatters).toBe('string');
+      expect(typeof e.whatToWatch).toBe('string');
+    }
+  });
+
+  it('falls back gracefully for unknown or missing alerts', () => {
+    expect(alertExplanation(null).whyItMatters).toBeTruthy();
+    expect(alertExplanation({ rule: 'NOPE' }).whatToWatch).toBeTruthy();
   });
 });

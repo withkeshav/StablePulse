@@ -12,13 +12,15 @@ import RefreshCountdown from './components/ui/RefreshCountdown.jsx';
 import SettingsPanel from './components/SettingsPanel.jsx';
 import useTheme from './hooks/useTheme.js';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
-import { apiBase, APP_VERSION } from './config.js';
+import { APP_VERSION, aiApiBase } from './config.js';
 import { coinFromTabId } from './utils/coin-config.js';
+import { fetchDashboardData, loadCoinChart } from './lib/api.js';
+import { fetchIntelligence } from './lib/ai.js';
+import { generateAlerts } from './lib/derive.js';
 
 const REFRESH_OPTIONS = [60, 180, 300, 600, 900];
 const REFRESH_KEY = 'stablepulse:refresh';
 const COMPACT_KEY = 'stablepulse:compact';
-const FETCH_TIMEOUT_MS = 20000;
 
 function readStoredRefresh() {
   try {
@@ -35,8 +37,6 @@ function readStoredCompact() {
 }
 
 export default function App() {
-  const dashboardUrl = `${apiBase}/api/dashboard`;
-
   const { theme, setTheme } = useTheme();
   const [activeTab, setActiveTab] = useState('home');
   const [data, setData] = useState(null);
@@ -47,12 +47,11 @@ export default function App() {
   const [lastUpdated, setLastUpdated] = useState(null);
 
   const initialStoredRefresh = readStoredRefresh();
-  const hasUserStoredRefreshRef = useRef(initialStoredRefresh !== null);
   const [refreshIntervalSec, setRefreshIntervalSec] = useState(initialStoredRefresh ?? 900);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [compactMode, setCompactMode] = useState(readStoredCompact);
 
-  const hasLoadedRef = useRef(false);
+  const intelligenceRef = useRef(null);
 
   const aliveRef = useRef(true);
   const abortRef = useRef(null);
@@ -65,69 +64,58 @@ export default function App() {
     };
   }, []);
 
-  const fetchDashboard = useCallback(
-    async (opts = {}) => {
-      const { background = false } = opts;
-      abortRef.current?.abort();
-      const ctrl = new AbortController();
-      abortRef.current = ctrl;
-      const timeout = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+  const refresh = useCallback(async (opts = {}) => {
+    const { background = false } = opts;
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
 
-      if (background) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-        setApiStatus({ message: '' });
-      }
+    if (background) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+      setApiStatus({ message: '' });
+    }
 
-      try {
-        const res = await fetch(dashboardUrl, { signal: ctrl.signal });
-        if (!aliveRef.current) return;
-        if (res.status === 404 || res.status === 503) {
-          setApiStatus({ message: 'Waiting for first background sync. Please check back in a few minutes.' });
-          return;
-        }
-        if (!res.ok) throw new Error(`Dashboard fetch failed: ${res.status}`);
-        const payload = await res.json();
-        if (!aliveRef.current) return;
-        if (!payload || !payload.data) {
-          setApiStatus({ message: 'Waiting for first background sync. Please check back in a few minutes.' });
-          return;
-        }
-        setData({ ...payload.data, intelligence: payload.intelligence || null });
-        setAlerts(payload.alerts || []);
-        setLastUpdated(payload.lastUpdated || null);
-        if (!hasLoadedRef.current) {
-          hasLoadedRef.current = true;
-          if (!hasUserStoredRefreshRef.current && payload.refreshIntervalSec) {
-            setRefreshIntervalSec(payload.refreshIntervalSec);
-          }
-        }
-        setApiStatus({ message: '' });
-      } catch (err) {
-        if (!aliveRef.current || err?.name === 'AbortError') return;
-        console.error(err);
-        setApiStatus({ message: 'Failed to load dashboard data. Please retry shortly.' });
-      } finally {
-        clearTimeout(timeout);
-        if (aliveRef.current) {
-          setLoading(false);
-          setRefreshing(false);
-        }
+    try {
+      const result = await fetchDashboardData({ signal: ctrl.signal });
+      if (!aliveRef.current) return;
+      const nextData = { ...result, intelligence: intelligenceRef.current || null };
+      setData(nextData);
+      setAlerts(generateAlerts(nextData));
+      setLastUpdated(Date.now());
+      setApiStatus({ message: '' });
+    } catch (err) {
+      if (!aliveRef.current || err?.name === 'AbortError') return;
+      console.error(err);
+      setApiStatus({ message: 'Failed to load market data. Retry shortly; the last snapshot is shown if a cache exists.' });
+    } finally {
+      if (aliveRef.current) {
+        setLoading(false);
+        setRefreshing(false);
       }
-    },
-    [dashboardUrl]
-  );
+    }
+  }, []);
 
   useEffect(() => {
-    fetchDashboard();
-  }, [fetchDashboard]);
+    refresh();
+  }, [refresh]);
 
   useEffect(() => {
     if (!refreshIntervalSec || refreshIntervalSec <= 0) return undefined;
-    const t = setInterval(() => fetchDashboard({ background: true }), refreshIntervalSec * 1000);
+    const t = setInterval(() => refresh({ background: true }), refreshIntervalSec * 1000);
     return () => clearInterval(t);
-  }, [refreshIntervalSec, fetchDashboard]);
+  }, [refreshIntervalSec, refresh]);
+
+  useEffect(() => {
+    if (!aiApiBase) return undefined;
+    fetchIntelligence().then((ai) => {
+      if (!aliveRef.current || !ai) return;
+      intelligenceRef.current = ai;
+      setData((prev) => (prev ? { ...prev, intelligence: ai } : prev));
+    });
+    return undefined;
+  }, [refresh]);
 
   useEffect(() => {
     document.body.classList.toggle('compact', compactMode);
@@ -151,6 +139,17 @@ export default function App() {
 
   const coinTab = coinFromTabId(activeTab);
 
+  useEffect(() => {
+    if (!coinTab || !data) return undefined;
+    let alive = true;
+    loadCoinChart(coinTab, data).then(() => {
+      if (alive) setData((prev) => ({ ...prev }));
+    });
+    return () => {
+      alive = false;
+    };
+  }, [coinTab, data?.fetchedAt]);
+
   return (
     <div id="app-layout" class="layout-wrapper">
       <a href="#main" class="skip-link">Skip to content</a>
@@ -159,7 +158,7 @@ export default function App() {
         refreshing={refreshing}
         apiStatus={apiStatus}
         onOpenSettings={() => setIsSettingsOpen(true)}
-        onRefresh={() => fetchDashboard({ background: true })}
+        onRefresh={() => refresh({ background: true })}
         buildVersion={APP_VERSION}
         theme={theme}
         setTheme={setTheme}
