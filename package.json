@@ -1,9 +1,9 @@
 {
   "name": "stablepulse",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": false,
   "type": "module",
-  "description": "StablePulse - Professional USDT & USDC Intelligence Platform. Standalone edition.",
+  "description": "StablePulse - Stablecoin intelligence across USDT, USDC, DAI, USDe and PYUSD.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

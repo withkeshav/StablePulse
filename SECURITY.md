@@ -13,15 +13,17 @@ If you find a security issue in StablePulse, please report it privately instead 
 In scope:
 
 - The frontend in this repository (`src/`, `index.html`, build configuration).
-- Configuration resolution (`window.STABLEPULSE_CONFIG`, `STABLEPULSE_API_BASE`).
+- The optional backend in `backend/` (Fastify + SQLite + cron jobs).
+- Configuration resolution (`window.STABLEPULSE_CONFIG`, `STABLEPULSE_AI_API_BASE`).
 
 Out of scope:
 
-- The backend worker (Cloudflare Worker) that serves `/api/dashboard` lives in a separate repository. Report worker issues there.
 - Upstream data sources (CoinGecko, DefiLlama) and third-party libraries; report those to their respective projects.
 
 ## Security notes
 
-- The frontend holds no secrets. API keys and model credentials are configured server-side only and never reach the browser.
+- The frontend holds no secrets. The AI model key lives only in `backend/.env` (server-side) and never reaches the browser.
 - Never commit `OPENAI_*` values or any other tokens to this repository.
-- The default API endpoint is a public Cloudflare Worker; treat its responses as untrusted input and rely on the client-side rendering guards in `src/lib/derive.js`.
+- The backend exposes read-only endpoints (`/api/healthz`, `/api/ai`, `/api/history`) with no write surface. Bind it to localhost behind nginx; if it must be public, rate-limit `/api/ai` (e.g. `limit_req`).
+- Upstream API responses are untrusted input; the frontend renders them through guarded formatters and `derive.js` sanitization.
+- Browser-direct data calls come from visitor IPs and require no credentials; do not add keyed upstream calls that would leak secrets into the bundle.

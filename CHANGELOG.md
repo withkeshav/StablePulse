@@ -8,6 +8,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 Nothing yet.
 
+## [2.1.0] - 2026-08-11
+
+### Added
+
+- Top-5 stablecoin coverage: USDT, USDC, DAI, USDe and PYUSD (registry-driven, one config entry per coin).
+- Browser-direct data layer (`src/lib/api.js`): fetches DefiLlama + CoinGecko straight from the visitor's browser with SWR caching, 60s throttle, 1h cache-first detail, 20s timeout, and stale-on-error fallback.
+- Lite VPS backend (`backend/`): Fastify + SQLite (WAL) history accumulation, cron jobs (`jobs/fetch.js` every 10 min, `jobs/ai.js` gated on `AI_CADENCE_MIN`), endpoints `/api/healthz`, `/api/ai`, `/api/history`.
+- Deterministic client-side alert engine (`generateAlerts` in `derive.js`): PEG_BREAK, CHAIN_SPIKE, MEGA_SUPPLY, DOM_SHIFT with per-coin thresholds; explanations rendered locally (no per-alert AI round-trip).
+- AI narrative ticker showing last-updated / next-update times from the backend.
+
+### Changed
+
+- Dropped the Cloudflare Worker `/api/dashboard` aggregator; the frontend no longer depends on a single pre-aggregated JSON payload.
+- Runtime config key renamed from `apiBase` to `aiApiBase` (build-time `STABLEPULSE_AI_API_BASE`).
+- Market-cap total now summed from all registered coins (DefiLlama no longer reports a global aggregate).
+- README/docs updated for the hybrid topology; scaling playbook rewritten for the VPS backend.
+
+### Fixed
+
+- `totalMarketCap` was `undefined` under the new data layer; now computed by summing `peggedUSD` across `peggedAssets`.
+- `megaSupplyUsd` thresholds for DAI, USDE, PYUSD were set above those coins' whole supply; corrected to sane relative values so MEGA_SUPPLY can fire.
+
 ## [2.0.0] - 2026-08-10
 
 ### Added
@@ -46,5 +68,6 @@ Nothing yet.
 
 Initial internal release of the intelligence dashboard (prior to open-source packaging). No public changelog kept.
 
-[Unreleased]: https://github.com/withkeshav/StablePulse/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/withkeshav/StablePulse/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/withkeshav/StablePulse/releases/tag/v2.1.0
 [2.0.0]: https://github.com/withkeshav/StablePulse/releases/tag/v2.0.0

@@ -1,43 +1,39 @@
-# Worker Scaling Playbook
+# Scaling & Operations
 
-Guidance for the **backend worker** (separate repository) that aggregates data and serves `/api/dashboard`. This repo only contains the frontend; the budgets below shape how many coins it can safely support.
+Guidance for operating and scaling the lite VPS backend (`backend/`) plus the browser-direct data layer.
 
-## Free-tier budgets (Cloudflare Workers)
+## Why browser-direct scales for free
 
-- **CPU:** 10 ms per invocation.
-- **Subrequests:** 50 per request.
-- Each coin adds DefiLlama + CoinGecko fetches and JSON parsing, so every coin costs real CPU and subrequest budget.
+Live market data is fetched from each visitor's own IP, so traffic is spread across many client IPs rather than hammering one origin. The backend is never in the hot path for live data, which keeps it tiny: it only accumulates history and serves the occasional AI narrative.
 
-## Principles
+## Backend capacity
 
-1. **Keep `ACTIVE_STABLECOINS` as a worker env var**, not baked into a build. Adding a coin then never requires a frontend redeploy, and the frontend list stays in sync via config.
-2. **Round-robin coins across cron runs.** Process 1-2 coins per run so each invocation stays under the 10 ms CPU budget. A coin's data is updated on its turn; the dashboard serves cached values in between.
-3. **Cache raw upstream responses in Workers KV.** Parse only the fields the dashboard needs. Reuse cached upstream data across runs.
-4. **Split aggregation across multiple workers if it grows** (the free plan allows 100). Each worker handles a coin subset; a dashboard worker merges the results into the single cached payload.
-5. **Generate the AI narrative during cron**, not on request. Users never wait on the model; the cached payload ships with `intelligence` precomputed.
+- SQLite (WAL) with 10-minute snapshots across 5 coins is tiny: roughly **0.5-1 MB per month**. Years of history fit in tens of MB; no database tuning needed until well past that.
+- The backend handles a handful of requests per minute in normal operation (`/api/healthz`, `/api/ai`, occasional `/api/history`).
+- `AI_CADENCE_MIN` (default 120) caps model spend and rate-limit pressure on the OpenAI-compatible provider.
 
-## Suggested topology at N coins
+## Operations
 
-| Coins | Topology |
-|---|---|
-| 2-3 | Single worker, all coins each run (still within 10 ms). |
-| 4-8 | Single worker, round-robin 1-2 coins per run + KV cache. |
-| 8+ | Multiple aggregator workers (one per coin group) + one dashboard/merge worker. |
+### Backups
 
-## KV cache design
+- Use `sqlite3 backend/data/stablepulse.db ".backup /path/to/backup.db"` (WAL-safe) on a cron, then ship the backup off-box. Do **not** `cp` the live DB file.
 
-- Key `dashboard:<last 5-min bucket>` stores the fully assembled payload (minus volatile timestamps) so `/api/dashboard` is a pure KV read.
-- Key `raw:<coin>:<endpoint>` stores upstream JSON per coin; TTL aligned to cron cadence.
-- Key `alert-explain:<alertId>` stores AI explanations; TTL generous (alerts are immutable, explanation stable).
+### Monitoring
 
-## Backpressure and staleness
+- `GET /api/healthz` reports `lastMarketSync` and `lastAiRun`; alert if either goes stale (e.g. older than 30 min for market sync, 3x cadence for AI).
+- Add a cron ping to an uptime monitor that hits `/api/healthz` and fails on non-`{"ok":true}`.
+- Watch job logs for repeated upstream failures (DefiLlama/CoinGecko rate limits are the main risk).
 
-- Serve stale KV while a fresh aggregation is in progress (read-through cache).
-- `lastUpdated` in the payload tells the frontend how fresh the data is; the frontend keeps its own 20s fetch timeout.
-- If upstream is down, return the last cached payload rather than a 5xx, so the dashboard stays usable.
+## Growth paths
 
-## Monitoring
+- **More coins:** registry-only change in `src/utils/coin-config.js`; snapshot rows grow a few percent. Nothing else changes.
+- **More history:** the `snapshots` table is append-only per (coin, chain, ts); indexes on (coin, chain, ts) keep queries fast. At extreme size, archive partitions by month.
+- **Postgres:** if SQLite is ever a bottleneck, the schema is simple and portable; only `lib/db.js` and the jobs' inserts change.
+- **Multiple regions:** the backend is stateless except the DB. Run a primary writer; replicas can serve `/api/ai` reads with nightly backups shipped to them.
 
-- Log per-run CPU, subrequest count, and KV hits/misses.
-- Alert on consecutive cron failures for any coin.
-- Watch the free-tier usage dashboard monthly; upgrade only when sustained.
+## Known limits
+
+- `tickers` (~65 KB) is fetched lazily only when a coin tab opens and sliced to the top 8 exchange pairs client-side.
+- Browser-direct data means each visitor pays the upstream rate limit of their own IP; the 60s throttle keeps this well within CoinGecko's free tier.
+- The AI narrative is recomputed on a cadence, not on every refresh; the dashboard shows last-updated / next-update times so users know how fresh it is.
+- Multi-tab dedupe is handled via inflight-request sharing + the localStorage cache; no BroadcastChannel coordination (acceptable at this scale).

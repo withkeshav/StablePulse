@@ -1,111 +1,108 @@
 # API Protocol
 
-The frontend is a **pure consumer** of a single pre-aggregated endpoint. It never calls CoinGecko or DefiLlama directly.
+This document covers how the frontend gets data: browser-direct calls to DefiLlama/CoinGecko, plus the optional backend endpoints for AI and history.
 
 ## Base URL
 
-Resolved by `src/config.js` (see [architecture.md](./architecture.md)):
+- **Live market data:** hardcoded upstream URLs (DefiLlama, CoinGecko). No auth, no keys, CORS-open.
+- **AI/backend:** resolved by `src/config.js` as `aiApiBase` (see [architecture.md](./architecture.md)):
 
-1. `window.STABLEPULSE_CONFIG.apiBase` (runtime)
-2. `import.meta.env.STABLEPULSE_API_BASE` (build time)
-3. Default: dev `http://127.0.0.1:8787`, prod the StablePulse Worker.
+  1. `window.STABLEPULSE_CONFIG.aiApiBase` (runtime)
+  2. `import.meta.env.STABLEPULSE_AI_API_BASE` (build time)
+  3. Default `''` (same origin; AI disabled unless a backend is served alongside)
 
-## GET /api/dashboard
+## Browser-direct endpoints (`src/lib/api.js`)
 
-One JSON payload, fetched by `src/App.jsx` on load and each refresh. Shape:
+| Endpoint | Purpose | Cache / TTL |
+|---|---|---|
+| `GET https://stablecoins.llama.fi/stablecoins` | Per-coin supply, chains, aggregate market cap | 60s throttle, SWR |
+| `GET https://stablecoins.llama.fi/stablecoin/{id}` | Per-chain daily history (drives `derive.js`) | 1h cache-first, SWR |
+| `GET https://api.coingecko.com/api/v3/simple/price` | Spot prices + 24h change/volume | 60s throttle, SWR |
+| `GET https://api.coingecko.com/api/v3/coins/{id}/market_chart` | 90-day price history | 5 min, lazy (coin tab) |
+| `GET https://api.coingecko.com/api/v3/coins/{id}/tickers` | Top exchange pairs | 5 min, lazy (coin tab) |
+
+The frontend fetches these from the visitor's own IP. Requests are throttled, deduped inflight, cached in localStorage + an in-memory Map, and fall back to stale data on error. The **20s fetch timeout** applies to all fetches.
+
+### Frontend data assembly
+
+`src/lib/api.js` assembles the raw upstream responses into the shape `derive.js` expects:
 
 ```jsonc
 {
-  "data": {
-    "allStables": {
-      "totalMarketCap": { "peggedUSD": 180000000000 },
-      "peggedAssets": [ { "symbol": "USDT", "chainBalances": { "ethereum": 80000000000 }, "peggedUSD": 120000000000 } ]
-    },
-    "cgSimple": {
-      "tether":     { "usd": 0.9999, "usd_24h_change": 0.01 },
-      "usd-coin":   { "usd": 1.0001, "usd_24h_change": -0.01 }
-    },
-    "usdtDetail": { "chainBalances": { "tron": 50000000000, "ethereum": 40000000000 } },
-    "usdcDetail": { "chainBalances": { "ethereum": 30000000000, "solana": 8000000000 } },
-    "cgUSDTChart":  [ [1700000000000, 0.9999], [1700000064000, 1.0000] ],
-    "cgUSDCChart":  [ [1700000000000, 1.0001], [1700000064000, 1.0000] ]
+  "cgSimple": { "tether": { "usd": 0.9999, "usd_24h_change": 0.01 } },
+  "allStables": {
+    "totalMarketCap": { "peggedUSD": 306000000000 },
+    "peggedAssets": [ { "symbol": "USDT", "chainBalances": { "Ethereum": 80000000000 } } ],
+    "chains": [ { "name": "Ethereum", "totalCirculatingUSD": { "peggedUSD": 1e11 } } ]
   },
-  "alerts": [ {
-    "id": "usdt-tron-1700000000",
-    "coin": "USDT",
-    "severity": "high",
-    "rule": "chainSpike",
-    "title": "USDT supply surged on Tron",
-    "description": "USDT minted aggressively on Tron (+$1.2B in 24h).",
-    "magnitude": 1.2e9,
-    "timestamp": 1700000000000
-  } ],
+  "usdtDetail": { "chainBalances": { "Ethereum": { "tokens": [ { "date": 1720000000, "circulating": { "peggedUSD": 8e10 } } ] } } },
+  "usdcDetail": { ... },
+  "daiDetail": { ... },
+  "usdeDetail": { ... },
+  "pyusdDetail": { ... },
+  "intelligence": { "headline": "...", "narrative": "...", "implications": "...", "ts": 1720000000000 } | null,
+  "fetchedAt": 1720000000000
+}
+```
+
+Per-coin keys use the registry entry's `coingeckoId` / `llamaStablecoinId`. Adding a coin requires only the config entry; the data layer resolves URLs generically.
+
+## Backend endpoints (`aiApiBase`)
+
+The backend is optional. When present it is served same-origin behind nginx (no CORS needed).
+
+### `GET /api/healthz`
+
+```jsonc
+{ "ok": true, "db": "ok", "lastMarketSync": 1720000000000, "lastAiRun": 1720000000000, "now": 1720000000000 }
+```
+
+### `GET /api/ai`
+
+Latest AI narrative, or `{ "intelligence": null }` if not generated yet:
+
+```jsonc
+{
   "intelligence": {
     "headline": "Stablecoin flows show mild flight to Tron.",
     "narrative": "Net issuance remains positive while yields compress.",
-    "implications": "Watch peg drift on Tron if inflows persist."
-  },
-  "lastUpdated": 1700000000000,
-  "refreshIntervalSec": 300
+    "implications": "Watch peg drift on Tron if inflows persist.",
+    "model": "gpt-4o-mini",
+    "ts": 1720000000000,
+    "nextUpdateAt": 1720007200000,
+    "cadenceMin": 120
+  }
 }
 ```
 
-### Frontend field usage
+### `GET /api/history?coin=USDT[&chain=Ethereum][&days=30]`
 
-| Field | Consumed by |
-|---|---|
-| `data.allStables.peggedAssets` | Home stats, ChainsTab, per-coin asset lookup |
-| `data.allStables.totalMarketCap.peggedUSD` | Home total market cap |
-| `data.cgSimple[coingeckoId].usd` / `usd_24h_change` | Home + CoinTab price/change |
-| `data.<coin>Detail.chainBalances` | Home chain flows, CoinTab chain rows, whale watch, migration pairs |
-| `data.cg<COIN>Chart` | CoinTab supply/price history (per coin) |
-| `alerts[]` | Alerts tab, stress index, sparklines, alert counts |
-| `intelligence` | Home AI headline + AlertsHero narrative/implications |
-| `lastUpdated` | Header status / freshness |
-| `refreshIntervalSec` | Auto-refresh cadence (fallback 900) |
+Daily supply series from the proprietary SQLite dataset:
 
-### Errors and empty states
+```jsonc
+{ "data": [ { "ts": 1720000000000, "value": 80000000000 } ] }
+```
 
-- **404 / 503** or missing `data` means the worker has not completed a first background sync. The UI shows "Waiting for first background sync."
-- Any other non-OK status or network error keeps the last-known data and shows an error banner. The app does not blank.
-- The frontend applies a **20s fetch timeout** and aborts in-flight requests on refresh/unmount.
+## Alerts
 
-### Per-coin naming
-
-Coin tabs are driven by `ACTIVE_STABLECOINS` in `src/utils/coin-config.js`. For each coin `SYMBOL`:
-
-- Detail payload key: `` `${symbol.toLowerCase()}Detail` `` (e.g. `usdtDetail`, `usdcDetail`, `usdeDetail`).
-- Chart payload key: `` `cg${SYMBOL}Chart` `` (e.g. `cgUSDTChart`).
-- Price key: `cgSimple[coingeckoId]` where `coingeckoId` comes from the registry entry.
-
-Adding a coin therefore requires the worker to serve these three key shapes.
-
-## GET /api/alert-explain?id=<alertId>
-
-On-demand AI explanation for a single alert. Called by `AlertCard` when the user expands an alert. Shape:
+Alerts are generated **client-side** by `generateAlerts(data)` in `src/lib/derive.js` using per-coin thresholds from the registry. No backend round-trip:
 
 ```jsonc
 {
-  "explanation": "Tron inflows accelerated after the Arbitrum yield spread narrowed.",
-  "sources": ["chainBalanceDelta", "pegDrift"]
+  "id": "peg_break-usdt-<ts>",
+  "rule": "PEG_BREAK",
+  "coin": "USDT",
+  "severity": "critical",
+  "magnitude": 60,
+  "timestamp": 1700000000000,
+  "rationale": "USDT is -60 bps below the $1 peg."
 }
 ```
 
-- The frontend renders `explanation` verbatim; `sources` is optional metadata.
-- **Cache this response** in the worker (e.g. KV keyed by alert id) so repeat expansions are instant and do not hit the model each time.
-- If AI is unavailable the endpoint should still return a useful message or the UI shows its fallback copy.
+Rules: `PEG_BREAK`, `CHAIN_SPIKE`, `MEGA_SUPPLY`, `DOM_SHIFT`. Explanations are deterministic via `alertExplanation(alert)`.
 
-## CORS
+## Errors and empty states
 
-The worker must return `Access-Control-Allow-Origin` for the origin serving the frontend:
-
-- Dev: `http://localhost:5173` (or your Vite port) or `*`.
-- Prod: your Cloudflare Pages / VPS domain, or `*`.
-
-Both `/api/dashboard` and `/api/alert-explain` need the header.
-
-## Timeouts and polling
-
-- Frontend fetch timeout: 20s (`FETCH_TIMEOUT_MS` in `src/App.jsx`).
-- Auto-refresh options: 60 / 180 / 300 / 600 / 900 seconds, persisted in `stablepulse:refresh`; the payload's `refreshIntervalSec` can override.
-- The worker should serve the dashboard from a KV cache refreshed by cron so page loads are fast and never block on upstream APIs.
+- Upstream 404/503 or missing data: the UI shows "Waiting for first data sync" state; `refreshIntervalSec` fallback is 900.
+- Any other non-OK status or network error keeps the last-known data and shows an error banner. The app does not blank.
+- The frontend applies a **20s fetch timeout** and aborts in-flight requests on refresh/unmount.

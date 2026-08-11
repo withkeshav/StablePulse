@@ -1,20 +1,23 @@
 # Architecture
 
-StablePulse is a static, mobile-first frontend. It fetches **one pre-aggregated JSON payload** from a backend (normally a Cloudflare Worker) and computes all display math client-side in pure functions.
+StablePulse is a mobile-first frontend with an optional lite backend. Live market data is fetched **directly in the browser** from DefiLlama and CoinGecko (both CORS-open and keyless). An optional VPS backend accumulates history and serves AI narratives.
 
 ## Data flow
 
 ```
-Cloudflare Worker (cron background sync, separate repo)
-  |- pulls DefiLlama chain balances + CoinGecko prices/tickers
-  |- generates AI narrative (OpenAI-compatible, keys stay server-side)
-  +- serves ONE cached JSON payload:  /api/dashboard
-                     |
-Static frontend (Cloudflare Pages / VPS / anywhere)
-  +- fetches /api/dashboard -> derive.js computes display stats client-side
+Visitor's browser
+  |- src/lib/api.js: DefiLlama /stablecoins, /stablecoin/{id}   (supply, chains, history)
+  |- src/lib/api.js: CoinGecko  /simple/price, market_chart, tickers   (prices, charts)
+  |- src/lib/derive.js: compute stress index, flows, migrations, whale watch, alerts
+  |- src/lib/ai.js: /api/ai (same origin or aiApiBase)   (narrative, optional)
+
+Backend (optional, lite VPS)
+  |- jobs/fetch.js (cron, 10 min): DefiLlama + CoinGecko -> SQLite history dataset
+  |- jobs/ai.js (cron, gated by AI_CADENCE_MIN): builds narrative from snapshots
+  |- server.js: /api/healthz, /api/ai, /api/history
 ```
 
-The frontend makes **one request per refresh**. It never calls CoinGecko or DefiLlama directly. See [api-protocol.md](./api-protocol.md) for the payload contract.
+The frontend makes its live-data calls from the visitor's own IP, so no single origin is hammered and no API keys are needed. It never depends on the backend for the core dashboard.
 
 ## Module map
 
@@ -22,27 +25,39 @@ The frontend makes **one request per refresh**. It never calls CoinGecko or Defi
 |---|---|
 | `index.html` | Entry point, pre-paint theme bootstrap (default light), meta/favicon/manifest, runtime config global |
 | `src/main.jsx` | Mounts `App` into `#app` |
-| `src/config.js` | Resolves `apiBase` and exports `APP_VERSION` |
+| `src/config.js` | Resolves `aiApiBase` and exports `APP_VERSION` |
 | `src/App.jsx` | Fetch loop, refresh/countdown state, tab routing, settings panel |
 | `src/hooks/useTheme.js` | Theme state: Light default, Dark/System options |
+| `src/lib/api.js` | Browser-direct data layer: DefiLlama + CoinGecko with SWR caching |
+| `src/lib/ai.js` | AI narrative fetch from `aiApiBase` |
 | `src/lib/derive.js` | Pure display logic (framework-free, unit tested) |
 | `src/utils/formatters.js` | Formatting helpers (pure, unit tested) |
 | `src/utils/coin-config.js` | Stablecoin registry + active coin list |
 | `src/components/Tabs/` | Views: Home, Coin, Chains, Alerts |
 | `src/components/Sections/` | Page content: signal hero, market pulse, capital flows, whale watch, summary |
-| `src/components/ui/` | StatCard, Sparkline, ChartWrapper, RefreshCountdown, SkeletonLoader |
+| `src/components/ui/` | StatCard, Sparkline, ChartWrapper, RefreshCountdown, SkeletonLoader, AiTicker |
 | `src/components/` | Header, Sidebar, MobileNav, SettingsPanel, ThemeToggle |
 | `src/styles.css` | Single stylesheet: variables, light/dark themes, responsive rules |
+| `backend/` | Optional Fastify + SQLite service: history + AI narratives |
+
+## Data layer (`src/lib/api.js`)
+
+The frontend talks to upstream APIs directly. See [api-protocol.md](./api-protocol.md) for the exact endpoints and cache TTLs.
+
+- **Light endpoints** (`/stablecoins`, `/simple/price`): 60s throttle, SWR.
+- **Heavy detail** (`/stablecoin/{id}`): 1h cache-first, SWR.
+- **Lazy** (`market_chart`, `tickers`): 5 min, loaded when a coin tab opens.
+- localStorage + in-memory Map; stale-on-error fallback; 20s fetch timeout; inflight dedupe.
 
 ## Config resolution
 
-`apiBase` resolves in this order (`src/config.js`):
+`aiApiBase` resolves in this order (`src/config.js`):
 
-1. `window.STABLEPULSE_CONFIG.apiBase` (runtime override, set in `index.html` or before the bundle loads).
-2. `import.meta.env.STABLEPULSE_API_BASE` (build-time env var).
-3. Default: dev uses `http://127.0.0.1:8787`, prod uses the Cloudflare Worker URL.
+1. `window.STABLEPULSE_CONFIG.aiApiBase` (runtime override, set in `index.html` or before the bundle loads).
+2. `import.meta.env.STABLEPULSE_AI_API_BASE` (build-time env var).
+3. Default: `''` (same origin; AI layer disabled when no backend is present).
 
-Trailing slashes are stripped. The runtime override is how deployments on arbitrary hosts (Pages, VPS) point at a backend without a rebuild.
+Trailing slashes are stripped. The runtime override is how deployments on arbitrary hosts point at a backend without a rebuild.
 
 ## Display logic (`src/lib/derive.js`)
 
@@ -55,8 +70,14 @@ All functions are pure and deterministic, which is what makes them unit-testable
 - `buildWhaleWatchRows(detailsByCoin, limit)`: z-score based supply anomaly rows.
 - `buildShareSeries(supplyByCoin, targetCoin)`: target coin share of total supply over time.
 - `buildAlertSparkSeries(alert, data)`: sparkline series for an alert.
+- `generateAlerts(data)`: deterministic alert engine (PEG_BREAK, CHAIN_SPIKE, MEGA_SUPPLY, DOM_SHIFT).
+- `alertExplanation(alert)`: local, deterministic explanation text (no AI round-trip).
 
 The UI never re-computes these per animation frame: chart series and derive outputs are memoized, and the refresh countdown is isolated in `RefreshCountdown` so it re-renders alone.
+
+## Backend (`backend/`)
+
+See [backend/README.md](../backend/README.md). Fastify + SQLite (WAL), cron jobs for history and AI, served same-origin behind nginx.
 
 ## Theming
 
