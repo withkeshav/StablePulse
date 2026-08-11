@@ -158,13 +158,20 @@ function normalizeChainCirculating(asset) {
   return out;
 }
 
+function sumPeggedUSD(assets, key) {
+  return (assets || []).reduce((sum, asset) => sum + (asset?.[key]?.peggedUSD || 0), 0);
+}
+
 function assembleLlama(data, llama, coins) {
   const activeSymbols = new Set(coins.map((c) => c.symbol));
   const peggedAssets = (llama?.peggedAssets || [])
     .filter((a) => a && activeSymbols.has(a.symbol))
     .map((a) => ({ ...a, chainCirculating: normalizeChainCirculating(a) }));
   data.allStables = {
-    totalMarketCap: llama?.totalMarketCap || { peggedUSD: 0 },
+    totalMarketCap: {
+      peggedUSD: sumPeggedUSD(llama?.peggedAssets, 'circulating'),
+      prevDay: { peggedUSD: sumPeggedUSD(llama?.peggedAssets, 'circulatingPrevDay') },
+    },
     peggedAssets,
     chains: llama?.chains || [],
   };

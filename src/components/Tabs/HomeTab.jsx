@@ -90,7 +90,7 @@ export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec
         coins={coins}
         priceByCoin={priceByCoin}
         stress={stress}
-        aiHeadline={data?.intelligence?.headline || ''}
+        intelligence={data?.intelligence}
       />
 
       <p class="sync-cadence-hint">

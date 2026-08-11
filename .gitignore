@@ -34,6 +34,9 @@ docs/tmp/
 .notes/
 *.md.tmp
 
+# Backend local database
+backend/data/
+
 # Local agent instructions (internal, not published)
 AGENTS.md
 CLAUDE.md
