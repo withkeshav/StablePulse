@@ -13,6 +13,7 @@ import RefreshCountdown from './components/ui/RefreshCountdown.jsx';
 import SettingsPanel from './components/SettingsPanel.jsx';
 import useTheme from './hooks/useTheme.js';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
+import FirstRunTour from './components/ui/FirstRunTour.jsx';
 import { APP_VERSION, aiApiBase } from './config.js';
 import { REFRESH_KEY, COMPACT_KEY } from './utils/storage.js';
 import { coinFromTabId } from './utils/coin-config.js';
@@ -169,7 +170,7 @@ export default function App() {
         onJumpToAlerts={() => setActiveTab('alerts')}
       />
       <div id="body-row">
-        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} alertCount={alerts.length} />
+        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} alertCount={alerts.length} alerts={alerts} />
         <main id="main">
           <ErrorBoundary>
             {loading && !data ? (
@@ -203,6 +204,7 @@ export default function App() {
         </main>
       </div>
       <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} alertCount={alerts.length} />
+      <FirstRunTour />
       <SettingsPanel
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}

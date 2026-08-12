@@ -24,6 +24,7 @@
 <a href="#main" class="skip-link" style="position:absolute;left:-9999px;">Skip to content</a>
 
 <header class="hub-header">
+  <div id="toc-progress" style="position:fixed;top:0;left:0;height:2px;background:var(--hub-gold);width:0;z-index:200;transition:width 0.1s"></div>
   <div class="hub-header-inner">
     <a href="/research/" class="hub-mark">StableSense<span class="gold-dot">.</span> Research</a>
     <nav class="hub-nav" aria-label="Hub sections">
@@ -35,6 +36,7 @@
       <a href="#depegs">Depegs</a>
       <a href="#regulation">Regulation</a>
       <a href="/" class="to-dashboard" target="_blank" rel="noopener noreferrer">Open the live dashboard &rsaquo;</a>
+      <button id="hub-theme-toggle" class="hub-chip" style="cursor:pointer" title="Toggle theme">Theme</button>
     </nav>
   </div>
 </header>
@@ -84,7 +86,7 @@
     </noscript>
 
     <h3 style="margin-top:2.5rem">Token comparison</h3>
-    <p class="as-of">Sortable by market cap; filter by category with the chips. Figures as of mid-2026.</p>
+    <p class="as-of">Sortable by market cap; filter by category with the chips. Figures as of mid-2026. <button id="export-tokens-csv" class="hub-chip" style="cursor:pointer">Export CSV</button></p>
     <div class="chip-row" id="token-chips" role="group" aria-label="Filter tokens by category">
       <button class="hub-chip active" data-cat="all">All</button>
       <button class="hub-chip" data-cat="fiat-usd"><span class="cat-dot" style="background:var(--hub-cat-fiat-usd)"></span>Fiat-USD</button>

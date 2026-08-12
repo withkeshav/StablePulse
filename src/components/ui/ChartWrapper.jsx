@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { createSharePopover } from '../../utils/shareChart.js';
 
 let chartPromise;
 function getChart() {
@@ -11,7 +12,12 @@ function getChart() {
         m.CategoryScale, m.LinearScale,
         m.Tooltip, m.Legend
       );
-      return Chart;
+      // Register zoom plugin for line charts (pinch/scroll + dbl-click reset)
+      return import('chartjs-plugin-zoom').then((zoomMod) => {
+        const Zoom = zoomMod.default || zoomMod;
+        Chart.register(Zoom);
+        return Chart;
+      });
     });
   }
   return chartPromise;
@@ -128,9 +134,18 @@ export default function ChartWrapper({ type, data, options = {}, height = 220, a
       const text = readCssVar('--text', '#111827');
 
       const themedScales = tintScales(options?.scales, grid, tick);
+      const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      const zoomPlugin = type === 'line' ? {
+        zoom: {
+          pan: { enabled: true, mode: 'x' },
+          zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
+        },
+        limits: { x: { minRange: 1 } },
+      } : {};
 
       const mergedOptions = {
-        animation: false,
+        animation: reducedMotion ? false : false,
         responsive: true,
         ...options,
         maintainAspectRatio: aspectRatio ? false : (options.maintainAspectRatio ?? true),
@@ -144,9 +159,15 @@ export default function ChartWrapper({ type, data, options = {}, height = 220, a
             borderWidth: 1,
             ...options.plugins?.tooltip,
           },
+          zoom: type === 'line' ? { ...zoomPlugin, ...(options.plugins?.zoom || {}) } : (options.plugins?.zoom || {}),
         },
         scales: themedScales,
       };
+
+      // double-click reset for zoom
+      if (type === 'line' && canvasRef.current) {
+        canvasRef.current.ondblclick = () => { if (chartRef.current) chartRef.current.resetZoom(); };
+      }
 
       if (chartRef.current) chartRef.current.destroy();
       chartRef.current = new Chart(canvasRef.current, {
@@ -177,6 +198,7 @@ export default function ChartWrapper({ type, data, options = {}, height = 220, a
   return (
     <div class="chart-wrap" style={wrapStyle} aria-label={`${type} chart`} role="img">
       <canvas ref={canvasRef}></canvas>
+      <button class="share-btn" type="button" title="Share as screenshot" aria-label="Share chart as screenshot" onClick={(e) => { e.stopPropagation(); if (chartRef.current) createSharePopover(chartRef.current, 'StableSense chart', new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }), e.currentTarget); }}>⎘</button>
     </div>
   );
 }

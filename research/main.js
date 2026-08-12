@@ -18,6 +18,21 @@ try {
   document.documentElement.setAttribute('data-theme', effective);
 } catch { /* private mode */ }
 
+// hub theme toggle
+const hubToggle = document.getElementById('hub-theme-toggle');
+if (hubToggle) {
+  hubToggle.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme') || 'light';
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem('stablesense:theme', next); } catch { /* private mode */ }
+    // resize all charts to pick up new grid/tick colors
+    loadChartJs().then((Chart) => {
+      setTimeout(() => Object.values(Chart.instances || {}).forEach((inst) => inst.resize()), 50);
+    });
+  });
+}
+
 // --- category color helper -------------------------------------------------
 const catColor = (id) => {
   const map = {
@@ -597,10 +612,60 @@ function buildFooterLists() {
   }
 }
 
+// --- sticky TOC + reading progress ----------------------------------------
+function stickyToc() {
+  const sections = document.querySelectorAll('.section[id]');
+  const progress = document.getElementById('toc-progress');
+  const tocLinks = document.querySelectorAll('.hub-nav a[href^="#"]');
+  if (!sections.length || !tocLinks.length) return;
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) {
+        const id = e.target.id;
+        tocLinks.forEach((l) => {
+          l.classList.toggle('active', l.getAttribute('href') === '#' + id);
+        });
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  sections.forEach((s) => io.observe(s));
+
+  // reading progress bar
+  if (progress) {
+    const onScroll = () => {
+      const scrolled = window.scrollY;
+      const total = document.documentElement.scrollHeight - window.innerHeight;
+      progress.style.width = (total > 0 ? (scrolled / total) * 100 : 0) + '%';
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  }
+}
+
+// --- CSV export helper ----------------------------------------------------
+function exportTableCsv(tableId, filename) {
+  const table = document.getElementById(tableId);
+  if (!table) return;
+  const rows = table.querySelectorAll('tr');
+  const csv = [];
+  rows.forEach((row) => {
+    const cells = row.querySelectorAll('th, td');
+    csv.push(Array.from(cells).map((c) => '"' + c.textContent.trim().replace(/"/g, '""') + '"').join(','));
+  });
+  const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 // --- init -----------------------------------------------------------------
 async function init() {
   reveals();
   heroCounter();
+  stickyToc();
   buildTaxonomy();
   buildCorridors();
   buildDepegs();
@@ -608,6 +673,9 @@ async function init() {
   remittanceCalc();
   raceBars();
   buildFooterLists();
+  // CSV export buttons
+  const csvBtn = document.getElementById('export-tokens-csv');
+  if (csvBtn) csvBtn.addEventListener('click', () => exportTableCsv('token-table', 'stablesense-tokens.csv'));
   try {
     await Promise.all([taxonomyChart(), scaleChart(), forecastChart(), treasuryChart(), dollarizationChart(), realityChart()]);
     // Constructing 6 charts back-to-back via Promise.all appears to race

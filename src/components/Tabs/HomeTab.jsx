@@ -131,7 +131,7 @@ export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec
       <div class="sticky-stats-wrap">
         <div class="stats-grid" id="home-stats">
           {coins.map((c) => (
-            <StatCard key={c.symbol} label={`${c.symbol} Price`} value={fmtPrice(priceByCoin[c.symbol])} />
+            <StatCard key={c.symbol} label={`${c.symbol} Price`} value={fmtPrice(priceByCoin[c.symbol])} meta={(() => { const chg = cg?.[c.coingeckoId]?.usd_24h_change; return typeof chg === 'number' ? `${chg > 0 ? '+' : ''}${chg.toFixed(2)}% 24h` : null; })()} />
           ))}
           {coins.map((c) => {
             const asset = data?.allStables?.peggedAssets?.find((x) => x.symbol.toLowerCase() === c.symbol.toLowerCase());
