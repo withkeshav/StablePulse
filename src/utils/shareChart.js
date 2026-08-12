@@ -85,9 +85,12 @@ export function createSharePopover(chartInstance, title, dateStr, anchorEl) {
     ).join('')}
     <button class="share-cancel-btn">Cancel</button>
   `;
+  // Position relative to viewport using getBoundingClientRect, then
+  // convert to document coordinates for the body-appended popover.
+  const rect = anchorEl.getBoundingClientRect();
   pop.style.position = 'absolute';
-  pop.style.top = (anchorEl.offsetTop + anchorEl.offsetHeight + 4) + 'px';
-  pop.style.right = '0';
+  pop.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+  pop.style.left = (rect.right + window.scrollX - 160) + 'px';
   pop.style.zIndex = '250';
   document.body.appendChild(pop);
   pop.querySelectorAll('.share-format-btn').forEach((btn) => {
