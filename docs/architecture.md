@@ -34,7 +34,7 @@ The frontend makes its live-data calls from the visitor's own IP, so no single o
 | `src/lib/insights.js` | Pure Learn-tab observations from live data (framework-free, unit tested) |
 | `src/utils/formatters.js` | Formatting helpers (pure, unit tested) |
 | `src/utils/coin-config.js` | Stablecoin registry + active coin list |
-| `src/components/Tabs/` | Views: Home, Coin, Learn, Chains, Alerts, About |
+| `src/components/Tabs/` | Views: Home, Coin, Learn, Chains, Alerts, About. Learn covers the value-referenced-token taxonomy (peg mechanics, collateral types, gold/commodity, crypto-collateralized, synthetic, algorithmic, tokenized funds) plus the macroeconomic impact (Treasury demand, bank disintermediation, cross-border, depeg history, regulation); fast-decaying lessons carry a per-lesson `lastUpdated` date rendered next to the title |
 | `src/components/Sections/` | Page content: signal hero, market pulse, capital flows, whale watch, summary |
 | `src/components/ui/` | StatCard, Sparkline, ChartWrapper, RefreshCountdown, SkeletonLoader, AiTicker |
 | `src/components/` | Header, Sidebar, MobileNav, SettingsPanel, ThemeToggle |
