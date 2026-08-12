@@ -12,9 +12,12 @@ export default function SettingsPanel({
   setTheme,
 }) {
   const panelRef = useRef(null);
+  const returnFocusRef = useRef(null);
 
   useEffect(() => {
     if (!isOpen) return undefined;
+    // Remember who opened the dialog so focus can be returned on close.
+    returnFocusRef.current = document.activeElement;
     const onKey = (e) => {
       if (e.key === 'Escape') { onClose(); return; }
       if (e.key === 'Tab' && panelRef.current) {
@@ -34,7 +37,12 @@ export default function SettingsPanel({
     document.addEventListener('keydown', onKey);
     const firstFocusable = panelRef.current?.querySelector('button, select, input');
     firstFocusable?.focus();
-    return () => document.removeEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      const prev = returnFocusRef.current;
+      returnFocusRef.current = null;
+      if (prev && typeof prev.focus === 'function' && document.contains(prev)) prev.focus();
+    };
   }, [isOpen, onClose]);
 
   return (

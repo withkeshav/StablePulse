@@ -137,10 +137,8 @@ export default function ChartWrapper({ type, data, options = {}, height = 220, a
       const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
       const zoomPlugin = type === 'line' ? {
-        zoom: {
-          pan: { enabled: true, mode: 'x' },
-          zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
-        },
+        pan: { enabled: true, mode: 'x' },
+        zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
         limits: { x: { minRange: 1 } },
       } : {};
 
