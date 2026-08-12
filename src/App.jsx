@@ -32,8 +32,11 @@ function readStoredRefresh() {
 }
 
 function readStoredCompact() {
-  try { return localStorage.getItem(COMPACT_KEY) === '1'; }
-  catch { return false; }
+  try {
+    const raw = localStorage.getItem(COMPACT_KEY);
+    if (raw === null) return true;   // no stored preference yet: default to compact
+    return raw === '1';
+  } catch { return true; }
 }
 
 export default function App() {
