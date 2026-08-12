@@ -4,10 +4,13 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.3.5] - 2026-08-12
 
 ### Added
 
+- Learn tab v2: 16 lessons across 4 collapsible modules (Fundamentals, The ecosystem map, Risk & history, Regulation & outlook) plus an expanded 20-term glossary.
+- Deterministic live observations (`src/lib/insights.js`): data-grounded callouts rendered inline under lessons (dominance, peg drift, chain concentration, collateral mix, alert count). Computed locally from dashboard data, no AI, no network, reproducible from the stat cards.
+- Cross-links into Learn: a "What does this mean?" affordance under the Home peg-stress index, and per-rule "Learn" links inside alert cards that deep-link to the matching lesson.
 - Learn tab: plain-language lessons on stablecoins (what they are, how pegs work, collateral types, depeg causes, how to read the dashboard) plus a glossary.
 - One-time localStorage migration from legacy `stablepulse:*` keys to `stablesense:*` (theme, refresh, compact) with automatic cleanup of the old cache prefix.
 
@@ -17,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Config keys renamed: `window.STABLEPULSE_CONFIG` to `window.STABLESENSE_CONFIG`, `STABLEPULSE_AI_API_BASE` to `STABLESENSE_AI_API_BASE`.
 - Mobile bottom nav now scrolls horizontally so the added Learn tab keeps 44px touch targets at 375px.
 - Backend artifacts renamed end-to-end: `stablesense.db`, `stablesense-backend.service`, `/opt/stablesense`, `/var/log/stablesense`; see `backend/README.md` for the VPS migration steps.
+- Version aligned to 2.3.5 in `package.json` and in the `config.js` fallback string.
 
 ### Removed
 
@@ -82,6 +86,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 Initial internal release of the intelligence dashboard (prior to open-source packaging). No public changelog kept.
 
-[Unreleased]: https://github.com/withkeshav/StableSense/compare/v2.1.0...HEAD
+[2.3.5]: https://github.com/withkeshav/StableSense/releases/tag/v2.3.5
 [2.1.0]: https://github.com/withkeshav/StableSense/releases/tag/v2.1.0
 [2.0.0]: https://github.com/withkeshav/StableSense/releases/tag/v2.0.0

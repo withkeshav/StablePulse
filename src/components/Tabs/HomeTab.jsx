@@ -91,6 +91,7 @@ export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec
         priceByCoin={priceByCoin}
         stress={stress}
         intelligence={data?.intelligence}
+        onLearn={() => setActiveTab('learn')}
       />
 
       <p class="sync-cadence-hint">

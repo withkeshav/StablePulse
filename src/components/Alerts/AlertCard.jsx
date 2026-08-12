@@ -3,9 +3,17 @@ import { timeAgo } from '../../utils/formatters.js';
 import Sparkline from '../ui/Sparkline.jsx';
 import { alertExplanation } from '../../lib/derive.js';
 
-export default function AlertCard({ alert, compact = false, spark = null }) {
+const RULE_LESSONS = {
+  PEG_BREAK: 'depeg-causes',
+  CHAIN_SPIKE: 'many-chains',
+  MEGA_SUPPLY: 'volume-uses',
+  DOM_SHIFT: 'who-issues',
+};
+
+export default function AlertCard({ alert, compact = false, spark = null, onLearn }) {
   const [open, setOpen] = useState(false);
   const detail = useMemo(() => alertExplanation(alert), [alert]);
+  const lessonId = alert?.rule ? RULE_LESSONS[alert.rule] : null;
 
   const sevClass = alert?.severity === 'CRITICAL' ? 'crit' : alert?.severity === 'HIGH' ? 'high' : 'warn';
   const sparkH = compact ? 44 : 52;
@@ -39,6 +47,11 @@ export default function AlertCard({ alert, compact = false, spark = null }) {
           <div class="alert-confidence">
             <strong>Confidence:</strong> {(detail.confidence * 100).toFixed(0)}%
           </div>
+        ) : null}
+        {onLearn && lessonId ? (
+          <button type="button" class="learn-link-btn" onClick={() => onLearn(lessonId)}>
+            What does this alert mean? Learn
+          </button>
         ) : null}
       </div>
     </article>

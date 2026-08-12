@@ -1,7 +1,7 @@
 ﻿import { fmtPrice, bps } from '../../utils/formatters.js';
 import AiTicker from '../ui/AiTicker.jsx';
 
-export default function SignalHero({ coins, priceByCoin, stress, intelligence }) {
+export default function SignalHero({ coins, priceByCoin, stress, intelligence, onLearn }) {
   return (
     <section class="signal-hero card mb-4">
       <div class="card-body">
@@ -12,6 +12,11 @@ export default function SignalHero({ coins, priceByCoin, stress, intelligence })
             {intelligence?.headline ? <p class="signal-ai-line">{intelligence.headline}</p> : null}
             <AiTicker intelligence={intelligence} />
             <p class="signal-subtitle">Level: {stress.level}. Driven by peg drift, active alerts, and cross-chain flow pressure.</p>
+            {onLearn ? (
+              <button type="button" class="learn-link-btn" onClick={onLearn}>
+                What does this mean? Learn
+              </button>
+            ) : null}
           </div>
           <div class="signal-prices">
             {(coins || []).map((c) => (

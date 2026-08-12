@@ -23,11 +23,20 @@ function AlertsEmptyState() {
   );
 }
 
-export default function AlertsTab({ alerts, intelligence, data }) {
+export default function AlertsTab({ alerts, intelligence, data, setActiveTab }) {
   const [severity, setSeverity] = useState('all');
   const [coin, setCoin] = useState('all');
   const [sortBy, setSortBy] = useState('latest');
   const [groupByRule, setGroupByRule] = useState(false);
+
+  const handleLearn = (lessonId) => {
+    try {
+      window.location.hash = `lesson-${lessonId}`;
+    } catch {
+      // ignore hash errors; the tab switch still happens
+    }
+    setActiveTab('learn');
+  };
 
   const coins = useMemo(() => {
     const s = new Set((alerts || []).map((a) => a.coin).filter(Boolean));
@@ -79,6 +88,7 @@ export default function AlertsTab({ alerts, intelligence, data }) {
       alert={a}
       compact={false}
       spark={sparks[a.id]}
+      onLearn={handleLearn}
     />
   );
 

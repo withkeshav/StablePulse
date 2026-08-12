@@ -190,9 +190,9 @@ export default function App() {
                 {coinTab ? <CoinTab key={activeTab} coin={activeTab} data={data} /> : null}
                 {activeTab === 'chains' && <ChainsTab data={data} />}
                 {activeTab === 'alerts' && (
-                  <AlertsTab alerts={alerts} intelligence={data?.intelligence} data={data} />
+                  <AlertsTab alerts={alerts} intelligence={data?.intelligence} data={data} setActiveTab={setActiveTab} />
                 )}
-                {activeTab === 'learn' && <LearnTab />}
+                {activeTab === 'learn' && <LearnTab data={data} alerts={alerts} />}
                 {activeTab === 'about' && <AboutTab />}
               </>
             )}

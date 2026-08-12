@@ -31,6 +31,7 @@ The frontend makes its live-data calls from the visitor's own IP, so no single o
 | `src/lib/api.js` | Browser-direct data layer: DefiLlama + CoinGecko with SWR caching |
 | `src/lib/ai.js` | AI narrative fetch from `aiApiBase` |
 | `src/lib/derive.js` | Pure display logic (framework-free, unit tested) |
+| `src/lib/insights.js` | Pure Learn-tab observations from live data (framework-free, unit tested) |
 | `src/utils/formatters.js` | Formatting helpers (pure, unit tested) |
 | `src/utils/coin-config.js` | Stablecoin registry + active coin list |
 | `src/components/Tabs/` | Views: Home, Coin, Learn, Chains, Alerts, About |
