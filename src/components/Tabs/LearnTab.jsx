@@ -242,7 +242,7 @@ export default function LearnTab({ data, alerts }) {
             small observation computed from this dashboard's data at this moment.
           </p>
           <p class="mt-3 mb-0">
-            <a class="learn-link-btn" href="/research/#taxonomy">Read the full research: State of Stablecoins &rsaquo;</a>
+            <a class="learn-link-btn" href="/research/#taxonomy" target="_blank" rel="noopener noreferrer">Read the full research: State of Stablecoins &rsaquo;</a>
           </p>
         </div>
       </section>
@@ -280,7 +280,7 @@ export default function LearnTab({ data, alerts }) {
             })}
             {mod.moduleLink ? (
               <p class="learn-lesson" style="padding-top:8px">
-                <a class="learn-link-btn" href={mod.moduleLink.href}>{mod.moduleLink.label} &rsaquo;</a>
+                <a class="learn-link-btn" href={mod.moduleLink.href} target="_blank" rel="noopener noreferrer">{mod.moduleLink.label} &rsaquo;</a>
               </p>
             ) : null}
           </div>

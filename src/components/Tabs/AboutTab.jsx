@@ -92,7 +92,7 @@ export default function AboutTab() {
             shown where sources disagree.
           </p>
           <p class="mb-0">
-            <a class="learn-link-btn" href="/research/">Read the State of Stablecoins report &rsaquo;</a>
+            <a class="learn-link-btn" href="/research/" target="_blank" rel="noopener noreferrer">Read the State of Stablecoins report &rsaquo;</a>
           </p>
         </div>
       </section>

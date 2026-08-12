@@ -249,6 +249,16 @@ body.compact .tab-content{padding:8px}
   #sidebar .nav-label,#sidebar .nav-badge,#sidebar .sidebar-footer{display:none}
   #sidebar .nav-item{justify-content:center}
 }
+.hdr-research-link{display:flex;align-items:center;padding:0 10px;height:44px;font-size:var(--xs);font-weight:600;color:var(--accent);border-right:1px solid var(--border-s);margin-right:4px;text-decoration:none;white-space:nowrap}
+.hdr-research-link:hover{color:var(--accent-h)}
+@media(max-width:480px){.hdr-research-link{padding:0 8px}}
+
+.research-callout{display:flex;align-items:center;gap:10px;padding:12px 16px;margin-bottom:16px;border:1px solid var(--border-s);border-left:3px solid var(--accent);border-radius:6px;background:color-mix(in oklch,var(--accent) 4%,var(--surface));text-decoration:none;color:var(--text);min-height:44px;transition:border-color var(--tr),background var(--tr)}
+.research-callout:hover{border-left-color:var(--accent-h);background:color-mix(in oklch,var(--accent) 8%,var(--surface))}
+.research-callout-kicker{font-family:var(--mono);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);background:color-mix(in oklch,var(--accent) 14%,transparent);padding:2px 6px;border-radius:3px;flex-shrink:0}
+.research-callout-text{font-size:var(--sm);font-weight:500;flex:1;min-width:0}
+.research-callout-arrow{color:var(--accent);font-size:var(--md);flex-shrink:0}
+
 @media print{#sidebar,#mobile-nav,#header .hdr-actions{display:none!important}body{color:#000;background:#fff}.card{border:1px solid #ccc;box-shadow:none}}
 
 .build-version{font-size:10px;color:var(--text3);font-weight:500}

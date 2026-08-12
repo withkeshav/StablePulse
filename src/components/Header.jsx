@@ -19,6 +19,7 @@ export default function Header({ loading, refreshing, apiStatus, onOpenSettings,
         Alerts {alertCount ? <span class="alert-pill">{alertCount}</span> : null}
       </button>
       <div class="hdr-actions">
+        <a class="hdr-research-link" href="/research/" target="_blank" rel="noopener noreferrer" title="State of Stablecoins research">Research</a>
         <button type="button" id="refresh-btn" class="hdr-btn" onClick={onRefresh} title="Refresh now" aria-label="Refresh now" disabled={refreshing}>
           ↻
         </button>

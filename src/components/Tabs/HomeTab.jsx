@@ -94,6 +94,12 @@ export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec
         onLearn={() => setActiveTab('learn')}
       />
 
+      <a class="research-callout" href="/research/" target="_blank" rel="noopener noreferrer">
+        <span class="research-callout-kicker">New</span>
+        <span class="research-callout-text">Read the full stablecoin research: The State of Stablecoins</span>
+        <span class="research-callout-arrow">&rsaquo;</span>
+      </a>
+
       <p class="sync-cadence-hint">
         Data refreshes on your chosen cadence from live market sources; the strip above shows the countdown to the next refresh.
       </p>

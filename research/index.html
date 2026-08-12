@@ -25,7 +25,7 @@
 
 <header class="hub-header">
   <div class="hub-header-inner">
-    <a href="/" class="hub-mark">StableSense<span class="gold-dot">.</span> Research</a>
+    <a href="/research/" class="hub-mark">StableSense<span class="gold-dot">.</span> Research</a>
     <nav class="hub-nav" aria-label="Hub sections">
       <a href="#taxonomy">Taxonomy</a>
       <a href="#scale">Scale</a>
@@ -34,7 +34,7 @@
       <a href="#remittances">Payments</a>
       <a href="#depegs">Depegs</a>
       <a href="#regulation">Regulation</a>
-      <a href="/" class="to-dashboard">Open the live dashboard &rsaquo;</a>
+      <a href="/" class="to-dashboard" target="_blank" rel="noopener noreferrer">Open the live dashboard &rsaquo;</a>
     </nav>
   </div>
 </header>
@@ -62,8 +62,10 @@
     <p class="section-thesis">A stablecoin is a token engineered to hold steady value against some reference. The reference is usually the US dollar but not always. The chart below shows the relative scale of all six categories. Dollar-pegged coins dominate, but the taxonomy runs wider than the common case this dashboard tracks.</p>
 
     <div class="chart-wrap reveal">
-      <canvas id="taxonomy-chart" height="220" role="img" aria-label="Stacked horizontal bar chart showing relative scale of the six stablecoin taxonomy categories. Fiat-USD dominates at over 95% of total supply."></canvas>
-      <p class="chart-caption">Relative scale of the six value-referenced-token categories, mid-2026. Figures are ranges where aggregators disagree (see methodology). Fiat-USD is the dominant case the dashboard tracks; the other five categories together are under 5%.</p>
+      <div class="chart-canvas-box" style="height:220px">
+        <canvas id="taxonomy-chart" height="220" role="img" aria-label="Stacked horizontal bar chart showing relative scale of the six stablecoin taxonomy categories. Fiat-USD dominates at over 95% of total supply."></canvas>
+      </div>
+      <p class="chart-caption">Relative scale of the six value-referenced-token categories, mid-2026. Figures are ranges where aggregators disagree (see methodology). The other five categories combined are roughly 15-16% of the total shown here; RWA/tokenized funds is the largest of the five.</p>
     </div>
 
     <h3 style="margin-top:2.5rem">The six categories</h3>
@@ -121,13 +123,17 @@
     <p class="section-thesis">Total stablecoin market cap is approximately $300-320B as of mid-2026 (aggregators disagree: CoinMarketCap ~$300B, CoinGecko ~$291B, DefiLlama ~$289B - the range is the honest answer, not a number to pick). USDT and USDC alone control over 80% of supply. Every credible forecaster expects multi-trillion scale by 2030; the disagreement is how fast, not whether.</p>
 
     <div class="chart-wrap reveal">
-      <canvas id="scale-chart" height="320" role="img" aria-label="Line chart of total stablecoin market cap from 2017 to 2026, with markers at UST collapse (May 2022), SVB/USDC (March 2023), and GENIUS Act signing (July 2025)."></canvas>
+      <div class="chart-canvas-box" style="height:320px">
+        <canvas id="scale-chart" height="320" role="img" aria-label="Line chart of total stablecoin market cap from 2017 to 2026, with markers at UST collapse (May 2022), SVB/USDC (March 2023), and GENIUS Act signing (July 2025)."></canvas>
+      </div>
       <p class="chart-caption">Total stablecoin market cap, year-end USD billions. Markers: UST collapse (May 2022), USDC/SVB (March 2023), GENIUS Act signed (July 2025). Source: DefiLlama stablecoins dashboard.</p>
     </div>
 
     <h3 style="margin-top:2.5rem">Forward projections to 2030</h3>
     <div class="chart-wrap reveal">
-      <canvas id="forecast-chart" height="280" role="img" aria-label="Fan/band chart of stablecoin market cap projections from 2026 to 2030, showing IMF, Citi, Bain, Standard Chartered, and JPMorgan forecasts as separate labeled ranges."></canvas>
+      <div class="chart-canvas-box" style="height:280px">
+        <canvas id="forecast-chart" height="280" role="img" aria-label="Fan/band chart of stablecoin market cap projections from 2026 to 2030, showing IMF, Citi, Bain, Standard Chartered, and JPMorgan forecasts as separate labeled ranges."></canvas>
+      </div>
       <p class="chart-caption">Named projections to 2030. Toggle forecasters with the chips below the chart. Everyone credible expects multi-trillion scale; the disagreement is how fast, not whether.</p>
     </div>
     <div class="chip-row" id="forecast-chips" role="group" aria-label="Isolate a forecaster">
@@ -149,7 +155,9 @@
     <p class="section-thesis">Stablecoin issuers now hold well over $150B in US Treasuries, mostly short-dated T-bills. Tether's reported ~$141B (Q1 2026 attestation) exceeds the holdings of Germany ($91.3B) and Norway ($104.4B) per the US Treasury TIC Jan 2023 table; combined issuers' ~$182B exceeds Norway. The comparison is duration-mismatched: issuers hold short-dated bills, while TIC ranks total foreign holdings.</p>
 
     <div class="chart-wrap reveal">
-      <canvas id="treasury-chart" height="420" role="img" aria-label="Horizontal bar chart ranking sovereign nations and stablecoin issuers as holders of US Treasury debt. Issuer bars highlighted in gold. Tether (~$141B) ranks between Luxembourg and Norway; combined issuers (~$182B) exceed Norway."></canvas>
+      <div class="chart-canvas-box" style="height:420px">
+        <canvas id="treasury-chart" height="420" role="img" aria-label="Horizontal bar chart ranking sovereign nations and stablecoin issuers as holders of US Treasury debt. Issuer bars highlighted in gold. Tether (~$141B) ranks between Luxembourg and Norway; combined issuers (~$182B) exceed Norway."></canvas>
+      </div>
       <p class="chart-caption">Largest holders of US Treasury securities, USD billions. Sovereign nations per US Treasury TIC (Jan 2023, latest published); stablecoin issuers per their own reserve attestations (Tether Q1 2026, combined 4 issuers ~$182B). The comparison is duration-mismatched - issuers hold short-dated T-bills, TIC ranks total (long+short) holdings.</p>
     </div>
 
@@ -268,7 +276,9 @@
     <p class="section-thesis">When a country's citizens choose the dollar over the national currency at scale, monetary policy loses its transmission mechanism. Stablecoins have turned dollarization from a government-level decision into a tap on a phone. BIS Working Paper 1370 (Jul 2026) found stablecoin flows show little response to capital controls, unlike bank deposits.</p>
 
     <div class="chart-wrap reveal">
-      <canvas id="dollarization-chart" height="320" role="img" aria-label="Ranked bar chart of stablecoin purchases as a share of GDP by country. Turkey leads at 4.3 percent. Other countries ranked below with cited qualitative evidence."></canvas>
+      <div class="chart-canvas-box" style="height:320px">
+        <canvas id="dollarization-chart" height="320" role="img" aria-label="Ranked bar chart of stablecoin purchases as a share of GDP by country. Turkey leads at 4.3 percent. Other countries ranked below with cited qualitative evidence."></canvas>
+      </div>
       <p class="chart-caption">Stablecoin purchases as a share of GDP. Turkey is the only country with a measured figure (~4.3%, Chainalysis). Argentina, Nigeria, Lebanon, and Venezuela have strong qualitative and survey evidence but no single comparable GDP-share figure; ranked below Turkey on documented adoption.</p>
     </div>
 
@@ -290,13 +300,13 @@
   <div class="section-inner">
     <div class="kicker">07 - When pegs break</div>
     <h2>Three depegs, three failure modes</h2>
-    <p class="section-thesis">A depeg happens when redemption confidence drops. The three cases below show three different mechanisms: an algorithmic death spiral (UST, structural), a bank-run scare (USDC/SVB, temporary), and a synthetic-dollar funding-rate stress event (USDe, recoverable). Cross-linked with the dashboard's own <a href="/#lesson-depeg-cases">Anatomy of a real depeg</a> lesson.</p>
+    <p class="section-thesis">A depeg happens when redemption confidence drops. The three cases below show three different mechanisms: an algorithmic death spiral (UST, structural), a bank-run scare (USDC/SVB, temporary), and a synthetic-dollar funding-rate stress event (USDe, recoverable). Cross-linked with the dashboard's own <a href="/#lesson-depeg-cases" target="_blank" rel="noopener noreferrer">Anatomy of a real depeg</a> lesson.</p>
 
     <div id="depeg-cards"></div>
     <noscript>
       <div class="depeg-card">
         <h3>UST / Terra - May 2022</h3>
-        <p class="mech">Algorithmic death spiral. Combined UST+LUNA loss ~$60B in roughly a week. See <a href="#treasury">Section 3</a> and the <a href="/#lesson-depeg-cases">in-app lesson</a>.</p>
+        <p class="mech">Algorithmic death spiral. Combined UST+LUNA loss ~$60B in roughly a week. See <a href="#treasury">Section 3</a> and the <a href="/#lesson-depeg-cases" target="_blank" rel="noopener noreferrer">in-app lesson</a>.</p>
       </div>
       <div class="depeg-card">
         <h3>USDC / SVB - March 2023</h3>
@@ -355,7 +365,9 @@
     <p class="section-thesis">After eight sections of "this is a big deal," a deliberately humbling close. Today's tokenization is a rounding error against traditional finance. The growth rate is the story, not the current size.</p>
 
     <div class="chart-wrap reveal">
-      <canvas id="reality-chart" height="340" role="img" aria-label="Log-scale bar chart putting stablecoins next to money-market funds, gold ETFs, tokenized gold, and RWA ex-stablecoins. Money-market funds at $7.9T dwarf everything else."></canvas>
+      <div class="chart-canvas-box" style="height:340px">
+        <canvas id="reality-chart" height="340" role="img" aria-label="Log-scale bar chart putting stablecoins next to money-market funds, gold ETFs, tokenized gold, and RWA ex-stablecoins. Money-market funds at $7.9T dwarf everything else."></canvas>
+      </div>
       <p class="chart-caption">Log scale, USD billions. US money-market funds ~$7.9T (ICI); US gold ETFs ~$530B (World Gold Council); fiat stablecoins ~$316B; RWA ex-stablecoins ~$20-40B (rwa.xyz); tokenized gold ~$5-8B. The ratios are structurally stable for now; the absolute sizes are fast-stale.</p>
     </div>
     <p class="as-of">Until on-chain real assets approach even 1% of their traditional counterparts, claims that they are "changing" commodity or credit markets should be read as trajectory statements, not current-fact statements. The growth rates, not the sizes, are the story worth monitoring on the live dashboard.</p>
@@ -367,14 +379,14 @@
 <!-- FOOTER -->
 <footer class="hub-footer">
   <div class="hub-footer-inner">
-    <div class="badge">Last updated 2026-08-12 - Next scheduled review 2026-11-01</div>
+    <div class="badge">Last updated 2026-08-12</div>
 
-    <p class="attribution">Research and maintained by <a href="https://www.withkeshav.com">Keshav Maheshwari</a>.</p>
+    <p class="attribution">Research and maintained by <a href="https://www.withkeshav.com" target="_blank" rel="noopener noreferrer">Keshav Maheshwari</a>.</p>
 
-    <p class="disclaimer">This report is provided for informational and educational purposes only. It is not financial, investment, legal, or tax advice, and nothing here should be read as a recommendation to buy, sell, or hold any asset. Headline figures such as market capitalization represent one measure among several relevant ones, they do not by themselves capture trading volume, tokenized real-world-asset value, or every issuer's reserves, and different sources measure and report them differently, see the numeric-claim-precision rule above for how this report handles that. Figures are sourced and dated as noted throughout; markets and regulation move quickly, verify any figure against the cited primary source before relying on it for a decision.</p>
+    <p class="disclaimer">This report is provided for informational and educational purposes only. It is not financial, investment, legal, or tax advice, and nothing here should be read as a recommendation to buy, sell, or hold any asset. Headline figures such as market capitalization represent one measure among several relevant ones, they do not by themselves capture trading volume, tokenized real-world-asset value, or every issuer's reserves, and different sources measure and report them differently. Where that is the case, this report states what a figure specifically measures rather than leaving it ambiguous. Figures are sourced and dated as noted throughout; markets and regulation move quickly, verify any figure against the cited primary source before relying on it for a decision.</p>
 
     <h3 style="font-size:1.1rem;margin-top:2rem">Methodology</h3>
-    <p class="methodology">Three independent research passes (see .progress/ for the source reports), cross-checked against each other and against primary sources. Where sources disagree on a figure, the range is given rather than a single silently-chosen number. The four highest-stakes claims (Treasury-holder ranking, GENIUS Act effective-date mechanics, SVB/USDC low, UST collapse figure) were verified against primary sources on 2026-08-12: Treasury TIC data (Jan 2023), Morgan Lewis on the GENIUS Act, CoinGecko Research on the USDC low ($0.8789), and CoinMarketCap/Reuters/ScienceDirect on UST (~$18B supply, ~$60B combined loss). If a primary source was unreachable or ambiguous during verification, it is noted in the resolved-claim detail below rather than silently falling back to a research-file figure.</p>
+    <p class="methodology">Every figure in this report was checked against multiple sources and cross-referenced against primary data. Where sources disagree on a figure, the range is given rather than a single silently-chosen number. The four highest-stakes claims (Treasury-holder ranking, GENIUS Act effective-date mechanics, SVB/USDC low, UST collapse figure) were separately verified against primary sources on 2026-08-12: Treasury TIC data (Jan 2023), Morgan Lewis on the GENIUS Act, CoinGecko Research on the USDC low ($0.8789), and CoinMarketCap/Reuters/ScienceDirect on UST (~$18B supply, ~$60B combined loss). Where a primary source was unreachable or ambiguous during verification, that is noted in the resolved-claim detail below rather than silently defaulting to an unverified figure.</p>
 
     <h3 style="font-size:1.1rem">Verified claims (resolved 2026-08-12)</h3>
     <div id="verified-claims-list"></div>
@@ -394,7 +406,7 @@
     </noscript>
 
     <div class="back-link">
-      <a href="/">&larr; Open the live dashboard</a>
+      <a href="/" target="_blank" rel="noopener noreferrer">&larr; Open the live dashboard</a>
     </div>
   </div>
 </footer>
