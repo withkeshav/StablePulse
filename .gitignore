@@ -40,6 +40,7 @@ backend/data/
 # Local agent instructions (internal, not published)
 AGENTS.md
 CLAUDE.md
+.claude/
 
 # Local review/planning notes (internal, not published)
 .progress/
