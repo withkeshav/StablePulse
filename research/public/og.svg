@@ -6,7 +6,7 @@
       .corner { stroke: #B8863D; stroke-width: 3; fill: none; stroke-linecap: square; }
       .kicker { font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace; font-size: 22px; letter-spacing: 2.4px; fill: #B8863D; font-weight: 500; }
       .headline { font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif; font-size: 84px; letter-spacing: -1.8px; fill: #14201A; font-weight: 600; }
-      .subhead { font-family: -apple-system, 'Segoe UI', system-ui, sans-serif; font-size: 26px; fill: #5C6B62; }
+      .subhead { font-family: -apple-system, 'Segoe UI', system-ui, sans-serif; font-size: 24px; fill: #5C6B62; }
       .rigor { font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace; font-size: 17px; fill: #5C6B62; letter-spacing: 0.3px; }
       .attr { font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace; font-size: 17px; fill: #5C6B62; letter-spacing: 0.3px; }
       .chart-motif { stroke: #D8DBD1; stroke-width: 1.2; fill: none; }
@@ -37,11 +37,12 @@
   <!-- headline -->
   <text class="headline" x="80" y="300">The State of Stablecoins</text>
 
-  <!-- subhead: one-line thesis -->
-  <text class="subhead" x="80" y="350">Stablecoins are not just dollar tokens. They are becoming a layer of the financial system.</text>
+  <!-- subhead: two short lines so nothing crosses the frame -->
+  <text class="subhead" x="80" y="344">Stablecoins are not just dollar tokens.</text>
+  <text class="subhead" x="80" y="376">They are becoming a layer of the financial system.</text>
 
   <!-- bottom row: rigor note left, attribution right -->
   <line class="frame" x1="80" y1="540" x2="1120" y2="540" stroke-opacity="0.5"/>
-  <text class="rigor" x="80" y="575">Every figure sourced and dated. Ranges shown where sources disagree.</text>
+  <text class="rigor" x="80" y="575">Every figure sourced and dated.</text>
   <text class="attr" x="1120" y="575" text-anchor="end">Keshav Maheshwari - withkeshav.com</text>
 </svg>

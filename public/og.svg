@@ -6,7 +6,7 @@
       .corner { stroke: #7A4098; stroke-width: 3; fill: none; stroke-linecap: square; }
       .kicker { font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace; font-size: 22px; letter-spacing: 2.4px; fill: #7A4098; font-weight: 500; }
       .headline { font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif; font-size: 92px; letter-spacing: -1.8px; fill: #14201A; font-weight: 600; }
-      .subhead { font-family: -apple-system, 'Segoe UI', system-ui, sans-serif; font-size: 26px; fill: #5C6B62; }
+      .subhead { font-family: -apple-system, 'Segoe UI', system-ui, sans-serif; font-size: 24px; fill: #5C6B62; }
       .rigor { font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace; font-size: 17px; fill: #5C6B62; letter-spacing: 0.3px; }
       .attr { font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace; font-size: 17px; fill: #5C6B62; letter-spacing: 0.3px; }
       .chart-motif { stroke: #7A4098; stroke-width: 1.4; fill: none; opacity: 0.35; }
@@ -32,16 +32,17 @@
   </g>
 
   <!-- kicker -->
-  <text class="kicker" x="80" y="200">STABLE SENSE</text>
+  <text class="kicker" x="80" y="200">STABLESENSE</text>
 
   <!-- wordmark -->
   <text class="headline" x="80" y="300">StableSense</text>
 
-  <!-- subhead -->
-  <text class="subhead" x="80" y="352">Peg stress, cross-chain flows, whale-watch anomalies and AI narratives across the top stablecoins.</text>
+  <!-- subhead: two short lines so nothing crosses the frame -->
+  <text class="subhead" x="80" y="344">Live peg stress, cross-chain flows, whale-watch</text>
+  <text class="subhead" x="80" y="376">anomalies and AI narratives across the top stablecoins.</text>
 
   <!-- bottom row: rigor note left, attribution right -->
   <line class="frame" x1="80" y1="540" x2="1120" y2="540" stroke-opacity="0.5"/>
-  <text class="rigor" x="80" y="575">Live market data, updated continuously. Learn how stablecoins work.</text>
+  <text class="rigor" x="80" y="575">Live market data, updated continuously.</text>
   <text class="attr" x="1120" y="575" text-anchor="end">Keshav Maheshwari - withkeshav.com</text>
 </svg>
