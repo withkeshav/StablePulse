@@ -54,6 +54,7 @@ async function heroCounter() {
     for (const sym of ['USDT', 'USDC', 'DAI', 'USDE', 'PYUSD']) {
       if (typeof supplies[sym] === 'number') total += supplies[sym];
     }
+    total = total / 1e9; // peggedUSD is raw dollars; fmt() below expects billions
     if (total > 0) fetched = true;
   } catch { /* keep static fallback */ }
 
@@ -159,9 +160,26 @@ function buildTaxonomy() {
 }
 
 // --- Chart.js (lazy) ------------------------------------------------------
+let chartJsPromise;
 async function loadChartJs() {
-  const mod = await import('chart.js');
-  return mod.Chart || mod.default.Chart || mod.default;
+  if (!chartJsPromise) {
+    chartJsPromise = import('chart.js').then((m) => {
+      const Chart = m.Chart;
+      // Tree-shakeable build: every controller/element/scale/plugin used below
+      // must be registered explicitly, or Chart.js throws "X is not a
+      // registered scale/controller" at render time. bar + line charts,
+      // fill:true areas (Filler), and Section 9's log-scale comparison
+      // (LogarithmicScale) are all used across this hub's charts.
+      Chart.register(
+        m.LineController, m.BarController,
+        m.LineElement, m.PointElement, m.BarElement,
+        m.CategoryScale, m.LinearScale, m.LogarithmicScale,
+        m.Filler, m.Tooltip, m.Legend
+      );
+      return Chart;
+    });
+  }
+  return chartJsPromise;
 }
 
 const chartDefaults = () => ({
@@ -498,11 +516,11 @@ function buildCorridors() {
 function buildFooterLists() {
   const vc = document.getElementById('verified-claims-list');
   if (vc) {
-    vc.innerHTML = '<ol>' + data.verifiedClaims.map((c) => `<li><strong>${c.claim}.</strong> ${c.resolution}<br><span class="as-of">Sources: ${c.sources.map((s) => `<a href="${s.url}">${s.label}</a>`).join('; ')}.</span></li>`).join('') + '</ol>';
+    vc.innerHTML = '<ol>' + data.verifiedClaims.map((c) => `<li><strong>${c.claim}.</strong> ${c.resolution}<br><span class="as-of">Sources: ${c.sources.map((s) => `<a href="${s.url}" target="_blank" rel="noopener noreferrer">${s.label}</a>`).join('; ')}.</span></li>`).join('') + '</ol>';
   }
   const sl = document.getElementById('sources-list');
   if (sl) {
-    sl.innerHTML = data.sources.map((s) => `<li><a href="${s.url}">${s.label}</a></li>`).join('');
+    sl.innerHTML = data.sources.map((s) => `<li><a href="${s.url}" target="_blank" rel="noopener noreferrer">${s.label}</a></li>`).join('');
   }
 }
 
@@ -519,8 +537,31 @@ async function init() {
   buildFooterLists();
   try {
     await Promise.all([taxonomyChart(), scaleChart(), forecastChart(), treasuryChart(), dollarizationChart(), realityChart()]);
+    // Constructing 6 charts back-to-back via Promise.all appears to race
+    // Chart.js's own ResizeObserver-driven initial sizing: each canvas's
+    // width can get stuck at its pre-layout 0px reading and never receive
+    // the automatic correction pass. Forcing one resize() per instance once
+    // everything is settled reliably fixes it. Deliberately not wrapped in
+    // requestAnimationFrame: rAF is throttled or fully suspended on
+    // backgrounded/non-composited tabs in most browsers, which would make
+    // this fix silently no-op in exactly the situations it needs to run.
+    // setTimeout is not subject to the same throttling.
+    const Chart = await loadChartJs();
+    setTimeout(() => {
+      Object.values(Chart.instances || {}).forEach((inst) => inst.resize());
+    }, 0);
   } catch (e) { console.error('chart init error', e); }
 }
+
+let resizeDebounce;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeDebounce);
+  resizeDebounce = setTimeout(() => {
+    loadChartJs().then((Chart) => {
+      Object.values(Chart.instances || {}).forEach((inst) => inst.resize());
+    });
+  }, 150);
+});
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
 else init();

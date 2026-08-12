@@ -1,15 +1,13 @@
 // All sourced figures for the State of Stablecoins hub. Every number carries
 // its source and as-of date. Where aggregators disagree, the range is given
-// rather than a single silently-chosen number (per the research files' own
-// disclosed methodology). The four highest-stakes claims (Treasury-holder
+// rather than a single silently-chosen number. The four highest-stakes claims (Treasury-holder
 // ranking, GENIUS Act effective-date mechanics, SVB/USDC low, UST collapse
 // figure) were verified against primary sources on 2026-08-12; see the
 // `verifiedClaims` export and the methodology note in the footer.
 
 export const AS_OF = '2026-08-12';
-export const NEXT_REVIEW = '2026-11-01';
 
-// --- the four manually-verified claims (implementation-plan.md section 7) -
+// --- the four manually-verified claims (see the methodology note in the footer) -
 export const verifiedClaims = [
   {
     id: 'treasury-ranking',

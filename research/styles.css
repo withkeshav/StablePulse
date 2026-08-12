@@ -1,7 +1,7 @@
 /* State of Stablecoins hub - engraved-ledger design system.
    Self-contained: does not import src/styles.css. The hub connects to the
    dashboard app through one deliberate bridge element (the "open the live
-   dashboard" link), not a shared palette. See .progress/orchestrator-prompt-hub-buildout.md. */
+   dashboard" link), not a shared palette. */
 
 /* --- tokens -------------------------------------------------------------- */
 :root,
@@ -152,7 +152,7 @@ hr.rule { border: 0; border-top: 1px solid var(--hub-line); margin: 0; }
 
 /* --- chip filter (mirrors AlertsTab .filter-chip, hub-styled) ----------- */
 .chip-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1.2rem 0 1.6rem; }
-.hub-chip { font-family: var(--hub-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.5rem 0.9rem; border: 1px solid var(--hub-line); border-radius: 999px; background: transparent; color: var(--hub-ink2); cursor: pointer; min-height: 36px; transition: border-color 0.15s, color 0.15s, background 0.15s; }
+.hub-chip { font-family: var(--hub-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.5rem 0.9rem; border: 1px solid var(--hub-line); border-radius: 999px; background: transparent; color: var(--hub-ink2); cursor: pointer; min-height: 44px; transition: border-color 0.15s, color 0.15s, background 0.15s; }
 .hub-chip:hover { border-color: var(--hub-gold); color: var(--hub-ink); }
 .hub-chip:focus-visible { outline: 2px solid var(--hub-gold); outline-offset: 2px; }
 .hub-chip.active { background: var(--hub-ink); color: var(--hub-bg); border-color: var(--hub-ink); }
@@ -176,8 +176,18 @@ hr.rule { border: 0; border-top: 1px solid var(--hub-line); margin: 0; }
 @media (min-width: 720px) { .callout-row { grid-template-columns: 1fr 1fr; } }
 
 /* --- chart canvases ------------------------------------------------------ */
-.chart-wrap { position: relative; margin: 1.5rem 0; }
-.chart-wrap canvas { max-width: 100%; height: auto; }
+.chart-wrap { margin: 1.5rem 0; }
+/* Chart.js (responsive:true, maintainAspectRatio:false) fully owns width and
+   height at render time, measured against its DIRECT parent. That parent
+   needs an explicit, non-content-driven height (chart-canvas-box, set inline
+   per chart to match the canvas's own HTML `height` attribute, 220-420px) or
+   Chart.js and an auto-height parent chase each other into a runaway growth
+   loop. chart-wrap itself stays auto-height on purpose: it also holds
+   chart-caption below the canvas, and giving IT the fixed height instead
+   starves the caption of room and makes it overlap whatever comes next in
+   the page (this happened once, do not put the height back on chart-wrap). */
+.chart-canvas-box { position: relative; }
+.chart-canvas-box canvas { max-width: 100%; }
 .chart-caption { font-size: 0.82rem; color: var(--hub-ink2); margin-top: 0.4rem; font-style: italic; }
 
 /* --- flow diagram (Section 4) ------------------------------------------- */
