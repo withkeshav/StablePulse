@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="StableSense - Stablecoin intelligence">
+  <defs>
+    <style>
+      .bg { fill: #FAFAF8; }
+      .frame { stroke: #D8DBD1; stroke-width: 1.5; fill: none; }
+      .corner { stroke: #7A4098; stroke-width: 3; fill: none; stroke-linecap: square; }
+      .kicker { font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace; font-size: 22px; letter-spacing: 2.4px; fill: #7A4098; font-weight: 500; }
+      .headline { font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif; font-size: 92px; letter-spacing: -1.8px; fill: #14201A; font-weight: 600; }
+      .subhead { font-family: -apple-system, 'Segoe UI', system-ui, sans-serif; font-size: 26px; fill: #5C6B62; }
+      .rigor { font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace; font-size: 17px; fill: #5C6B62; letter-spacing: 0.3px; }
+      .attr { font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace; font-size: 17px; fill: #5C6B62; letter-spacing: 0.3px; }
+      .chart-motif { stroke: #7A4098; stroke-width: 1.4; fill: none; opacity: 0.35; }
+      .gold-dot { fill: #B8863D; }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1200" height="630"/>
+
+  <!-- hairline frame -->
+  <rect class="frame" x="40" y="40" width="1120" height="550"/>
+
+  <!-- plum corner brackets -->
+  <path class="corner" d="M40 40 L40 90 M40 40 L90 40"/>
+  <path class="corner" d="M1160 40 L1160 90 M1160 40 L1110 40"/>
+  <path class="corner" d="M40 590 L40 540 M40 590 L90 590"/>
+  <path class="corner" d="M1160 590 L1160 540 M1160 590 L1110 590"/>
+
+  <!-- faint line-chart motif top-right ending in a gold dot -->
+  <g transform="translate(820,70)">
+    <polyline class="chart-motif" points="0,120 60,108 120,114 180,96 240,102 300,78 340,60"/>
+    <circle class="gold-dot" cx="340" cy="60" r="5"/>
+  </g>
+
+  <!-- kicker -->
+  <text class="kicker" x="80" y="200">STABLE SENSE</text>
+
+  <!-- wordmark -->
+  <text class="headline" x="80" y="300">StableSense</text>
+
+  <!-- subhead -->
+  <text class="subhead" x="80" y="352">Peg stress, cross-chain flows, whale-watch anomalies and AI narratives across the top stablecoins.</text>
+
+  <!-- bottom row: rigor note left, attribution right -->
+  <line class="frame" x1="80" y1="540" x2="1120" y2="540" stroke-opacity="0.5"/>
+  <text class="rigor" x="80" y="575">Live market data, updated continuously. Learn how stablecoins work.</text>
+  <text class="attr" x="1120" y="575" text-anchor="end">Keshav Maheshwari - withkeshav.com</text>
+</svg>
