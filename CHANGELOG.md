@@ -4,6 +4,19 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] - 2026-08-12
+
+### Added
+
+- Learn tab v3: two new modules ("Beyond the dollar", "The bigger picture") with 10 new lessons covering the value-referenced-token taxonomy (gold-backed, crypto-collateralized, synthetic, algorithmic, tokenized funds) and the macroeconomic impact (Treasury demand, bank disintermediation, cross-border payments, trust breaks, the global regulatory landscape).
+- Per-lesson `lastUpdated` date field on fast-decaying content; rendered next to the lesson title. The five "bigger picture" lessons carry `2026-08-12`.
+- Three new glossary terms: Reference asset, Tokenized fund, Funding rate.
+
+### Changed
+
+- Learn tab intro rewritten from the dollar-only frame ("a stablecoin should stay close to $1.00") to the broader value-referenced-token definition (stable relative to a reference, usually but not always USD). Tracked coins on the dashboard remain USD-pegged by design.
+- First-time visitors now land in compact mode by default; an explicit prior choice in localStorage is still respected.
+
 ## [3.1.0] - 2026-08-12
 
 ### Added
@@ -85,6 +98,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 Initial internal release of the intelligence dashboard (prior to open-source packaging). No public changelog kept.
 
+[3.2.0]: https://github.com/withkeshav/StableSense/releases/tag/v3.2.0
 [3.1.0]: https://github.com/withkeshav/StableSense/releases/tag/v3.1.0
 [2.1.0]: https://github.com/withkeshav/StableSense/releases/tag/v2.1.0
 [2.0.0]: https://github.com/withkeshav/StableSense/releases/tag/v2.0.0

@@ -1,6 +1,6 @@
 # StableSense
 
-![Version](https://img.shields.io/badge/version-3.1.0-2A6FDB)
+![Version](https://img.shields.io/badge/version-3.2.0-2A6FDB)
 ![License: Source-Available](https://img.shields.io/badge/license-source--available-blue)
 ![Tests](https://img.shields.io/badge/tests-106%20passing-green)
 ![Bundle](https://img.shields.io/badge/bundle-82.42%20kB%20(27.70%20kB%20gzip)-orange)

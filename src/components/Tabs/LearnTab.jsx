@@ -22,6 +22,9 @@ const GLOSSARY = [
   { term: 'Severity', def: 'The alert triage: WARNING, HIGH, CRITICAL. Higher levels signal more real stress.' },
   { term: 'Algorithmic stablecoin', def: 'A model with no direct backing that relies on market incentives. Historically the highest depeg risk.' },
   { term: 'Arbitrage', def: 'Buying a coin below $1 and redeeming at face value (or minting and selling above $1). The force that pulls prices back to the peg.' },
+  { term: 'Reference asset', def: 'The real-world value a stablecoin is designed to track. Usually the US dollar, but can be gold, another fiat currency, or a basket.' },
+  { term: 'Tokenized fund', def: 'A regulated security that holds traditional assets like Treasuries on-chain. Unlike a payment stablecoin, it pays yield but requires KYC and restricts transfers.' },
+  { term: 'Funding rate', def: 'The periodic fee longs pay shorts (or vice versa) in perpetual futures. Ethena\'s USDe earns its yield from this.' },
 ];
 
 const MODULES = [
@@ -129,6 +132,73 @@ const MODULES = [
       },
     ],
   },
+  {
+    id: 'beyond-dollar',
+    title: 'Beyond the dollar',
+    lessons: [
+      {
+        id: 'stable-relative-to-what',
+        title: 'Stable relative to what',
+        body: 'A stablecoin is a token engineered to hold a steady value against some reference, and that reference is usually but not always the US dollar. On this dashboard all five tracked coins are dollar-pegged, which matches the common case. The wider category also includes tokens pegged to gold, to other fiat currencies like the euro, to baskets of assets, and to tokenized funds that hold Treasuries. The dollar dominates because it has the deepest short-term debt market and the strongest network effects, not because a stablecoin must be a dollar token by definition.',
+      },
+      {
+        id: 'gold-commodity',
+        title: 'Gold and other commodity-backed coins',
+        body: 'Some tokens are stable relative to a physical commodity, not the dollar. PAXG and XAUT each represent one troy ounce of gold held in vaults in London and Switzerland, so their dollar price moves with gold rather than holding at $1. Together they cover about 96% of the tokenized-gold market, which reached roughly $6 billion in early 2026. There is no peg-break risk in the dollar sense, but you take on gold-price volatility, custodian risk, and redemption friction, since physical delivery needs large minimum lots. Silver and oil tokens exist but remain economically marginal.',
+      },
+      {
+        id: 'crypto-collateralized',
+        title: 'Crypto-collateralized and synthetic dollars',
+        body: 'DAI (now Sky) and USDe (Ethena) hold their dollar peg without bank deposits. DAI is over-collateralized: users lock crypto in vaults and mint DAI against it, with liquidations if the collateral drops. USDe is synthetic: it holds spot staked ETH and an equal short futures position, so price moves cancel out and the funding rate pays the yield. Both keep the peg through code and market incentives, not a promise to redeem at a bank. The risk moves to smart-contract bugs, liquidation cascades, and, for USDe, funding rates flipping negative in bear markets.',
+      },
+      {
+        id: 'no-reserve',
+        title: 'When the model has no reserve at all',
+        body: 'Algorithmic stablecoins try to hold $1 with no direct backing, only a sister token that absorbs sell pressure. TerraUSD (UST) was the largest, and in May 2022 it collapsed in roughly a week: as UST fell below $1, the mechanism minted ever more LUNA to defend it, hyperinflating LUNA and crashing both tokens toward zero. The combined loss was tens of billions of dollars. After UST, regulators everywhere effectively banned pure algorithmic models from regulated payment-stablecoin status, and the survivors re-collateralized. The category is now a cautionary tale, not a live design.',
+      },
+      {
+        id: 'tokenized-funds',
+        title: 'Tokenized funds vs. payment stablecoins',
+        body: 'A tokenized fund like BlackRock\'s BUIDL or Franklin Templeton\'s BENJI holds short-term Treasuries, just like a dollar stablecoin\'s reserves, but it is legally a security, not a payment instrument. Under the US GENIUS Act, a payment stablecoin must stay flat at $1, move freely between wallets, and cannot pay yield to holders. A tokenized fund pays yield to holders but requires KYC, restricts transfers to whitelisted wallets, and redeems on a T+1 cycle. Institutions use them as a pair: stablecoin for instant settlement, tokenized fund as the yield-bearing sweep account for idle balances.',
+      },
+    ],
+  },
+  {
+    id: 'bigger-picture',
+    title: 'The bigger picture',
+    lessons: [
+      {
+        id: 'treasury-buyer',
+        title: 'A quiet buyer of government debt',
+        lastUpdated: '2026-08-12',
+        body: 'Stablecoin issuers now hold well over $150 billion in US Treasuries, mostly short-dated T-bills. Tether alone reports Treasury exposure comparable to the holdings of major sovereign nations, and combined issuers rank among the top-20 external holders of US debt. The GENIUS Act, signed July 2025 and taking effect in 2026, legally requires payment-stablecoin reserves to be cash, T-bills, or overnight repo, which locks this demand into the very short end of the curve. As stablecoins grow, their issuers become structural buyers of US government debt, tying crypto\'s health to Treasury market liquidity.',
+      },
+      {
+        id: 'bank-disintermediation',
+        title: 'Does this take money out of banks',
+        lastUpdated: '2026-08-12',
+        body: 'When a household moves a deposit into a stablecoin, the bank loses cheap funding that funds mortgages and business loans. The New York Fed\'s February 2026 research found banks exposed to stablecoin flows already lend less relative to peers. The ECB compares stablecoins to the money-market funds of the 1970s, which drained retail deposits into volatile wholesale funding. The White House argues the lending impact is minimal, and its model has been criticized by bank groups and reform advocates as built on favorable assumptions. The honest answer right now: early evidence, no consensus number.',
+      },
+      {
+        id: 'cross-border',
+        title: 'Cheaper, faster money across borders',
+        lastUpdated: '2026-08-12',
+        body: 'A $10,000 cross-border transfer through banks costs roughly $245 to $465 in fees and FX spreads and takes one to five business days. The same transfer on stablecoin rails costs under $10 and settles in seconds. Real adoption is concentrated where it solves a real problem: Argentina and Brazil for dollar savings against currency depreciation, Nigeria for cross-border trade and remittances, and the UAE-to-India corridor for instant settlement. Even Visa now settles payments in USDC. This is stablecoins\' clearest real-world win, measured against World Bank remittance-price data.',
+      },
+      {
+        id: 'when-trust-breaks',
+        title: 'When trust breaks',
+        lastUpdated: '2026-08-12',
+        body: 'In March 2023, Circle held about $3.3 billion of USDC reserves, roughly 8% of backing, at Silicon Valley Bank. When SVB failed, USDC dropped below the peg over the weekend until the government backstopped all SVB depositors and the money was recovered. Through DeFi\'s interconnected code, even stablecoins with no SVB exposure lost their pegs as liquidity pools drained. The IMF\'s 2026 research models how a major stablecoin run would force fire sales of Treasuries, and MIT warns dealer balance-sheet rules could prevent them from absorbing the dumped bonds, so even safe assets could gap.',
+      },
+      {
+        id: 'rulebook',
+        title: 'One rulebook, many flavors',
+        lastUpdated: '2026-08-12',
+        body: 'By August 2026, every major financial hub has a live stablecoin framework, and they converge on full reserve backing, licensed issuers, and the effective death of algorithmic designs. The US GENIUS Act requires 1:1 T-bill or cash backing and bans paying yield to holders. The EU\'s MiCA, fully effective July 2026, splits stablecoins into single-currency and basket-pegged classes and caps non-euro usage. The UK, Japan, Singapore, Hong Kong, and the UAE each run their own models. The real battleground is whether foreign dollar stablecoins are welcomed or contained to protect local currencies.',
+      },
+    ],
+  },
 ];
 
 const OBSERVATION_NOTE = 'Live, computed from this dashboard\'s data - not AI-generated.';
@@ -162,10 +232,12 @@ export default function LearnTab({ data, alerts }) {
         </div>
         <div class="card-body">
           <p class="mb-0">
-            Everything in StableSense is built on one idea: a stablecoin should stay close to $1.00.
-            These modules cover what that means, how it can fail, and how the signals on this dashboard
-            help you see stress before it becomes a headline. Where the market is live, the lessons carry
-            a small observation computed from this dashboard's data at this moment.
+            Everything in StableSense is built on one idea: a stablecoin is a token engineered to hold
+            steady value against some reference, usually the US dollar but not always. This dashboard
+            tracks five dollar-pegged coins, which is the common case. These modules cover how pegs
+            work, how they fail, the wider landscape beyond the dollar, and how the signals here help
+            you see stress before it becomes a headline. Where the market is live, the lessons carry a
+            small observation computed from this dashboard's data at this moment.
           </p>
         </div>
       </section>
@@ -186,7 +258,10 @@ export default function LearnTab({ data, alerts }) {
               const observation = lesson.observationId ? observationsById[lesson.observationId] : null;
               return (
                 <div class="learn-lesson" id={`lesson-${lesson.id}`} key={lesson.id}>
-                  <div class="learn-lesson-title">{lesson.title}</div>
+                  <div class="learn-lesson-title">
+                    {lesson.title}
+                    {lesson.lastUpdated ? <span class="learn-lesson-date">Updated {lesson.lastUpdated}</span> : null}
+                  </div>
                   <p class="text-muted small mb-0">{lesson.body}</p>
                   {observation ? (
                     <div class="learn-observation">
