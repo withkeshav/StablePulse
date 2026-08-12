@@ -431,26 +431,43 @@ async function dollarizationChart() {
 function buildDepegs() {
   const container = document.getElementById('depeg-cards');
   if (!container) return;
+  // Shared Y domain across all three cards so amplitudes are comparable
+  const Y_MIN = 0.0, Y_MAX = 1.05;
+  const w = 100, h = 60;
+  const yScale = (v) => h - ((v - Y_MIN) / (Y_MAX - Y_MIN)) * (h - 6) - 3;
   container.innerHTML = data.depegs.map((d) => {
     const vals = d.spark;
-    const min = Math.min(...vals), max = Math.max(...vals);
-    const w = 100, h = 50;
-    const range = max - min || 1;
+    const labels = d.sparkLabels || vals.map((_, i) => i);
+    // find low point
+    let lowIdx = 0;
+    for (let i = 1; i < vals.length; i++) if (vals[i] < vals[lowIdx]) lowIdx = i;
     const pts = vals.map((v, i) => {
       const x = (i / (vals.length - 1)) * w;
-      const y = h - ((v - min) / range) * (h - 6) - 3;
+      const y = yScale(v);
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     }).join(' ');
+    const lowX = (lowIdx / (vals.length - 1)) * w;
+    const lowY = yScale(vals[lowIdx]);
+    const refY = yScale(1.0);
     return `<div class="depeg-card">
       <h3>${d.name} - ${d.date}</h3>
       <p class="as-of">Low: <span class="num">${d.low}</span></p>
-      <svg class="depeg-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Price sparkline for ${d.name} during the event">
-        <line class="spark-baseline" x1="0" y1="${h - 3}" x2="${w}" y2="${h - 3}"/>
+      <svg class="depeg-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Price sparkline for ${d.name} during the event, shared scale $0.00 to $1.05">
+        <line class="spark-baseline" x1="0" y1="${refY}" x2="${w}" y2="${refY}"/>
         <polyline class="spark-line" points="${pts}"/>
+        <circle class="spark-low-dot" cx="${lowX}" cy="${lowY}" r="2"/>
+        <text class="spark-low-label" x="${Math.min(lowX, w - 20).toFixed(1)}" y="${(lowY - 3).toFixed(1)}">${d.low}</text>
       </svg>
       <p class="mech">${d.mech}</p>
+      <p class="as-of" style="font-style:italic">${d.failureMode}</p>
     </div>`;
   }).join('');
+  // Add hover tooltips via title elements on the polyline
+  container.querySelectorAll('.depeg-spark').forEach((svg, idx) => {
+    const d = data.depegs[idx];
+    const poly = svg.querySelector('.spark-line');
+    if (poly) poly.setAttribute('tabindex', '0');
+  });
 }
 
 // --- Section 8: regulation table + chips ---------------------------------

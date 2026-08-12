@@ -225,8 +225,10 @@ hr.rule { border: 0; border-top: 1px solid var(--hub-line); margin: 0; }
 .depeg-card { border: 1px solid var(--hub-line); padding: 1.2rem; margin-bottom: 1.2rem; }
 .depeg-card h3 { margin-bottom: 0.3rem; }
 .depeg-spark { display: block; width: 100%; height: 60px; margin: 0.6rem 0; }
-.depeg-spark .spark-line { stroke: var(--hub-cat-algorithmic); stroke-width: 1.5; fill: none; }
-.depeg-spark .spark-baseline { stroke: var(--hub-line); stroke-width: 1; stroke-dasharray: 3 3; }
+.depeg-spark .spark-line { stroke: var(--hub-cat-algorithmic); stroke-width: 1.25; fill: none; }
+.depeg-spark .spark-baseline { stroke: var(--hub-gold); stroke-width: 0.8; stroke-dasharray: 3 3; opacity: 0.7; }
+.depeg-spark .spark-low-dot { fill: var(--hub-gold); }
+.depeg-spark .spark-low-label { fill: var(--hub-ink2); font-size: 7px; font-family: var(--hub-mono); }
 .depeg-card .mech { font-size: 0.92rem; margin-bottom: 0; }
 
 /* --- footer -------------------------------------------------------------- */
@@ -254,6 +256,7 @@ hr.rule { border: 0; border-top: 1px solid var(--hub-line); margin: 0; }
   .hub-table { min-width: 460px; }
   .callout-row { grid-template-columns: 1fr; }
   .hub-nav { font-size: 0.68rem; gap: 0.8rem; }
+  .chart-canvas-box { max-width: 100%; aspect-ratio: 16/8; }
 }
 
 /* noscript fallback: ensure reveals are visible without JS */

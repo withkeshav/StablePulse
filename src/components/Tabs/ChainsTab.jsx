@@ -11,7 +11,7 @@ export default function ChainsTab({ data }) {
   // its second-largest chain to surface the biggest supply concentration.
   const coinPairs = useMemo(() => {
     return activeCoins.map((cfg) => {
-      const asset = assets.find((x) => x.symbol === cfg.symbol);
+      const asset = assets.find((x) => x.symbol.toLowerCase() === cfg.symbol.toLowerCase());
       const bt = (asset?.chainCirculating && Object.entries(asset.chainCirculating)) || [];
       const ranked = bt
         .map(([chain, info]) => ({
@@ -64,7 +64,11 @@ export default function ChainsTab({ data }) {
     return out;
   }, [assets]);
 
-  const chartOptions = useMemo(() => ({ responsive: true, maintainAspectRatio: false }), []);
+  const chartOptions = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: { x: { ticks: { maxRotation: 45, autoSkip: true, font: { size: 10 } } } },
+  }), []);
 
   return (
     <div class="tab-content active">

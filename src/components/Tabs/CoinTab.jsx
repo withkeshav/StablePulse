@@ -11,7 +11,7 @@ export default function CoinTab({ coin, data }) {
   const detail = data?.[`${symbol.toLowerCase()}Detail`];
   const chartData = data?.[`cg${symbol}Chart`];
   const cgTickers = data?.[`cg${symbol}`];
-  const asset = data?.allStables?.peggedAssets?.find((x) => x.symbol === symbol);
+  const asset = data?.allStables?.peggedAssets?.find((x) => x.symbol.toLowerCase() === symbol.toLowerCase());
   const price = data?.cgSimple?.[cgKey]?.usd || 1;
   const chg = data?.cgSimple?.[cgKey]?.usd_24h_change || 0;
   const supply = asset?.circulating?.peggedUSD || 0;
@@ -20,12 +20,16 @@ export default function CoinTab({ coin, data }) {
 
   const rows = useMemo(
     () =>
-      Object.entries(detail?.chainBalances || {}).slice(0, 10).map(([chain, chainData]) => {
-        const tokens = chainData?.tokens || [];
-        const cur = tokens[tokens.length - 1]?.circulating?.peggedUSD || 0;
-        const pd = tokens[tokens.length - 2]?.circulating?.peggedUSD || cur;
-        return { chain, cur, pd, d1: pctChange(cur, pd) };
-      }),
+      Object.entries(detail?.chainBalances || {})
+        .map(([chain, chainData]) => {
+          const tokens = chainData?.tokens || [];
+          const cur = tokens[tokens.length - 1]?.circulating?.peggedUSD || 0;
+          const pd = tokens[tokens.length - 2]?.circulating?.peggedUSD || cur;
+          return { chain, cur, pd, d1: pctChange(cur, pd) };
+        })
+        .filter((r) => r.cur > 0)  // filter out negligible / $0 chains
+        .sort((a, b) => b.cur - a.cur)
+        .slice(0, 10),
     [detail]
   );
 
