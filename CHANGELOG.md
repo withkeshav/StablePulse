@@ -4,6 +4,43 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.0] - 2026-08-12
+
+### Fixed
+
+- **USDE supply bug:** root cause was a case-sensitivity collision in `assembleLlama` - DefiLlama returns two assets with symbol "USDe" (id=146, Ethena, ~$3.95B) and "USDE" (id=264, XBANKING, ~$49K). The old case-sensitive `Set.has()` matched the XBANKING imposter. Fixed with case-insensitive match + id-priority disambiguation. Also added `dataQuality` flag, amber warning chip on StatCard, and SignalHero exclusion note.
+- **Hub remittance calculator:** old formula (0.1% + $8 fixed) gave $8.05 at $50 (16%, worse than banks) and $18 at $10k (contradicted "under $10" headline). Rewritten to `networkFeeUsd: 0.10` + optional off-ramp spread checkbox; both rails shown simultaneously.
+- **Hub hero $0 flicker:** fetch race could render $0. Guarded with "Loading..." initial state + partial-fetch annotation.
+- **Hub forecast chart:** `parseFloat(range.replace(/[^0-9.]/g, ''))` mangled range strings. Rewritten as floating-bar bands with explicit `low`/`high` numeric fields + visual padding for narrow bands.
+- **Dashboard peg chart:** auto-scaled 0-1.0, flattening peg drift. Now uses dynamic band around the series clamped to +/-2% of $1.
+- **Hub depeg cards:** per-card min/max scaling made all three cards look identical. Now uses shared Y domain $0.00-$1.05, $1.00 reference line, 25 points, low-point labels, failure-mode captions.
+- **Chains chart label overlap + 979px table:** added `maxRotation: 45, autoSkip: true`; mobile card-row layout already existed.
+- **Dark-mode gridlines:** added `--grid-color: rgba(255,255,255,0.18)`.
+- **SettingsPanel focus trap:** Tab now wraps within dialog; focus restored to settings button on close.
+- **Hub Section 6 undefined buttons:** data shape mismatch fixed.
+
+### Added
+
+- Coin-tab anomalies section (Whale Watch per coin).
+- Sidebar per-coin alert badges.
+- Stat card 24h change chips.
+- Outlined skeleton placeholders (replaced solid gray blocks).
+- First-run tour (3 steps, localStorage-gated, dismissible).
+- Chart zoom/pan (chartjs-plugin-zoom) on 90-day line charts + dbl-click reset.
+- Share-as-screenshot on every chart card (Story/Square/Landscape, offscreen canvas composite, brand footer, no new deps beyond zoom plugin).
+- Hub sticky reading progress bar + section-highlight TOC.
+- Hub dark mode toggle.
+- Hub CSV export for token comparison table.
+- Mobile nav icons (SVG per tab type).
+- `dataQuality` warning system for failed upstream fetches.
+- Coin-config alias support (`llamaStablecoinAliases`).
+
+### Changed
+
+- Mobile chart sizing: dashboard `aspect-ratio: 16/7` in grid-2 under 768px; research `aspect-ratio: 16/8` on mobile.
+- Coin-tab by-chain table: filters out $0 chains, sorts by supply, shows top-10.
+- Share-as-screenshot uses direct `ctx.drawImage(chartCanvas)` instead of `toBase64Image()` roundtrip.
+
 ## [3.2.5] - 2026-08-12
 
 ### Added
@@ -113,6 +150,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 Initial internal release of the intelligence dashboard (prior to open-source packaging). No public changelog kept.
 
+[3.3.0]: https://github.com/withkeshav/StableSense/releases/tag/v3.3.0
 [3.2.5]: https://github.com/withkeshav/StableSense/releases/tag/v3.2.5
 [3.2.0]: https://github.com/withkeshav/StableSense/releases/tag/v3.2.0
 [3.1.0]: https://github.com/withkeshav/StableSense/releases/tag/v3.1.0

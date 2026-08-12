@@ -34,27 +34,24 @@ export function shareChart(chartInstance, title, dateStr, formatKey) {
   ctx.textAlign = 'left';
   ctx.fillText(title, 60, 80);
 
-  // chart image centered in safe zone
-  const chartImg = chartInstance?.toBase64Image?.();
-  if (chartImg) {
-    const img = new Image();
-    img.onload = () => {
-      const maxW = fmt.w - 120;
-      const maxH = fmt.h - 240;
-      const ratio = Math.min(maxW / img.width, maxH / img.height);
-      const dw = img.width * ratio;
-      const dh = img.height * ratio;
-      const dx = (fmt.w - dw) / 2;
-      const dy = (fmt.h - dh) / 2 + 20;
-      ctx.drawImage(img, dx, dy, dw, dh);
-      drawFooter(ctx, fmt, muted, dateStr);
-      download(off, `${title}-${formatKey}.png`);
-    };
-    img.src = chartImg;
-  } else {
-    drawFooter(ctx, fmt, muted, dateStr);
-    download(off, `${title}-${formatKey}.png`);
+  // Draw the chart canvas directly onto the offscreen canvas.
+  // This avoids the toBase64Image() -> Image roundtrip entirely,
+  // removing the whole class of taint/CORS failures. The chart
+  // canvas backing bitmap is always current (no animation-frame race).
+  const chartCanvas = chartInstance?.canvas;
+  if (chartCanvas) {
+    const maxW = fmt.w - 120;
+    const maxH = fmt.h - 240;
+    const ratio = Math.min(maxW / chartCanvas.width, maxH / chartCanvas.height);
+    const dw = chartCanvas.width * ratio;
+    const dh = chartCanvas.height * ratio;
+    const dx = (fmt.w - dw) / 2;
+    const dy = (fmt.h - dh) / 2 + 20;
+    ctx.drawImage(chartCanvas, dx, dy, dw, dh);
   }
+
+  drawFooter(ctx, fmt, muted, dateStr);
+  download(off, `${title}-${formatKey}.png`);
 }
 
 function drawFooter(ctx, fmt, muted, dateStr) {

@@ -192,6 +192,11 @@ function assembleLlama(data, llama, coins) {
       return { ...a, chainCirculating: normalizeChainCirculating(a) };
     })
     .filter((a) => a && !seen.has(a.symbol.toLowerCase()) && seen.add(a.symbol.toLowerCase()));
+  // Debug: log matched symbols/ids to verify the USDE case-sensitivity fix
+  if (typeof console !== 'undefined' && peggedAssets.length) {
+    const usde = peggedAssets.find((a) => a.symbol.toLowerCase() === 'usde');
+    if (usde) console.debug('[StableSense] USDE matched:', usde.id, usde.symbol, usde.name, usde.circulating?.peggedUSD);
+  }
   data.allStables = {
     totalMarketCap: {
       peggedUSD: sumPeggedUSD(llama?.peggedAssets, 'circulating'),

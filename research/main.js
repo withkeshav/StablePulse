@@ -310,20 +310,38 @@ async function forecastChart() {
 
   const buildData = (filter) => {
     const items = data.projections.filter((p) => filter === 'all' || p.name === filter);
+    // For floating bars, minBarLength does NOT reliably enforce minimum thickness.
+    // Compute visual padding: for single-point forecasters (low === high), expand
+    // to +/-10% visual extent; for narrow bands, add minimum padding so the bar
+    // is visible. The tooltip still shows the real range.
+    const visualData = items.map((p) => {
+      if (p.low === p.high) {
+        // single-point: render as a thick bar with +/-10% visual extent
+        const pad = p.low * 0.10;
+        return [Math.max(0, p.low - pad), p.high + pad];
+      }
+      // range: if the range is very narrow, add visual padding
+      const range = p.high - p.low;
+      const minVisualRange = 100; // $100B minimum visual range
+      if (range < minVisualRange) {
+        const pad = (minVisualRange - range) / 2;
+        return [Math.max(0, p.low - pad), p.high + pad];
+      }
+      return [p.low, p.high];
+    });
     return {
       labels: items.map((p) => p.name),
       datasets: [{
         label: 'Projected range by 2030 ($B)',
-        data: items.map((p) => [p.low, p.high]),
+        data: visualData,
         backgroundColor: items.map((p) => {
-          // use gold for the widest/most-cited range, fiat-usd for others
           return p.name === 'IMF' ? gold + 'cc' : catColor('fiat-usd') + '99';
         }),
         borderColor: items.map(() => gold),
         borderWidth: 1,
         barThickness: 'flex',
         maxBarThickness: 40,
-        minBarLength: 12, // ensures bands are visibly distinguishable, not flat lines
+        minBarLength: 12, // belt: keep as fallback, but the visual padding above is the real fix
       }, {
         label: 'Current (mid-2026)',
         data: items.map(() => [currentAnchor, currentAnchor]),

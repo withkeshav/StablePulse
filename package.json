@@ -1,6 +1,6 @@
 {
   "name": "stablesense",
-  "version": "3.2.5",
+  "version": "3.3.0",
   "private": false,
   "type": "module",
   "description": "StableSense - Stablecoin intelligence and learning across USDT, USDC, DAI, USDe and PYUSD.",
