@@ -96,11 +96,11 @@ export const scaleMarkers = [
 ];
 
 export const projections = [
-  { name: 'IMF', range: '$0.5-3.7T', by: '2030', note: 'Wide, official; base case ~$1.5-2T' },
-  { name: 'Citi', range: '$1.9-4T', by: '2030', note: 'Base $1.9T, bull $4T' },
-  { name: 'Bain', range: 'up to $3.8T', by: '2030', note: '~12x current' },
-  { name: 'Standard Chartered', range: '$2T', by: '2028', note: 'Aggressive near-term slope' },
-  { name: 'JPMorgan', range: '~$500B', by: '2028', note: 'Conservative' },
+  { name: 'IMF', range: '$0.5-3.7T', low: 500, high: 3700, by: '2030', note: 'Wide, official; base case ~$1.5-2T' },
+  { name: 'Citi', range: '$1.9-4T', low: 1900, high: 4000, by: '2030', note: 'Base $1.9T, bull $4T' },
+  { name: 'Bain', range: 'up to $3.8T', low: 1900, high: 3800, by: '2030', note: '~12x current' },
+  { name: 'Standard Chartered', range: '$2T', low: 2000, high: 2000, by: '2028', note: 'Aggressive near-term slope' },
+  { name: 'JPMorgan', range: '~$500B', low: 500, high: 500, by: '2028', note: 'Conservative' },
 ];
 
 // --- Section 3: Treasury holdings (verified) ----------------------------
@@ -131,7 +131,7 @@ export const bankCallouts = [
 // --- Section 5: cross-border ---------------------------------------------
 export const remittanceCost = {
   traditional: { feePct: 4.65, fixedUsd: 245, days: '3-5 business days', label: 'Traditional wire' },
-  stablecoin: { feePct: 0.1, fixedUsd: 8, days: 'seconds', label: 'Stablecoin rails' },
+  stablecoin: { networkFeeUsd: 0.10, offrampSpreadPct: 0.25, includeOfframp: false, days: 'seconds', label: 'Stablecoin rails' },
 };
 
 export const corridors = [

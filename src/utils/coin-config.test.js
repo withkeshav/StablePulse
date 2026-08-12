@@ -29,6 +29,9 @@ describe('coin-config', () => {
     expect(STABLECOIN_REGISTRY.DAI.coingeckoId).toBe('dai');
     expect(STABLECOIN_REGISTRY.USDE.llamaStablecoinId).toBe(146);
     expect(STABLECOIN_REGISTRY.USDE.coingeckoId).toBe('ethena-usde');
+    expect(STABLECOIN_REGISTRY.USDE.llamaStablecoinAliases).toBeDefined();
+    expect(Array.isArray(STABLECOIN_REGISTRY.USDE.llamaStablecoinAliases)).toBe(true);
+    expect(STABLECOIN_REGISTRY.USDE.llamaStablecoinAliases).toContain(146);
     expect(STABLECOIN_REGISTRY.PYUSD.llamaStablecoinId).toBe(120);
     expect(STABLECOIN_REGISTRY.PYUSD.coingeckoId).toBe('paypal-usd');
   });

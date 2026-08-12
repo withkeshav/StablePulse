@@ -41,18 +41,26 @@ async function heroCounter() {
   const el = document.getElementById('hero-counter');
   const label = document.getElementById('hero-counter-label');
   if (!el) return;
+  // Show loading state immediately, never $0
+  el.textContent = 'Loading...';
+  const trackedSyms = ['USDT', 'USDC', 'DAI', 'USDE', 'PYUSD'];
   let total = 0;
   let fetched = false;
+  let missing = [];
   try {
     const { fetchDashboardData } = await import('../src/lib/api.js');
     const d = await fetchDashboardData({});
     const supplies = {};
     for (const a of d?.allStables?.peggedAssets || []) {
       const v = a?.circulating?.peggedUSD;
-      if (typeof v === 'number' && Number.isFinite(v)) supplies[a.symbol] = v;
+      if (typeof v === 'number' && Number.isFinite(v)) supplies[(a.symbol || '').toUpperCase()] = v;
     }
-    for (const sym of ['USDT', 'USDC', 'DAI', 'USDE', 'PYUSD']) {
-      if (typeof supplies[sym] === 'number') total += supplies[sym];
+    for (const sym of trackedSyms) {
+      if (typeof supplies[sym] === 'number' && supplies[sym] > 0) {
+        total += supplies[sym];
+      } else {
+        missing.push(sym);
+      }
     }
     total = total / 1e9; // peggedUSD is raw dollars; fmt() below expects billions
     if (total > 0) fetched = true;
@@ -63,6 +71,10 @@ async function heroCounter() {
     // labeled honestly as the global snapshot, not the live-tracked sum
     total = 308; // midpoint of the $299-316B research-file range
     label.textContent = 'Total global stablecoin market cap across all issuers, mid-2026 snapshot (live fetch unavailable; see Section 2 for the sourced range)';
+  } else if (missing.length > 0) {
+    label.textContent = `Combined market cap of the 5 stablecoins tracked here, updated live - partial, waiting on ${missing.length} coin${missing.length > 1 ? 's' : ''} (${missing.join(', ')})`;
+  } else {
+    label.textContent = 'Combined market cap of the 5 stablecoins tracked here, updated live';
   }
 
   const target = total;
@@ -273,36 +285,71 @@ async function forecastChart() {
   const Chart = await loadChartJs();
   const ink = inkColor();
   const grid = gridColor();
-  // bar-style ranges per forecaster
-  const labels = data.projections.map((p) => p.name);
-  const lows = data.projections.map((p) => parseFloat(p.range.replace(/[^0-9.]/g, '')) || 0);
-  new Chart(canvas, {
-    type: 'bar',
-    data: {
-      labels,
+  const gold = getComputedStyle(document.documentElement).getPropertyValue('--hub-gold').trim();
+  const currentAnchor = 316; // mid-2026 snapshot
+
+  // Build a floating-bar dataset: each bar spans [low, high] on a shared axis.
+  // Chart.js floating bars use [min, max] data points with type:'bar'.
+  const allNames = data.projections.map((p) => p.name);
+  let activeFilter = 'all';
+
+  const buildData = (filter) => {
+    const items = data.projections.filter((p) => filter === 'all' || p.name === filter);
+    return {
+      labels: items.map((p) => p.name),
       datasets: [{
-        label: 'Projected market cap by 2030 ($B)',
-        data: lows,
-        backgroundColor: data.projections.map(() => catColor('fiat-usd') + '99'),
-        borderWidth: 0,
+        label: 'Projected range by 2030 ($B)',
+        data: items.map((p) => [p.low, p.high]),
+        backgroundColor: items.map((p) => {
+          // use gold for the widest/most-cited range, fiat-usd for others
+          return p.name === 'IMF' ? gold + 'cc' : catColor('fiat-usd') + '99';
+        }),
+        borderColor: items.map(() => gold),
+        borderWidth: 1,
+        barThickness: 'flex',
+        maxBarThickness: 40,
+        minBarLength: 12, // ensures bands are visibly distinguishable, not flat lines
+      }, {
+        label: 'Current (mid-2026)',
+        data: items.map(() => [currentAnchor, currentAnchor]),
+        backgroundColor: items.map(() => gold),
+        barThickness: 2,
+        barPercentage: 1,
+        categoryPercentage: 1,
       }],
-    },
+    };
+  };
+
+  const chart = new Chart(canvas, {
+    type: 'bar',
+    data: buildData('all'),
     options: {
+      indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: (ctx) => `${data.projections[ctx.dataIndex].name}: ${data.projections[ctx.dataIndex].range} by ${data.projections[ctx.dataIndex].by} - ${data.projections[ctx.dataIndex].note}` } },
+        tooltip: { callbacks: { label: (ctx) => {
+          if (ctx.datasetIndex === 1) return `Current: ~$${currentAnchor}B (mid-2026)`;
+          const p = data.projections.find((x) => x.name === ctx.label);
+          return p ? `${p.name}: ${p.range} by ${p.by} - ${p.note}` : '';
+        } } },
       },
-      scales: { x: { grid: { color: grid }, ticks: { color: ink } }, y: { grid: { color: grid }, ticks: { color: ink, callback: (v) => '$' + v + 'B' } } },
+      scales: {
+        x: { grid: { color: grid }, ticks: { color: ink, callback: (v) => '$' + (v >= 1000 ? (v/1000).toFixed(1) + 'T' : v + 'B') } },
+        y: { grid: { display: false }, ticks: { color: ink } },
+      },
       animation: prefersReducedMotion ? false : { duration: 1200 },
     },
   });
-  // chip filter (re-render by hiding datasets is overkill for one dataset; instead just visually emphasizes)
+
   document.querySelectorAll('#forecast-chips .hub-chip').forEach((chip) => {
     chip.addEventListener('click', () => {
       document.querySelectorAll('#forecast-chips .hub-chip').forEach((c) => c.classList.remove('active'));
       chip.classList.add('active');
+      activeFilter = chip.dataset.forecaster;
+      chart.data = buildData(activeFilter);
+      chart.update();
     });
   });
 }
@@ -375,7 +422,7 @@ async function dollarizationChart() {
       animation: prefersReducedMotion ? false : { duration: 1200 },
     },
   });
-  buildAccordion('dollarization-accordion', data.dollarizationCountries, (c) => {
+  buildAccordion('dollarization-accordion', data.dollarizationCountries.map((c) => ({ label: c.country, ...c })), (c) => {
     return `<p>${c.detail}</p>${c.gdpPct !== null ? `<p class="as-of">Stablecoin purchases ~${c.gdpPct}% of GDP (Chainalysis).</p>` : ''}`;
   });
 }
@@ -469,21 +516,30 @@ async function realityChart() {
 // --- Section 5: remittance calculator + race bars ------------------------
 function remittanceCalc() {
   const amountEl = document.getElementById('calc-amount');
-  const railEl = document.getElementById('calc-rail');
-  const costEl = document.getElementById('calc-cost');
-  const detailEl = document.getElementById('calc-detail');
-  if (!amountEl || !railEl || !costEl) return;
+  const offrampEl = document.getElementById('calc-offramp');
+  const costTradEl = document.getElementById('calc-cost-trad');
+  const detailTradEl = document.getElementById('calc-detail-trad');
+  const costStableEl = document.getElementById('calc-cost-stable');
+  const detailStableEl = document.getElementById('calc-detail-stable');
+  if (!amountEl || !costTradEl || !costStableEl) return;
   const compute = () => {
     const amt = parseFloat(amountEl.value) || 0;
-    const rail = railEl.value;
-    const cfg = data.remittanceCost[rail];
-    const pct = amt * (cfg.feePct / 100);
-    const total = pct + cfg.fixedUsd;
-    costEl.textContent = '$' + total.toLocaleString('en-US', { maximumFractionDigits: 0 });
-    detailEl.textContent = `Estimated cost (${cfg.label}): ~${cfg.feePct}% + $${cfg.fixedUsd} fixed. Settles in ${cfg.days}.`;
+    const includeOfframp = offrampEl && offrampEl.checked;
+    const trad = data.remittanceCost.traditional;
+    const stable = data.remittanceCost.stablecoin;
+    // traditional: percentage + fixed
+    const tradCost = amt * (trad.feePct / 100) + trad.fixedUsd;
+    costTradEl.textContent = '$' + tradCost.toLocaleString('en-US', { maximumFractionDigits: 0 });
+    detailTradEl.textContent = `~${trad.feePct}% + $${trad.fixedUsd} fixed. Settles in ${trad.days}.`;
+    // stablecoin: fixed network fee + optional off-ramp spread
+    const offrampCost = includeOfframp ? amt * (stable.offrampSpreadPct / 100) : 0;
+    const stableCost = stable.networkFeeUsd + offrampCost;
+    costStableEl.textContent = '$' + stableCost.toLocaleString('en-US', { maximumFractionDigits: 2 });
+    const breakdown = `Network fee $${stable.networkFeeUsd.toFixed(2)}` + (includeOfframp ? ` [+ Off-ramp spread $${offrampCost.toFixed(2)}]` : '');
+    detailStableEl.textContent = `${breakdown}. Settles in ${stable.days}.`;
   };
   amountEl.addEventListener('input', compute);
-  railEl.addEventListener('change', compute);
+  if (offrampEl) offrampEl.addEventListener('change', compute);
   compute();
 }
 

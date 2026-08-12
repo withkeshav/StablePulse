@@ -163,10 +163,35 @@ function sumPeggedUSD(assets, key) {
 }
 
 function assembleLlama(data, llama, coins) {
-  const activeSymbols = new Set(coins.map((c) => c.symbol));
+  // Case-insensitive symbol match, with id-priority disambiguation.
+  // DefiLlama can return multiple assets sharing the same symbol (e.g.
+  // id=146 "USDe" Ethena and id=264 "USDE" XBANKING). When that happens,
+  // prefer the asset whose id matches the registry's llamaStablecoinId.
+  const registryById = new Map();
+  for (const c of coins) {
+    registryById.set(String(c.llamaStablecoinId), c);
+  }
+  const lowerToCoin = new Map();
+  for (const c of coins) {
+    lowerToCoin.set(c.symbol.toLowerCase(), c);
+  }
+  const seen = new Set();
   const peggedAssets = (llama?.peggedAssets || [])
-    .filter((a) => a && activeSymbols.has(a.symbol))
-    .map((a) => ({ ...a, chainCirculating: normalizeChainCirculating(a) }));
+    .filter((a) => a && a.symbol)
+    .map((a) => {
+      const coin = lowerToCoin.get(a.symbol.toLowerCase());
+      if (!coin) return null;
+      // disambiguate: if this asset's id does not match the registry id,
+      // and another asset with the same symbol + matching id exists, skip
+      if (String(a.id) !== String(coin.llamaStablecoinId)) {
+        const hasBetterMatch = (llama?.peggedAssets || []).some(
+          (b) => b && b.symbol && b.symbol.toLowerCase() === coin.symbol.toLowerCase() && String(b.id) === String(coin.llamaStablecoinId)
+        );
+        if (hasBetterMatch) return null;
+      }
+      return { ...a, chainCirculating: normalizeChainCirculating(a) };
+    })
+    .filter((a) => a && !seen.has(a.symbol.toLowerCase()) && seen.add(a.symbol.toLowerCase()));
   data.allStables = {
     totalMarketCap: {
       peggedUSD: sumPeggedUSD(llama?.peggedAssets, 'circulating'),
@@ -199,6 +224,7 @@ export async function fetchDashboardData({ signal } = {}) {
   const data = {};
   data.cgSimple = cg || {};
   assembleLlama(data, llama, coins);
+  data.dataQuality = [];
 
   await Promise.all(
     coins.map(async (coin) => {
@@ -207,7 +233,13 @@ export async function fetchDashboardData({ signal } = {}) {
         llamaStablecoinUrl(coin.llamaStablecoinId),
         { ttl: TTL.history, swr: true, signal }
       ).catch(() => null);
-      data[`${coin.symbol.toLowerCase()}Detail`] = detail || {};
+      const key = `${coin.symbol.toLowerCase()}Detail`;
+      if (!detail) {
+        data[key] = {};
+        data.dataQuality.push({ coin: coin.symbol, reason: 'DefiLlama detail fetch failed' });
+      } else {
+        data[key] = detail;
+      }
     })
   );
 

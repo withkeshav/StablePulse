@@ -220,37 +220,44 @@
   <div class="section-inner">
     <div class="kicker">05 - Cross-border payments</div>
     <h2>Cheaper, faster money across borders</h2>
-    <p class="section-thesis">This is stablecoins' clearest real-world win, measured against World Bank remittance-price data. A $10,000 cross-border transfer through banks costs roughly $245-465 and takes 1-5 business days; the same transfer on stablecoin rails costs under $10 and settles in seconds.</p>
+    <p class="section-thesis">This is stablecoins' clearest real-world win, measured against World Bank remittance-price data. A $10,000 cross-border transfer through banks costs roughly $710 and takes 1-5 business days; the same transfer on stablecoin rails costs approximately under $1 (network fee only) and settles in seconds.</p>
 
     <div class="reveal">
       <div class="race-row">
-        <div class="race-label"><span>Traditional wire - $245-465, 1-5 days</span><span class="num">~4.65%</span></div>
+        <div class="race-label"><span>Traditional wire - ~$710 at $10,000, 1-5 days</span><span class="num">~4.65%</span></div>
         <div class="race-bar-track"><div class="race-bar trad" data-fill="93"></div></div>
       </div>
       <div class="race-row">
-        <div class="race-label"><span>Stablecoin rails - under $10, seconds</span><span class="num">~0.1%</span></div>
-        <div class="race-bar-track"><div class="race-bar" data-fill="2"></div></div>
+        <div class="race-label"><span>Stablecoin rails - under $1 at $10,000, seconds</span><span class="num">~$0.10 fixed</span></div>
+        <div class="race-bar-track"><div class="race-bar" data-fill="0"></div></div>
       </div>
-      <p class="chart-caption">Cost of moving $10,000 across borders, as a share of the principal. Traditional: ~4.65% (SWIFT fees + FX spread, 1-5 days). Stablecoin: ~0.1% (network fee, seconds).</p>
+      <p class="chart-caption">Cost of moving $10,000 across borders. Traditional: ~4.65% + $245 fixed = ~$710 (SWIFT fees + FX spread, 1-5 days). Stablecoin: ~$0.10 network fee (seconds). Network gas is fixed regardless of amount; the percentage appears only when a fiat off-ramp with FX spread is used.</p>
     </div>
 
     <h3 style="margin-top:2.5rem">Remittance cost calculator</h3>
-    <p class="as-of">Pure client-side arithmetic from the cost figures above. Estimates only; real costs vary by corridor and off-ramp.</p>
+    <p class="as-of">Pure client-side arithmetic. Estimates only; real costs vary by corridor and off-ramp. Both rails are shown simultaneously for the entered amount.</p>
     <form class="calc" id="remittance-calc" onsubmit="return false">
       <div class="calc-row">
         <label for="calc-amount">Amount to send (USD)</label>
         <input type="number" id="calc-amount" value="1000" min="1" step="1" inputmode="numeric">
       </div>
       <div class="calc-row">
-        <label for="calc-rail">Rail</label>
-        <select id="calc-rail">
-          <option value="traditional">Traditional wire (~4.65%, $245 fixed, 3-5 days)</option>
-          <option value="stablecoin" selected>Stablecoin rails (~0.1%, $8 fixed, seconds)</option>
-        </select>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="calc-offramp" style="width:auto;min-height:auto">
+          Include fiat off-ramp FX spread (+0.25%)
+        </label>
       </div>
       <div class="calc-out">
-        <span class="stat" id="calc-cost">$0</span>
-        <span class="calc-detail" id="calc-detail">Estimated total cost</span>
+        <div class="calc-rail-row">
+          <span class="calc-rail-label">Traditional wire</span>
+          <span class="stat" id="calc-cost-trad">$0</span>
+          <span class="calc-detail" id="calc-detail-trad"></span>
+        </div>
+        <div class="calc-rail-row">
+          <span class="calc-rail-label">Stablecoin rails</span>
+          <span class="stat" id="calc-cost-stable">$0</span>
+          <span class="calc-detail" id="calc-detail-stable"></span>
+        </div>
       </div>
     </form>
 

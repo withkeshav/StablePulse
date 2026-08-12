@@ -81,6 +81,29 @@ export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec
     [coins, pegLabels, data]
   );
 
+  // Peg band: clamp y-axis to a narrow band around $1 so peg drift is visible.
+  // Widen automatically when a real depeg exceeds the default band.
+  const pegChartOptions = useMemo(() => {
+    const allPrices = pegChartData.datasets.flatMap((d) => d.data).filter((v) => typeof v === 'number' && v > 0);
+    if (!allPrices.length) return {};
+    const seriesMin = Math.min(...allPrices);
+    const seriesMax = Math.max(...allPrices);
+    const bandMin = Math.max(0.9, seriesMin - 0.005);
+    const bandMax = Math.min(1.1, seriesMax + 0.005);
+    return {
+      scales: {
+        y: {
+          min: bandMin,
+          max: bandMax,
+          ticks: { callback: (v) => '$' + Number(v).toFixed(4) },
+        },
+      },
+      plugins: {
+        tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: $${Number(ctx.parsed.y).toFixed(4)}` } },
+      },
+    };
+  }, [pegChartData]);
+
   const totalMC = data?.allStables?.totalMarketCap?.peggedUSD || 0;
   const vol = useMemo(() => coins.reduce((sum, c) => sum + (cg?.[c.coingeckoId]?.usd_24h_vol || 0), 0), [coins, cg]);
 
@@ -92,6 +115,7 @@ export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec
         stress={stress}
         intelligence={data?.intelligence}
         onLearn={() => setActiveTab('learn')}
+        dataQuality={data?.dataQuality}
       />
 
       <a class="research-callout" href="/research/" target="_blank" rel="noopener noreferrer">
@@ -110,8 +134,9 @@ export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec
             <StatCard key={c.symbol} label={`${c.symbol} Price`} value={fmtPrice(priceByCoin[c.symbol])} />
           ))}
           {coins.map((c) => {
-            const asset = data?.allStables?.peggedAssets?.find((x) => x.symbol === c.symbol);
-            return <StatCard key={`${c.symbol}-supply`} label={`${c.symbol} Supply`} value={fmtB(asset?.circulating?.peggedUSD)} />;
+            const asset = data?.allStables?.peggedAssets?.find((x) => x.symbol.toLowerCase() === c.symbol.toLowerCase());
+            const dq = data?.dataQuality?.find((q) => q.coin === c.symbol);
+            return <StatCard key={`${c.symbol}-supply`} label={`${c.symbol} Supply`} value={fmtB(asset?.circulating?.peggedUSD)} warning={dq ? 'Data unavailable' : null} />;
           })}
           <StatCard label="Total Market Cap" value={fmtB(totalMC)} />
           <StatCard label="24h Volume" value={fmtB(vol)} />
@@ -120,7 +145,7 @@ export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec
 
       <WhaleWatch rows={whaleRows} />
 
-      <MarketPulse supplyChartData={supplyChartData} pegChartData={pegChartData} />
+      <MarketPulse supplyChartData={supplyChartData} pegChartData={pegChartData} pegChartOptions={pegChartOptions} />
       <CapitalFlows migrationPairs={migrationPairs} chainFlows={chainFlows} />
       <SignalSummary data={data} alerts={alerts} onViewAll={() => setActiveTab('alerts')} />
     </div>

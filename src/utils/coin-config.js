@@ -44,6 +44,7 @@ export const STABLECOIN_REGISTRY = {
     symbol: 'USDE',
     coingeckoId: 'ethena-usde',
     llamaStablecoinId: 146,
+    llamaStablecoinAliases: [146, 'ethena-usde'],
     color: '#8B5CF6',
     thresholds: {
       pegCriticalBps: 60,
