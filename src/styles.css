@@ -139,6 +139,7 @@ a{color:inherit;text-decoration:none}
 
 /* â”€â”€ TABLES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .data-table th{padding:8px 12px;text-align:left;font-size:var(--xs);font-weight:600;color:var(--text2);background:var(--hover);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+.data-table th.num{text-align:right}
 .data-table th:hover{color:var(--text)}
 .data-table td{padding:8px 12px;font-size:var(--xs);border-bottom:1px solid var(--border-s);vertical-align:middle}
 .data-table tr:last-child td{border-bottom:none}
@@ -483,6 +484,6 @@ body.compact .tab-content{padding:8px}
 .share-format-btn{padding:8px 12px;border:0;border-radius:6px;background:var(--hover);color:var(--text);font-size:var(--sm);cursor:pointer;text-align:left;min-height:36px}
 .share-format-btn:hover{background:var(--border)}
 .share-cancel-btn{padding:8px 12px;border:0;border-radius:6px;background:transparent;color:var(--text2);font-size:var(--sm);cursor:pointer;text-align:left;min-height:36px}
-.share-btn{width:28px;height:28px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--text3);background:transparent;border:0;cursor:pointer;flex-shrink:0}
+.share-btn{position:absolute;top:4px;right:4px;z-index:10;width:28px;height:28px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--text3);background:var(--surface);border:1px solid var(--border);cursor:pointer;flex-shrink:0;font-size:14px}
 .share-btn:hover{color:var(--accent);background:var(--hover)}
 .chart-footer-chip{font-family:var(--mono);font-size:9px;color:var(--text3);padding:2px 6px;border:1px solid var(--border-s);border-radius:3px;display:inline-block;margin-top:4px}

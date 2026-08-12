@@ -12,12 +12,7 @@ function getChart() {
         m.CategoryScale, m.LinearScale,
         m.Tooltip, m.Legend
       );
-      // Register zoom plugin for line charts (pinch/scroll + dbl-click reset)
-      return import('chartjs-plugin-zoom').then((zoomMod) => {
-        const Zoom = zoomMod.default || zoomMod;
-        Chart.register(Zoom);
-        return Chart;
-      });
+      return Chart;
     });
   }
   return chartPromise;
@@ -136,14 +131,8 @@ export default function ChartWrapper({ type, data, options = {}, height = 220, a
       const themedScales = tintScales(options?.scales, grid, tick);
       const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-      const zoomPlugin = type === 'line' ? {
-        pan: { enabled: true, mode: 'x' },
-        zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
-        limits: { x: { minRange: 1 } },
-      } : {};
-
       const mergedOptions = {
-        animation: reducedMotion ? false : false,
+        animation: false,
         responsive: true,
         ...options,
         maintainAspectRatio: aspectRatio ? false : (options.maintainAspectRatio ?? true),
@@ -157,15 +146,9 @@ export default function ChartWrapper({ type, data, options = {}, height = 220, a
             borderWidth: 1,
             ...options.plugins?.tooltip,
           },
-          zoom: type === 'line' ? { ...zoomPlugin, ...(options.plugins?.zoom || {}) } : (options.plugins?.zoom || {}),
         },
         scales: themedScales,
       };
-
-      // double-click reset for zoom
-      if (type === 'line' && canvasRef.current) {
-        canvasRef.current.ondblclick = () => { if (chartRef.current) chartRef.current.resetZoom(); };
-      }
 
       if (chartRef.current) chartRef.current.destroy();
       chartRef.current = new Chart(canvasRef.current, {

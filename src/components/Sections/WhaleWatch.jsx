@@ -10,7 +10,7 @@ export default function WhaleWatch({ rows }) {
           <div class="whale-watch-head">
             <div>
               <div class="signal-kicker">Whale Watch</div>
-              <h3 class="h6 mb-1">Cross-chain supply anomalies</h3>
+              <h3 style="font-size:var(--md);font-weight:600;margin-bottom:4px">Cross-chain supply anomalies</h3>
               <p class="text-muted small mb-0">Highlighted chains where recent mint/burn drift cleared volatility thresholds.</p>
             </div>
           </div>
@@ -19,7 +19,7 @@ export default function WhaleWatch({ rows }) {
               <div class="whale-mobile-card" key={`mob-${row.coin}-${row.chain}-${idx}`}>
                 <div class="wm-main">{row.coin} &middot; {row.chain}</div>
                 <div>
-                  <div class="wm-label">Δ Supply</div>
+                  <div class="wm-label">Supply Delta</div>
                   <div class="wm-val">{fmtB(row.delta)}</div>
                 </div>
                 <div>
@@ -29,23 +29,23 @@ export default function WhaleWatch({ rows }) {
               </div>
             ))}
           </div>
-          <div class="table-responsive whale-table-desktop">
-            <table class="table table-sm mb-0 whale-watch-table">
+          <div class="whale-table-desktop tbl-wrap">
+            <table class="data-table whale-watch-table">
               <thead>
                 <tr>
                   <th>Coin</th>
                   <th>Chain</th>
-                  <th class="text-end">Δ Supply</th>
-                  <th class="text-end">Z-score</th>
+                  <th class="num">Supply Delta</th>
+                  <th class="num">Z-score</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row, idx) => (
                   <tr key={`${row.coin}-${row.chain}-${idx}`}>
-                    <td class="fw-semibold">{row.coin}</td>
-                    <td>{row.chain}</td>
-                    <td class="text-end">{fmtB(row.delta)}</td>
-                    <td class="text-end">{row.z.toFixed(1)}σ</td>
+                    <td class="td-name">{row.coin}</td>
+                    <td class="td-name">{row.chain}</td>
+                    <td class="mono">{fmtB(row.delta)}</td>
+                    <td class="mono">{row.z.toFixed(1)}σ</td>
                   </tr>
                 ))}
               </tbody>

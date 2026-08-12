@@ -43,7 +43,9 @@ export default function ChainsTab({ data }) {
     return { labels, datasets };
   }, [activeCoins, coinPairs]);
 
-  const chainRows = (data?.chainData || data?.allStables?.chains || []).slice(0, 20);
+  const chainRows = (data?.chainData || data?.allStables?.chains || [])
+    .filter((c) => (c.totalCirculatingUSD?.peggedUSD || 0) > 0)  // filter out $0 chains
+    .slice(0, 20);
   const migrations = useMemo(() => {
     const out = [];
     assets.forEach((asset) => {

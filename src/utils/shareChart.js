@@ -90,7 +90,10 @@ export function createSharePopover(chartInstance, title, dateStr, anchorEl) {
   const rect = anchorEl.getBoundingClientRect();
   pop.style.position = 'absolute';
   pop.style.top = (rect.bottom + window.scrollY + 4) + 'px';
-  pop.style.left = (rect.right + window.scrollX - 160) + 'px';
+  // Clamp left so the popover never goes off-screen on mobile
+  const popWidth = 160;
+  const leftVal = rect.right + window.scrollX - popWidth;
+  pop.style.left = Math.max(8, Math.min(leftVal, window.innerWidth - popWidth - 8)) + 'px';
   pop.style.zIndex = '250';
   document.body.appendChild(pop);
   pop.querySelectorAll('.share-format-btn').forEach((btn) => {

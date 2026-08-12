@@ -16,7 +16,7 @@ import ErrorBoundary from './components/ErrorBoundary.jsx';
 import FirstRunTour from './components/ui/FirstRunTour.jsx';
 import { APP_VERSION, aiApiBase } from './config.js';
 import { REFRESH_KEY, COMPACT_KEY } from './utils/storage.js';
-import { coinFromTabId } from './utils/coin-config.js';
+import { coinFromTabId, getActiveCoins } from './utils/coin-config.js';
 import { fetchDashboardData, loadCoinChart } from './lib/api.js';
 import { fetchIntelligence } from './lib/ai.js';
 import { generateAlerts } from './lib/derive.js';
@@ -144,15 +144,16 @@ export default function App() {
   const coinTab = coinFromTabId(activeTab);
 
   useEffect(() => {
-    if (!coinTab || !data) return undefined;
+    if (!data) return undefined;
+    // Load price charts for all active coins on initial load so the Home
+    // Peg Monitor and Supply Trend charts have data without needing a coin
+    // tab to be opened first.
     let alive = true;
-    loadCoinChart(coinTab, data).then(() => {
+    Promise.all(getActiveCoins().map((coin) => loadCoinChart(coin.symbol, data))).then(() => {
       if (alive) setData((prev) => ({ ...prev }));
     });
-    return () => {
-      alive = false;
-    };
-  }, [coinTab, data?.fetchedAt]);
+    return () => { alive = false; };
+  }, [data?.fetchedAt]);
 
   return (
     <div id="app-layout" class="layout-wrapper">

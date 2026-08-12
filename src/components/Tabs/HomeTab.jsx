@@ -138,7 +138,7 @@ export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec
             const dq = data?.dataQuality?.find((q) => q.coin === c.symbol);
             return <StatCard key={`${c.symbol}-supply`} label={`${c.symbol} Supply`} value={fmtB(asset?.circulating?.peggedUSD)} warning={dq ? 'Data unavailable' : null} />;
           })}
-          <StatCard label="Total Market Cap" value={fmtB(totalMC)} />
+          <StatCard label="Global Stablecoin MCap" value={fmtB(totalMC)} meta="All issuers" />
           <StatCard label="24h Volume" value={fmtB(vol)} />
         </div>
       </div>
