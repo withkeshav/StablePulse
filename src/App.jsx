@@ -7,20 +7,20 @@ import CoinTab from './components/Tabs/CoinTab.jsx';
 import ChainsTab from './components/Tabs/ChainsTab.jsx';
 import AlertsTab from './components/Tabs/AlertsTab.jsx';
 import AboutTab from './components/Tabs/AboutTab.jsx';
+import LearnTab from './components/Tabs/LearnTab.jsx';
 import SkeletonLoader from './components/ui/SkeletonLoader.jsx';
 import RefreshCountdown from './components/ui/RefreshCountdown.jsx';
 import SettingsPanel from './components/SettingsPanel.jsx';
 import useTheme from './hooks/useTheme.js';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { APP_VERSION, aiApiBase } from './config.js';
+import { REFRESH_KEY, COMPACT_KEY } from './utils/storage.js';
 import { coinFromTabId } from './utils/coin-config.js';
 import { fetchDashboardData, loadCoinChart } from './lib/api.js';
 import { fetchIntelligence } from './lib/ai.js';
 import { generateAlerts } from './lib/derive.js';
 
 const REFRESH_OPTIONS = [60, 180, 300, 600, 900];
-const REFRESH_KEY = 'stablepulse:refresh';
-const COMPACT_KEY = 'stablepulse:compact';
 
 function readStoredRefresh() {
   try {
@@ -192,6 +192,7 @@ export default function App() {
                 {activeTab === 'alerts' && (
                   <AlertsTab alerts={alerts} intelligence={data?.intelligence} data={data} />
                 )}
+                {activeTab === 'learn' && <LearnTab />}
                 {activeTab === 'about' && <AboutTab />}
               </>
             )}

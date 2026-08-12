@@ -3,6 +3,7 @@
 const ITEMS = [
   { id: 'home', label: 'Home' },
   ...ACTIVE_STABLECOINS.map((symbol) => ({ id: coinTabId(symbol), label: symbol })),
+  { id: 'learn', label: 'Learn' },
   { id: 'chains', label: 'Chains' },
   { id: 'alerts', label: 'Alerts' },
   { id: 'about', label: 'About' },

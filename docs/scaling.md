@@ -16,7 +16,7 @@ Live market data is fetched from each visitor's own IP, so traffic is spread acr
 
 ### Backups
 
-- Use `sqlite3 backend/data/stablepulse.db ".backup /path/to/backup.db"` (WAL-safe) on a cron, then ship the backup off-box. Do **not** `cp` the live DB file.
+- Use `sqlite3 backend/data/stablesense.db ".backup /path/to/backup.db"` (WAL-safe) on a cron, then ship the backup off-box. Do **not** `cp` the live DB file.
 
 ### Monitoring
 

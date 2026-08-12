@@ -7,8 +7,8 @@ This document covers how the frontend gets data: browser-direct calls to DefiLla
 - **Live market data:** hardcoded upstream URLs (DefiLlama, CoinGecko). No auth, no keys, CORS-open.
 - **AI/backend:** resolved by `src/config.js` as `aiApiBase` (see [architecture.md](./architecture.md)):
 
-  1. `window.STABLEPULSE_CONFIG.aiApiBase` (runtime)
-  2. `import.meta.env.STABLEPULSE_AI_API_BASE` (build time)
+  1. `window.STABLESENSE_CONFIG.aiApiBase` (runtime)
+  2. `import.meta.env.STABLESENSE_AI_API_BASE` (build time)
   3. Default `''` (same origin; AI disabled unless a backend is served alongside)
 
 ## Browser-direct endpoints (`src/lib/api.js`)

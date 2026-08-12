@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest an idea for StablePulse
+about: Suggest an idea for StableSense
 title: "[Feature] "
 labels: enhancement
 assignees: ""

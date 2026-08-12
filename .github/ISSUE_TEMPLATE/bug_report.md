@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Report a problem with StablePulse
+about: Report a problem with StableSense
 title: "[Bug] "
 labels: bug
 assignees: ""
@@ -29,7 +29,7 @@ If applicable, add screenshots (mobile and desktop).
 - Version: (from the header badge, e.g. v2.0.0)
 
 **API base**
-Are you using the default worker, a runtime override (`window.STABLEPULSE_CONFIG`), or a custom backend?
+Are you using the default worker, a runtime override (`window.STABLESENSE_CONFIG`), or a custom backend?
 
 **Additional context**
 Anything else relevant. Note: per the license, issues are for reporting, not for patch submissions.

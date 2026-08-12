@@ -1,15 +1,15 @@
-# StablePulse backend jobs. Install with: crontab -e (as the same user that runs
+# StableSense backend jobs. Install with: crontab -e (as the same user that runs
 # the systemd service, or run via a user crontab if www-data).
 # Directories must exist and be writable by the cron user:
-#   /opt/stablepulse/backend/data  (SQLite DB)
-#   /var/log/stablepulse          (job logs)
+#   /opt/stablesense/backend/data  (SQLite DB)
+#   /var/log/stablesense          (job logs)
 
 # History snapshot: every 10 minutes.
-*/10 * * * * cd /opt/stablepulse/backend && /usr/bin/node jobs/fetch.js >> /var/log/stablepulse/fetch.log 2>&1
+*/10 * * * * cd /opt/stablesense/backend && /usr/bin/node jobs/fetch.js >> /var/log/stablesense/fetch.log 2>&1
 
 # AI narrative: checked every 30 minutes; the job self-gates on AI_CADENCE_MIN
 # (default 120), so the model is only called after a full cadence has elapsed.
-*/30 * * * * cd /opt/stablepulse/backend && /usr/bin/node jobs/ai.js >> /var/log/stablepulse/ai.log 2>&1
+*/30 * * * * cd /opt/stablesense/backend && /usr/bin/node jobs/ai.js >> /var/log/stablesense/ai.log 2>&1
 
 # Daily backup of the SQLite database (WAL-safe snapshot via sqlite3 CLI backup).
-0 3 * * * /usr/bin/sqlite3 /opt/stablepulse/backend/data/stablepulse.db ".backup '/opt/stablepulse/backups/stablepulse-$(date +\%F).db'" >> /var/log/stablepulse/backup.log 2>&1
+0 3 * * * /usr/bin/sqlite3 /opt/stablesense/backend/data/stablesense.db ".backup '/opt/stablesense/backups/stablesense-$(date +\%F).db'" >> /var/log/stablesense/backup.log 2>&1

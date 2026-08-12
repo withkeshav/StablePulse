@@ -70,7 +70,7 @@ async function callModel(model) {
       model,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: `StablePulse snapshot data:\n${buildContext()}` },
+        { role: 'user', content: `StableSense snapshot data:\n${buildContext()}` },
       ],
       temperature: 0.4,
       max_tokens: 2048,

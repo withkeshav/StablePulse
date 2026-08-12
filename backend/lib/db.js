@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS intelligence (
 const dataDir = process.env.DATA_DIR || path.join(here, '..', 'data');
 mkdirSync(dataDir, { recursive: true });
 
-const db = new Database(path.join(dataDir, 'stablepulse.db'));
+const db = new Database(path.join(dataDir, 'stablesense.db'));
 db.pragma('journal_mode = WAL');
 db.pragma('synchronous = NORMAL');
 db.pragma('foreign_keys = ON');

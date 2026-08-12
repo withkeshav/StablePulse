@@ -1,9 +1,9 @@
 {
-  "name": "stablepulse-backend",
-  "version": "2.1.0",
+  "name": "stablesense-backend",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
-  "description": "StablePulse lite VPS backend: history accumulation (SQLite) + AI narrative service.",
+  "description": "StableSense lite VPS backend: history accumulation (SQLite) + AI narrative service.",
   "scripts": {
     "start": "node server.js",
     "fetch": "node jobs/fetch.js",

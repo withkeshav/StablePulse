@@ -1,6 +1,6 @@
 # Architecture
 
-StablePulse is a mobile-first frontend with an optional lite backend. Live market data is fetched **directly in the browser** from DefiLlama and CoinGecko (both CORS-open and keyless). An optional VPS backend accumulates history and serves AI narratives.
+StableSense is a mobile-first frontend with an optional lite backend. Live market data is fetched **directly in the browser** from DefiLlama and CoinGecko (both CORS-open and keyless). An optional VPS backend accumulates history and serves AI narratives.
 
 ## Data flow
 
@@ -33,7 +33,7 @@ The frontend makes its live-data calls from the visitor's own IP, so no single o
 | `src/lib/derive.js` | Pure display logic (framework-free, unit tested) |
 | `src/utils/formatters.js` | Formatting helpers (pure, unit tested) |
 | `src/utils/coin-config.js` | Stablecoin registry + active coin list |
-| `src/components/Tabs/` | Views: Home, Coin, Chains, Alerts |
+| `src/components/Tabs/` | Views: Home, Coin, Learn, Chains, Alerts, About |
 | `src/components/Sections/` | Page content: signal hero, market pulse, capital flows, whale watch, summary |
 | `src/components/ui/` | StatCard, Sparkline, ChartWrapper, RefreshCountdown, SkeletonLoader, AiTicker |
 | `src/components/` | Header, Sidebar, MobileNav, SettingsPanel, ThemeToggle |
@@ -53,8 +53,8 @@ The frontend talks to upstream APIs directly. See [api-protocol.md](./api-protoc
 
 `aiApiBase` resolves in this order (`src/config.js`):
 
-1. `window.STABLEPULSE_CONFIG.aiApiBase` (runtime override, set in `index.html` or before the bundle loads).
-2. `import.meta.env.STABLEPULSE_AI_API_BASE` (build-time env var).
+1. `window.STABLESENSE_CONFIG.aiApiBase` (runtime override, set in `index.html` or before the bundle loads).
+2. `import.meta.env.STABLESENSE_AI_API_BASE` (build-time env var).
 3. Default: `''` (same origin; AI layer disabled when no backend is present).
 
 Trailing slashes are stripped. The runtime override is how deployments on arbitrary hosts point at a backend without a rebuild.
@@ -82,7 +82,7 @@ See [backend/README.md](../backend/README.md). Fastify + SQLite (WAL), cron jobs
 ## Theming
 
 - Default theme is **Light**.
-- `useTheme` persists the choice to `localStorage` under `stablepulse:theme` (`light` / `dark` / `system`).
+- `useTheme` persists the choice to `localStorage` under `stablesense:theme` (`light` / `dark` / `system`).
 - A tiny inline script in `index.html` applies the effective theme before paint to avoid a flash.
 - `System` follows `prefers-color-scheme` and updates live when the OS setting changes.
 

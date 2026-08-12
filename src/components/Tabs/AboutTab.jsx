@@ -33,7 +33,7 @@ export default function AboutTab() {
         </div>
         <div class="card-body">
           <p>
-            StablePulse tracks the five stablecoins that matter most by <strong>market cap</strong>,{' '}
+            StableSense tracks the five stablecoins that matter most by <strong>market cap</strong>,{' '}
             <strong>transaction volume</strong>, <strong>adoption</strong>, and <strong>market momentum</strong>.
             Together they span every meaningful axis of the stablecoin market.
           </p>

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-
-const THEME_KEY = 'stablepulse:theme';
+import { THEME_KEY } from '../utils/storage.js';
 
 export function resolveTheme(mode) {
   if (mode === 'light' || mode === 'dark') return mode;

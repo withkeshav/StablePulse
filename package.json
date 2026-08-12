@@ -1,9 +1,9 @@
 {
-  "name": "stablepulse",
-  "version": "2.1.0",
+  "name": "stablesense",
+  "version": "3.0.0",
   "private": false,
   "type": "module",
-  "description": "StablePulse - Stablecoin intelligence across USDT, USDC, DAI, USDe and PYUSD.",
+  "description": "StableSense - Stablecoin intelligence and learning across USDT, USDC, DAI, USDe and PYUSD.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

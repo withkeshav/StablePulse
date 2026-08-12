@@ -3,7 +3,7 @@ import { Component } from 'preact';
 export default class ErrorBoundary extends Component {
   state = { error: null };
   static getDerivedStateFromError(error) { return { error }; }
-  componentDidCatch(error, info) { console.error('StablePulse caught:', error, info); }
+  componentDidCatch(error, info) { console.error('StableSense caught:', error, info); }
   render() {
     if (this.state.error) {
       return (

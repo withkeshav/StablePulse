@@ -4,6 +4,6 @@ import pkg from './package.json' assert { type: 'json' };
 
 export default defineConfig({
   plugins: [preact()],
-  envPrefix: ['VITE_', 'STABLEPULSE_'],
+  envPrefix: ['VITE_', 'STABLESENSE_'],
   define: { __APP_VERSION__: JSON.stringify('v' + pkg.version) },
 });

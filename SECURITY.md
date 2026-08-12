@@ -2,9 +2,9 @@
 
 ## Reporting a vulnerability
 
-If you find a security issue in StablePulse, please report it privately instead of opening a public issue.
+If you find a security issue in StableSense, please report it privately instead of opening a public issue.
 
-- **Email / contact:** [Keshav Maheshwari](https://www.withkeshav.com) via the contact form on the site, or open a private advisory using [GitHub Security Advisories](https://github.com/withkeshav/StablePulse/security/advisories/new) for this repository.
+- **Email / contact:** [Keshav Maheshwari](https://www.withkeshav.com) via the contact form on the site, or open a private advisory using [GitHub Security Advisories](https://github.com/withkeshav/StableSense/security/advisories/new) for this repository.
 - Please include the affected version, a minimal reproduction, and the impact.
 - You should receive an acknowledgement within a few days, and a fix plan within two weeks where feasible.
 
@@ -14,7 +14,7 @@ In scope:
 
 - The frontend in this repository (`src/`, `index.html`, build configuration).
 - The optional backend in `backend/` (Fastify + SQLite + cron jobs).
-- Configuration resolution (`window.STABLEPULSE_CONFIG`, `STABLEPULSE_AI_API_BASE`).
+- Configuration resolution (`window.STABLESENSE_CONFIG`, `STABLESENSE_AI_API_BASE`).
 
 Out of scope:
 

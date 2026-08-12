@@ -6,7 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- Learn tab: plain-language lessons on stablecoins (what they are, how pegs work, collateral types, depeg causes, how to read the dashboard) plus a glossary.
+- One-time localStorage migration from legacy `stablepulse:*` keys to `stablesense:*` (theme, refresh, compact) with automatic cleanup of the old cache prefix.
+
+### Changed
+
+- **Brand rename to StableSense** across UI, metadata, config keys, localStorage keys, package names, backend artifacts, and docs.
+- Config keys renamed: `window.STABLEPULSE_CONFIG` to `window.STABLESENSE_CONFIG`, `STABLEPULSE_AI_API_BASE` to `STABLESENSE_AI_API_BASE`.
+- Mobile bottom nav now scrolls horizontally so the added Learn tab keeps 44px touch targets at 375px.
+- Backend artifacts renamed end-to-end: `stablesense.db`, `stablesense-backend.service`, `/opt/stablesense`, `/var/log/stablesense`; see `backend/README.md` for the VPS migration steps.
+
+### Removed
+
+- Nothing.
 
 ## [2.1.0] - 2026-08-11
 
@@ -68,6 +82,6 @@ Nothing yet.
 
 Initial internal release of the intelligence dashboard (prior to open-source packaging). No public changelog kept.
 
-[Unreleased]: https://github.com/withkeshav/StablePulse/compare/v2.1.0...HEAD
-[2.1.0]: https://github.com/withkeshav/StablePulse/releases/tag/v2.1.0
-[2.0.0]: https://github.com/withkeshav/StablePulse/releases/tag/v2.0.0
+[Unreleased]: https://github.com/withkeshav/StableSense/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/withkeshav/StableSense/releases/tag/v2.1.0
+[2.0.0]: https://github.com/withkeshav/StableSense/releases/tag/v2.0.0

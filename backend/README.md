@@ -1,7 +1,7 @@
-# StablePulse Backend
+# StableSense Backend
 
 Lite VPS service that accumulates a proprietary historical dataset and serves
-the AI narrative endpoint. It is the only part of StablePulse that runs on an
+the AI narrative endpoint. It is the only part of StableSense that runs on an
 operator-controlled IP: everything else is served to visitors directly from
 the browser.
 
@@ -33,7 +33,7 @@ the browser.
 cd backend
 npm install
 cp .env.example .env        # fill OPENAI_* values; never commit .env
-npm run fetch               # backfills the dataset, creates data/stablepulse.db
+npm run fetch               # backfills the dataset, creates data/stablesense.db
 npm run ai                  # generates the first narrative (needs a valid key)
 npm start                   # serves the API on 127.0.0.1:8787
 ```
@@ -55,19 +55,19 @@ Environment (`backend/.env`, git-ignored):
 Copy `deploy/` files to the VPS:
 
 ```bash
-sudo mkdir -p /opt/stablepulse
-sudo chown www-data:www-data /opt/stablepulse
-# place this repo (frontend + backend) at /opt/stablepulse
-sudo mkdir -p /var/log/stablepulse /opt/stablepulse/backups
+sudo mkdir -p /opt/stablesense
+sudo chown www-data:www-data /opt/stablesense
+# place this repo (frontend + backend) at /opt/stablesense
+sudo mkdir -p /var/log/stablesense /opt/stablesense/backups
 
 # backend service
-sudo cp backend/deploy/stablepulse-backend.service /etc/systemd/system/
+sudo cp backend/deploy/stablesense-backend.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now stablepulse-backend
+sudo systemctl enable --now stablesense-backend
 
 # nginx: edit server_name, then
-sudo cp backend/deploy/nginx.conf /etc/nginx/sites-available/stablepulse
-sudo ln -s /etc/nginx/sites-available/stablepulse /etc/nginx/sites-enabled/
+sudo cp backend/deploy/nginx.conf /etc/nginx/sites-available/stablesense
+sudo ln -s /etc/nginx/sites-available/stablesense /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 sudo certbot --nginx -d your-domain   # TLS
 
@@ -77,7 +77,7 @@ crontab -e      # paste the lines from deploy/crontab.txt
 
 `nginx.conf` serves `dist/` and reverse-proxies `/api` to Fastify on the same
 origin, so there is zero CORS. The frontend only calls the backend through
-`/api/ai`; set `window.STABLEPULSE_CONFIG = { aiApiBase: '' }` (default) to use
+`/api/ai`; set `window.STABLESENSE_CONFIG = { aiApiBase: '' }` (default) to use
 the same origin.
 
 ## Notes

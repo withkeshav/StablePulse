@@ -1,4 +1,5 @@
 import { getActiveCoins, STABLECOIN_REGISTRY } from '../utils/coin-config.js';
+import { CACHE_PREFIX } from '../utils/storage.js';
 
 const LLAMA_BASE = 'https://stablecoins.llama.fi';
 const CG_BASE = 'https://api.coingecko.com/api/v3';
@@ -9,7 +10,6 @@ const TTL = {
   chart: 300_000,
 };
 const FETCH_TIMEOUT_MS = 20000;
-const CACHE_PREFIX = 'stablepulse:v2:';
 
 const memoryCache = new Map();
 const inflight = new Map();

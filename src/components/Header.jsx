@@ -9,7 +9,7 @@ export default function Header({ loading, refreshing, apiStatus, onOpenSettings,
 
   return (
     <header id="header">
-      <div class="logo">StablePulse {buildVersion ? <span class="build-version">{buildVersion}</span> : null}</div>
+      <div class="logo">StableSense {buildVersion ? <span class="build-version">{buildVersion}</span> : null}</div>
       <div class="status-bar">
         <div id="status-dot" class={statusClass}></div>
         <span id="status-text">{loading ? 'Syncing...' : refreshing ? 'Refreshing…' : anyFailed ? 'Partial' : 'Live'}</span>

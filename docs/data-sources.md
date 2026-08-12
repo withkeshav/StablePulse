@@ -1,6 +1,6 @@
 # Data Sources
 
-Everything StablePulse shows comes from two keyless, CORS-open upstreams, fetched either browser-direct (live data) or by the backend cron jobs (history + AI).
+Everything StableSense shows comes from two keyless, CORS-open upstreams, fetched either browser-direct (live data) or by the backend cron jobs (history + AI).
 
 ## Upstreams
 

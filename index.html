@@ -3,9 +3,10 @@
 <head>
   <script>
     (function () {
-      var key = 'stablepulse:theme';
+      var key = 'stablesense:theme';
+      var legacy = 'stablepulse:theme';
       var mode = 'light';
-      try { mode = localStorage.getItem(key) || 'light'; } catch (e) {}
+      try { mode = localStorage.getItem(key) || localStorage.getItem(legacy) || 'light'; } catch (e) {}
       var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
       var effective = mode === 'system' ? (dark ? 'dark' : 'light') : mode;
       document.documentElement.setAttribute('data-theme', effective);
@@ -16,12 +17,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#ffffff">
-  <meta name="description" content="StablePulse - Stablecoin intelligence across USDT, USDC, DAI, USDe and PYUSD">
-  <meta property="og:title" content="StablePulse">
-  <meta property="og:description" content="Peg stress, cross-chain flows, whale-watch anomalies and AI narratives across the top stablecoins.">
+  <meta name="description" content="StableSense - Stablecoin intelligence across USDT, USDC, DAI, USDe and PYUSD">
+  <meta property="og:title" content="StableSense">
+  <meta property="og:description" content="Peg stress, cross-chain flows, whale-watch anomalies and AI narratives across the top stablecoins. Learn how stablecoins work.">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary">
-  <title>StablePulse</title>
+  <title>StableSense</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,8 +33,8 @@
   <div id="app"></div>
   <script>
     // Runtime config override (optional). Set aiApiBase to point the app at an
-    // AI backend, e.g.: window.STABLEPULSE_CONFIG = { aiApiBase: 'https://your-host' };
-    window.STABLEPULSE_CONFIG = window.STABLEPULSE_CONFIG || {};
+    // AI backend, e.g.: window.STABLESENSE_CONFIG = { aiApiBase: 'https://your-host' };
+    window.STABLESENSE_CONFIG = window.STABLESENSE_CONFIG || {};
   </script>
   <script type="module" src="./src/main.jsx"></script>
 </body>

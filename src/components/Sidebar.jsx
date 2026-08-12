@@ -3,6 +3,7 @@
 const TABS = [
   { id: 'home', label: 'Home' },
   ...ACTIVE_STABLECOINS.map((symbol) => ({ id: coinTabId(symbol), label: symbol })),
+  { id: 'learn', label: 'Learn' },
   { id: 'chains', label: 'Chains' },
   { id: 'alerts', label: 'Alerts' },
   { id: 'about', label: 'About' },
@@ -27,7 +28,7 @@ export default function Sidebar({ activeTab, setActiveTab, alertCount }) {
         ))}
       </div>
       <div class="sidebar-footer">
-        <div>StablePulse</div>
+        <div>StableSense</div>
       </div>
     </nav>
   );

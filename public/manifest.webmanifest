@@ -1,10 +1,10 @@
 {
-  "name": "StablePulse",
-  "short_name": "StablePulse",
+  "name": "StableSense",
+  "short_name": "StableSense",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#ffffff",
-  "description": "Stablecoin intelligence",
+  "description": "Stablecoin intelligence and learning",
   "icons": [
     {
       "src": "favicon.svg",
