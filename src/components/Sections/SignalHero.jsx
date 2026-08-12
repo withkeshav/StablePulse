@@ -8,7 +8,7 @@ export default function SignalHero({ coins, priceByCoin, stress, intelligence, o
         <div class="signal-hero-top">
           <div>
             <div class="signal-kicker">Stablecoin Risk Radar</div>
-            <h2 class="signal-title">Peg Stress Index {stress.score}/100</h2>
+            <h2 class="signal-title">Peg Stress Index <span class="signal-score-display">{stress.score}/100</span></h2>
             {intelligence?.headline ? <p class="signal-ai-line">{intelligence.headline}</p> : null}
             <AiTicker intelligence={intelligence} />
             <p class="signal-subtitle">Level: {stress.level}. Driven by peg drift, active alerts, and cross-chain flow pressure.</p>

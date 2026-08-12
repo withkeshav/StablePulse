@@ -1,6 +1,7 @@
 /* â”€â”€ TOKENS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 :root {
   --font: 'Inter', -apple-system, sans-serif;
+  --display: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif;
   --mono: 'JetBrains Mono', monospace;
   --xs: clamp(.6875rem,.65rem + .18vw,.75rem);
   --sm: clamp(.75rem,.72rem + .2vw,.8125rem);
@@ -282,6 +283,12 @@ body.compact .tab-content{padding:8px}
 .ai-ticker{font-size:var(--xs);color:var(--text3);margin:6px 0 0;line-height:1.4;font-variant-numeric:tabular-nums}
 .signal-prices{font-family:var(--mono);font-size:var(--xs);color:var(--text2);display:flex;flex-direction:column;gap:6px;align-items:flex-end;text-align:right}
 .signal-prices span{color:var(--text3);margin-right:6px}
+
+.signal-score-display{font-family:var(--display);font-size:clamp(1.6rem,5vw,2.4rem);font-weight:600;letter-spacing:-.02em;color:var(--accent);margin-left:.15em}
+
+.home-section-flat{background:transparent;border:0;border-radius:0;box-shadow:none;border-top:1px solid var(--border-s);padding-top:20px;margin-top:8px}
+.home-section-flat .card-header{padding:0 0 8px;border-bottom:0}
+.home-section-flat .card-body{padding:8px 0 0}
 
 .alert-hero{
   background:linear-gradient(135deg,color-mix(in oklch,var(--accent) 10%,var(--surface)),var(--surface));
