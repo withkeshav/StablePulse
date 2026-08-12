@@ -4,6 +4,21 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.5] - 2026-08-12
+
+### Added
+
+- Research hub: "State of Stablecoins" at `/research/` - a public, fully-cited, chart-driven report on the stablecoin landscape and economic impact. Nine sections (taxonomy, scale, Treasury holdings, banks vs. stablecoins, cross-border payments, dollarization, depeg history, regulation, reality check) plus a live hero counter, remittance calculator, and deduplicated source list. Built as a separate static page (second Vite config) for SEO, not a Preact route.
+- Hub cross-links from Learn's intro card, the bottom of the "Beyond the dollar" and "The bigger picture" modules, and the About tab. No nav slot added (mobile nav already at 10 items).
+- Hub OG share image (`og.png`, 1200x630) with the engraved-ledger design - no headline number, per the numeric-claim-precision rule.
+- Numeric-claim-precision standing rule added to `AGENTS.md` (local): every prominent single-number display must state what it measures and excludes in the visible label.
+- Hub build pipeline: `npm run build:research` (uses `vite.config.research.mjs`) and `npm run build:all`. nginx `/research/` location block added to `backend/deploy/nginx.conf`.
+- App-wide meta tags strengthened in `index.html` (broader description mentioning the value-referenced-token definition, canonical URL, `og:url`, Twitter large-image card).
+
+### Verified
+
+- Four highest-stakes claims resolved against primary sources on 2026-08-12: Treasury-holder ranking (US Treasury TIC Jan 2023), GENIUS Act effective-date mechanics (Morgan Lewis + Congress.gov S.1582), SVB/USDC low ($0.8789 per CoinGecko Research), UST collapse figure (~$18B supply peak, ~$60B combined UST+LUNA loss per CoinMarketCap/Reuters/ScienceDirect). Resolutions and primary-source links live in the hub's methodology note.
+
 ## [3.2.0] - 2026-08-12
 
 ### Added
@@ -98,6 +113,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 Initial internal release of the intelligence dashboard (prior to open-source packaging). No public changelog kept.
 
+[3.2.5]: https://github.com/withkeshav/StableSense/releases/tag/v3.2.5
 [3.2.0]: https://github.com/withkeshav/StableSense/releases/tag/v3.2.0
 [3.1.0]: https://github.com/withkeshav/StableSense/releases/tag/v3.1.0
 [2.1.0]: https://github.com/withkeshav/StableSense/releases/tag/v2.1.0

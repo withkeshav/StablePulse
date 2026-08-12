@@ -135,6 +135,7 @@ const MODULES = [
   {
     id: 'beyond-dollar',
     title: 'Beyond the dollar',
+    moduleLink: { href: '/research/#taxonomy', label: 'Explore the full taxonomy with charts and data' },
     lessons: [
       {
         id: 'stable-relative-to-what',
@@ -166,6 +167,7 @@ const MODULES = [
   {
     id: 'bigger-picture',
     title: 'The bigger picture',
+    moduleLink: { href: '/research/#treasury', label: 'Read the full economic-impact analysis' },
     lessons: [
       {
         id: 'treasury-buyer',
@@ -239,6 +241,9 @@ export default function LearnTab({ data, alerts }) {
             you see stress before it becomes a headline. Where the market is live, the lessons carry a
             small observation computed from this dashboard's data at this moment.
           </p>
+          <p class="mt-3 mb-0">
+            <a class="learn-link-btn" href="/research/#taxonomy">Read the full research: State of Stablecoins &rsaquo;</a>
+          </p>
         </div>
       </section>
 
@@ -273,6 +278,11 @@ export default function LearnTab({ data, alerts }) {
                 </div>
               );
             })}
+            {mod.moduleLink ? (
+              <p class="learn-lesson" style="padding-top:8px">
+                <a class="learn-link-btn" href={mod.moduleLink.href}>{mod.moduleLink.label} &rsaquo;</a>
+              </p>
+            ) : null}
           </div>
         </section>
       ))}

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>The State of Stablecoins - StableSense Research</title>
+  <meta name="description" content="A sourced, dated research report on stablecoins beyond the dollar peg: the taxonomy of value-referenced tokens, Treasury-market effects, bank disintermediation, cross-border payments, dollarization, depeg history, and the global regulatory landscape. Every figure sourced and dated; ranges shown where sources disagree.">
+  <link rel="canonical" href="https://stablesense.withkeshav.com/research/">
+  <meta property="og:title" content="The State of Stablecoins - StableSense Research">
+  <meta property="og:description" content="A sourced, dated research report on stablecoins beyond the dollar peg. Every figure sourced and dated; ranges shown where sources disagree.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://stablesense.withkeshav.com/research/">
+  <meta property="og:image" content="/research/og.png">
+  <meta property="og:site_name" content="StableSense Research">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The State of Stablecoins - StableSense Research">
+  <meta name="twitter:description" content="A sourced, dated research report on stablecoins beyond the dollar peg. Every figure sourced and dated; ranges shown where sources disagree.">
+  <meta name="twitter:image" content="/research/og.png">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<a href="#main" class="skip-link" style="position:absolute;left:-9999px;">Skip to content</a>
+
+<header class="hub-header">
+  <div class="hub-header-inner">
+    <a href="/" class="hub-mark">StableSense<span class="gold-dot">.</span> Research</a>
+    <nav class="hub-nav" aria-label="Hub sections">
+      <a href="#taxonomy">Taxonomy</a>
+      <a href="#scale">Scale</a>
+      <a href="#treasury">Treasury</a>
+      <a href="#banks">Banks</a>
+      <a href="#remittances">Payments</a>
+      <a href="#depegs">Depegs</a>
+      <a href="#regulation">Regulation</a>
+      <a href="/" class="to-dashboard">Open the live dashboard &rsaquo;</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="kicker">StableSense Research - State of Stablecoins</div>
+    <h1>The State of Stablecoins</h1>
+    <p class="thesis">Stablecoins are not just dollar tokens. They are becoming a layer of the financial system - a structural buyer of US debt, a payments rail, and a dollarization force. This report tracks the wider landscape and the macro impact, sourced and dated.</p>
+    <div class="hero-counter num" id="hero-counter" aria-live="polite">$0</div>
+    <div class="hero-counter-label" id="hero-counter-label">Combined market cap of the 5 stablecoins tracked here, updated live</div>
+    <p class="short-disclaimer">Informational research, not financial advice. Figures are one measure among several, always sourced and dated.</p>
+    <div class="scroll-cue">Scroll to read &darr;</div>
+  </div>
+</section>
+
+<!-- SECTION 1: TAXONOMY -->
+<section class="section" id="taxonomy">
+  <div class="section-inner">
+    <div class="kicker">01 - The taxonomy</div>
+    <h2>Stable relative to what</h2>
+    <p class="section-thesis">A stablecoin is a token engineered to hold steady value against some reference. The reference is usually the US dollar but not always. The chart below shows the relative scale of all six categories. Dollar-pegged coins dominate, but the taxonomy runs wider than the common case this dashboard tracks.</p>
+
+    <div class="chart-wrap reveal">
+      <canvas id="taxonomy-chart" height="220" role="img" aria-label="Stacked horizontal bar chart showing relative scale of the six stablecoin taxonomy categories. Fiat-USD dominates at over 95% of total supply."></canvas>
+      <p class="chart-caption">Relative scale of the six value-referenced-token categories, mid-2026. Figures are ranges where aggregators disagree (see methodology). Fiat-USD is the dominant case the dashboard tracks; the other five categories together are under 5%.</p>
+    </div>
+
+    <h3 style="margin-top:2.5rem">The six categories</h3>
+    <div class="hub-accordion" id="taxonomy-accordion">
+      <!-- accordion items injected by main.js from data.taxonomy; static fallback below for no-JS -->
+    </div>
+    <noscript>
+      <div class="hub-accordion">
+        <div class="hub-accordion-item open"><div class="hub-accordion-panel"><p>Fiat-USD: ~$299-316B. USDT, USDC. Full reserve in cash + short-term Treasuries.</p></div></div>
+        <div class="hub-accordion-item open"><div class="hub-accordion-panel"><p>Fiat non-USD: ~$2B. EURC, JPYC, XSGD. Under 0.5% of supply.</p></div></div>
+        <div class="hub-accordion-item open"><div class="hub-accordion-panel"><p>Commodity-backed: ~$4.6-6B. PAXG, XAUT, KAG. ~96% gold.</p></div></div>
+        <div class="hub-accordion-item open"><div class="hub-accordion-panel"><p>Crypto-collateralized / synthetic: ~$13B. DAI/USDS, USDe, LUSD.</p></div></div>
+        <div class="hub-accordion-item open"><div class="hub-accordion-panel"><p>Algorithmic: near zero. UST dead, Frax re-collateralized.</p></div></div>
+        <div class="hub-accordion-item open"><div class="hub-accordion-panel"><p>RWA / tokenized funds: ~$20-40B. BUIDL, BENJI, OUSG.</p></div></div>
+      </div>
+    </noscript>
+
+    <h3 style="margin-top:2.5rem">Token comparison</h3>
+    <p class="as-of">Sortable by market cap; filter by category with the chips. Figures as of mid-2026.</p>
+    <div class="chip-row" id="token-chips" role="group" aria-label="Filter tokens by category">
+      <button class="hub-chip active" data-cat="all">All</button>
+      <button class="hub-chip" data-cat="fiat-usd"><span class="cat-dot" style="background:var(--hub-cat-fiat-usd)"></span>Fiat-USD</button>
+      <button class="hub-chip" data-cat="fiat-non-usd"><span class="cat-dot" style="background:var(--hub-cat-fiat-non-usd)"></span>Fiat non-USD</button>
+      <button class="hub-chip" data-cat="commodity"><span class="cat-dot" style="background:var(--hub-cat-commodity)"></span>Commodity</button>
+      <button class="hub-chip" data-cat="crypto-synth"><span class="cat-dot" style="background:var(--hub-cat-crypto-synth)"></span>Crypto / synthetic</button>
+      <button class="hub-chip" data-cat="algorithmic"><span class="cat-dot" style="background:var(--hub-cat-algorithmic)"></span>Algorithmic</button>
+      <button class="hub-chip" data-cat="rwa"><span class="cat-dot" style="background:var(--hub-cat-rwa)"></span>RWA</button>
+    </div>
+    <div class="hub-table-wrap">
+      <table class="hub-table" id="token-table">
+        <thead>
+          <tr>
+            <th>Token</th>
+            <th>Category</th>
+            <th>Peg</th>
+            <th>Issuer</th>
+            <th class="num">Market cap</th>
+            <th>Chain</th>
+            <th class="as-of">As of</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- rows injected by main.js from data.tokens -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2: SCALE -->
+<section class="section" id="scale">
+  <div class="section-inner">
+    <div class="kicker">02 - Scale and trajectory</div>
+    <h2>From crypto plumbing to financial infrastructure</h2>
+    <p class="section-thesis">Total stablecoin market cap is approximately $300-320B as of mid-2026 (aggregators disagree: CoinMarketCap ~$300B, CoinGecko ~$291B, DefiLlama ~$289B - the range is the honest answer, not a number to pick). USDT and USDC alone control over 80% of supply. Every credible forecaster expects multi-trillion scale by 2030; the disagreement is how fast, not whether.</p>
+
+    <div class="chart-wrap reveal">
+      <canvas id="scale-chart" height="320" role="img" aria-label="Line chart of total stablecoin market cap from 2017 to 2026, with markers at UST collapse (May 2022), SVB/USDC (March 2023), and GENIUS Act signing (July 2025)."></canvas>
+      <p class="chart-caption">Total stablecoin market cap, year-end USD billions. Markers: UST collapse (May 2022), USDC/SVB (March 2023), GENIUS Act signed (July 2025). Source: DefiLlama stablecoins dashboard.</p>
+    </div>
+
+    <h3 style="margin-top:2.5rem">Forward projections to 2030</h3>
+    <div class="chart-wrap reveal">
+      <canvas id="forecast-chart" height="280" role="img" aria-label="Fan/band chart of stablecoin market cap projections from 2026 to 2030, showing IMF, Citi, Bain, Standard Chartered, and JPMorgan forecasts as separate labeled ranges."></canvas>
+      <p class="chart-caption">Named projections to 2030. Toggle forecasters with the chips below the chart. Everyone credible expects multi-trillion scale; the disagreement is how fast, not whether.</p>
+    </div>
+    <div class="chip-row" id="forecast-chips" role="group" aria-label="Isolate a forecaster">
+      <button class="hub-chip active" data-forecaster="all">All</button>
+      <button class="hub-chip" data-forecaster="IMF">IMF ($0.5-3.7T)</button>
+      <button class="hub-chip" data-forecaster="Citi">Citi ($1.9-4T)</button>
+      <button class="hub-chip" data-forecaster="Bain">Bain (up to $3.8T)</button>
+      <button class="hub-chip" data-forecaster="Standard Chartered">Std Chartered ($2T)</button>
+      <button class="hub-chip" data-forecaster="JPMorgan">JPMorgan (~$500B)</button>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3: TREASURY -->
+<section class="section" id="treasury">
+  <div class="section-inner">
+    <div class="kicker">03 - Who holds the world's dollars</div>
+    <h2>A quiet buyer of government debt</h2>
+    <p class="section-thesis">Stablecoin issuers now hold well over $150B in US Treasuries, mostly short-dated T-bills. Tether's reported ~$141B (Q1 2026 attestation) exceeds the holdings of Germany ($91.3B) and Norway ($104.4B) per the US Treasury TIC Jan 2023 table; combined issuers' ~$182B exceeds Norway. The comparison is duration-mismatched: issuers hold short-dated bills, while TIC ranks total foreign holdings.</p>
+
+    <div class="chart-wrap reveal">
+      <canvas id="treasury-chart" height="420" role="img" aria-label="Horizontal bar chart ranking sovereign nations and stablecoin issuers as holders of US Treasury debt. Issuer bars highlighted in gold. Tether (~$141B) ranks between Luxembourg and Norway; combined issuers (~$182B) exceed Norway."></canvas>
+      <p class="chart-caption">Largest holders of US Treasury securities, USD billions. Sovereign nations per US Treasury TIC (Jan 2023, latest published); stablecoin issuers per their own reserve attestations (Tether Q1 2026, combined 4 issuers ~$182B). The comparison is duration-mismatched - issuers hold short-dated T-bills, TIC ranks total (long+short) holdings.</p>
+    </div>
+
+    <div class="hub-accordion" style="margin-top:2rem">
+      <div class="hub-accordion-item open">
+        <button class="hub-accordion-trigger" aria-expanded="true">How the GENIUS Act locks this in<span class="hub-accordion-mark">&rsaquo;</span></button>
+        <div class="hub-accordion-panel">
+          <p>The GENIUS Act (signed July 17-18, 2025) requires payment-stablecoin reserves to be 1:1 in cash, T-bills, or overnight repo, with maturities at 90 days or less. This legally binds issuer demand to the very short end of the yield curve, making issuers permanent, rule-bound T-bill buyers. The effective date is the earlier of 18 months after enactment or 120 days after final rules - estimated November 2026. Rulemaking status changes monthly; re-verify before citing.</p>
+          <p>See the full regulatory comparison in <a href="#regulation">Section 8</a>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 4: BANKS -->
+<section class="section" id="banks">
+  <div class="section-inner">
+    <div class="kicker">04 - Banks vs. stablecoins</div>
+    <h2>Does this take money out of banks</h2>
+    <p class="section-thesis">When a household moves a deposit into a stablecoin, the bank loses cheap funding that funds mortgages and business loans. The research is genuinely contested, not settled. The diagram below shows the mechanism; the callouts below it give both sides, cited and neutral.</p>
+
+    <div class="reveal">
+      <svg class="flow-svg" viewBox="0 0 720 260" role="img" aria-label="Flow diagram: a bank deposit splits into two paths. One path stays as bank lending capital. The other moves to a stablecoin issuer, which holds Treasuries instead of making loans.">
+        <rect class="node-rect" x="20" y="110" width="160" height="44" rx="2"/>
+        <text x="100" y="137" text-anchor="middle">Bank deposit</text>
+        <path class="flow-line animate" d="M180 132 Q 280 132 320 60"/>
+        <path class="flow-line animate" d="M180 132 Q 280 132 320 200"/>
+        <rect class="node-rect" x="320" y="40" width="200" height="44" rx="2"/>
+        <text x="420" y="67" text-anchor="middle">Bank keeps it -&gt; loans</text>
+        <rect class="node-rect" x="320" y="180" width="200" height="44" rx="2"/>
+        <text x="420" y="207" text-anchor="middle">Moves to stablecoin issuer</text>
+        <path class="flow-line animate" d="M520 202 Q 600 202 640 132"/>
+        <rect class="node-rect" x="540" y="110" width="160" height="44" rx="2"/>
+        <text x="620" y="137" text-anchor="middle">Holds T-bills</text>
+      </svg>
+      <p class="chart-caption">A $1 deposit moved to a stablecoin issuer does not disappear - it becomes a Treasury holding instead of bank lending capital. Distribution matters, not just aggregate liquidity.</p>
+    </div>
+
+    <div class="callout-row">
+      <div class="callout">
+        <div class="callout-label">Disintermediation view</div>
+        <p class="stat md">Banks exposed to stablecoin flows lend less</p>
+        <p class="as-of">NY Fed, Staff Report 1185 (Feb 2026)</p>
+        <p>First direct evidence of liquidity-driven disintermediation. Partner banks run "narrow" to absorb the volatility of stablecoin flows; their loan-to-asset ratios contract versus peers. The ECB (Schnabel, Jun 2026) draws the parallel to 1970s money-market funds draining retail deposits.</p>
+      </div>
+      <div class="callout">
+        <div class="callout-label">Minimal-impact view</div>
+        <p class="stat md">Minimal lending impact modeled</p>
+        <p class="as-of">White House CEA (Apr 2026)</p>
+        <p>Assumes a small baseline market. Criticized by Americans for Financial Reform ("a model built to mislead," May 2026) and the Consumer Bankers Association (Apr 2026) for treating recirculated funds as equivalent to retail deposits when they return as concentrated, wholesale, rate-sensitive liabilities that do not support relationship lending.</p>
+      </div>
+    </div>
+    <p class="as-of">Both sides are politically situated. The honest answer right now: early evidence, no consensus number.</p>
+  </div>
+</section>
+
+<!-- SECTION 5: CROSS-BORDER -->
+<section class="section" id="remittances">
+  <div class="section-inner">
+    <div class="kicker">05 - Cross-border payments</div>
+    <h2>Cheaper, faster money across borders</h2>
+    <p class="section-thesis">This is stablecoins' clearest real-world win, measured against World Bank remittance-price data. A $10,000 cross-border transfer through banks costs roughly $245-465 and takes 1-5 business days; the same transfer on stablecoin rails costs under $10 and settles in seconds.</p>
+
+    <div class="reveal">
+      <div class="race-row">
+        <div class="race-label"><span>Traditional wire - $245-465, 1-5 days</span><span class="num">~4.65%</span></div>
+        <div class="race-bar-track"><div class="race-bar trad" data-fill="93"></div></div>
+      </div>
+      <div class="race-row">
+        <div class="race-label"><span>Stablecoin rails - under $10, seconds</span><span class="num">~0.1%</span></div>
+        <div class="race-bar-track"><div class="race-bar" data-fill="2"></div></div>
+      </div>
+      <p class="chart-caption">Cost of moving $10,000 across borders, as a share of the principal. Traditional: ~4.65% (SWIFT fees + FX spread, 1-5 days). Stablecoin: ~0.1% (network fee, seconds).</p>
+    </div>
+
+    <h3 style="margin-top:2.5rem">Remittance cost calculator</h3>
+    <p class="as-of">Pure client-side arithmetic from the cost figures above. Estimates only; real costs vary by corridor and off-ramp.</p>
+    <form class="calc" id="remittance-calc" onsubmit="return false">
+      <div class="calc-row">
+        <label for="calc-amount">Amount to send (USD)</label>
+        <input type="number" id="calc-amount" value="1000" min="1" step="1" inputmode="numeric">
+      </div>
+      <div class="calc-row">
+        <label for="calc-rail">Rail</label>
+        <select id="calc-rail">
+          <option value="traditional">Traditional wire (~4.65%, $245 fixed, 3-5 days)</option>
+          <option value="stablecoin" selected>Stablecoin rails (~0.1%, $8 fixed, seconds)</option>
+        </select>
+      </div>
+      <div class="calc-out">
+        <span class="stat" id="calc-cost">$0</span>
+        <span class="calc-detail" id="calc-detail">Estimated total cost</span>
+      </div>
+    </form>
+
+    <h3 style="margin-top:2.5rem">Where adoption is real</h3>
+    <p class="as-of">Not pilot programs - real, non-trivial volume.</p>
+    <div class="hub-accordion" id="corridor-accordion"></div>
+    <noscript>
+      <ul>
+        <li><strong>Latin America:</strong> ~$1.5T in crypto 2022-2025, predominantly stablecoins. Argentina: >60% of exchange crypto purchases are stablecoins; Brazil: ~90% of crypto volume.</li>
+        <li><strong>Sub-Saharan Africa:</strong> highest remittance costs globally (8.78% avg). Nigeria receives ~60% of regional stablecoin inflows since 2019.</li>
+        <li><strong>UAE-India:</strong> world's largest remittance route; businesses convert AED to stablecoins for instant settlement into India.</li>
+      </ul>
+    </noscript>
+    <p class="as-of" style="margin-top:1rem">Sources: Chainalysis Geography of Cryptocurrency 2025; IMF Nigeria (Jun 2026); World Bank Remittance Prices Worldwide. Visa now settles payments in USDC (live in the US since Dec 2025).</p>
+  </div>
+</section>
+
+<!-- SECTION 6: DOLLARIZATION -->
+<section class="section" id="dollarization">
+  <div class="section-inner">
+    <div class="kicker">06 - Dollarization</div>
+    <h2>Dollarization from below</h2>
+    <p class="section-thesis">When a country's citizens choose the dollar over the national currency at scale, monetary policy loses its transmission mechanism. Stablecoins have turned dollarization from a government-level decision into a tap on a phone. BIS Working Paper 1370 (Jul 2026) found stablecoin flows show little response to capital controls, unlike bank deposits.</p>
+
+    <div class="chart-wrap reveal">
+      <canvas id="dollarization-chart" height="320" role="img" aria-label="Ranked bar chart of stablecoin purchases as a share of GDP by country. Turkey leads at 4.3 percent. Other countries ranked below with cited qualitative evidence."></canvas>
+      <p class="chart-caption">Stablecoin purchases as a share of GDP. Turkey is the only country with a measured figure (~4.3%, Chainalysis). Argentina, Nigeria, Lebanon, and Venezuela have strong qualitative and survey evidence but no single comparable GDP-share figure; ranked below Turkey on documented adoption.</p>
+    </div>
+
+    <div class="hub-accordion" id="dollarization-accordion" style="margin-top:1.5rem"></div>
+    <noscript>
+      <ul>
+        <li><strong>Turkey:</strong> 4.3% of GDP, highest share in the world. USDT/TRY top local trading pair.</li>
+        <li><strong>Argentina:</strong> 60% of exchange crypto purchases are USDT/USDC; landlords accept USDT.</li>
+        <li><strong>Nigeria:</strong> ~60% of sub-Saharan Africa stablecoin inflows since 2019.</li>
+        <li><strong>Lebanon:</strong> crypto volume +120% YoY in 2022; street vendors accept USDT.</li>
+        <li><strong>Venezuela:</strong> USDT P2P premium spiked ~40% in early-2026 crisis.</li>
+      </ul>
+    </noscript>
+  </div>
+</section>
+
+<!-- SECTION 7: DEPEGS -->
+<section class="section" id="depegs">
+  <div class="section-inner">
+    <div class="kicker">07 - When pegs break</div>
+    <h2>Three depegs, three failure modes</h2>
+    <p class="section-thesis">A depeg happens when redemption confidence drops. The three cases below show three different mechanisms: an algorithmic death spiral (UST, structural), a bank-run scare (USDC/SVB, temporary), and a synthetic-dollar funding-rate stress event (USDe, recoverable). Cross-linked with the dashboard's own <a href="/#lesson-depeg-cases">Anatomy of a real depeg</a> lesson.</p>
+
+    <div id="depeg-cards"></div>
+    <noscript>
+      <div class="depeg-card">
+        <h3>UST / Terra - May 2022</h3>
+        <p class="mech">Algorithmic death spiral. Combined UST+LUNA loss ~$60B in roughly a week. See <a href="#treasury">Section 3</a> and the <a href="/#lesson-depeg-cases">in-app lesson</a>.</p>
+      </div>
+      <div class="depeg-card">
+        <h3>USDC / SVB - March 2023</h3>
+        <p class="mech">USDC low $0.8789 (CoinGecko Research); $3.3B stranded at SVB. Recovered after US government backstopped all SVB depositors.</p>
+      </div>
+      <div class="depeg-card">
+        <h3>USDe wobble - October 2025</h3>
+        <p class="mech">Ethena USDe depegged to $0.62 on some DEXs during a funding-rate stress event. Recovered as hedges rebalanced.</p>
+      </div>
+    </noscript>
+  </div>
+</section>
+
+<!-- SECTION 8: REGULATION -->
+<section class="section" id="regulation">
+  <div class="section-inner">
+    <div class="kicker">08 - The rulebook</div>
+    <h2>One rulebook, many flavors</h2>
+    <p class="section-thesis">By August 2026, every major financial hub has a live stablecoin framework. They converge on full reserve backing, licensed issuers, and the effective death of algorithmic designs. The real divergence is whether foreign dollar stablecoins are welcomed (Singapore) or contained to protect local currencies (EU, UK, Japan). Filter by jurisdiction below.</p>
+
+    <div class="chip-row" id="reg-chips" role="group" aria-label="Filter by jurisdiction">
+      <button class="hub-chip active" data-jurisdiction="all">All</button>
+      <button class="hub-chip" data-jurisdiction="United States">US</button>
+      <button class="hub-chip" data-jurisdiction="European Union">EU</button>
+      <button class="hub-chip" data-jurisdiction="United Kingdom">UK</button>
+      <button class="hub-chip" data-jurisdiction="Japan">Japan</button>
+      <button class="hub-chip" data-jurisdiction="Singapore">Singapore</button>
+      <button class="hub-chip" data-jurisdiction="Hong Kong">Hong Kong</button>
+      <button class="hub-chip" data-jurisdiction="UAE">UAE</button>
+      <button class="hub-chip" data-jurisdiction="India">India</button>
+    </div>
+    <div class="hub-table-wrap">
+      <table class="hub-table" id="reg-table">
+        <thead>
+          <tr>
+            <th>Jurisdiction</th>
+            <th>Framework</th>
+            <th>Status</th>
+            <th>Permitted pegs</th>
+            <th>Algorithmic</th>
+            <th>Key rules</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="as-of" style="margin-top:0.8rem">Regulatory status is the most stale-fast category in this report. MiCA enforcement dates, GENIUS rulemaking, UK Oct 2027 go-live, Hong Kong license counts all change monthly. Always timestamp.</p>
+  </div>
+</section>
+
+<!-- SECTION 9: REALITY CHECK -->
+<section class="section" id="reality-check">
+  <div class="section-inner tight">
+    <div class="kicker">09 - Reality check</div>
+    <h2>A rounding error, with momentum</h2>
+    <p class="section-thesis">After eight sections of "this is a big deal," a deliberately humbling close. Today's tokenization is a rounding error against traditional finance. The growth rate is the story, not the current size.</p>
+
+    <div class="chart-wrap reveal">
+      <canvas id="reality-chart" height="340" role="img" aria-label="Log-scale bar chart putting stablecoins next to money-market funds, gold ETFs, tokenized gold, and RWA ex-stablecoins. Money-market funds at $7.9T dwarf everything else."></canvas>
+      <p class="chart-caption">Log scale, USD billions. US money-market funds ~$7.9T (ICI); US gold ETFs ~$530B (World Gold Council); fiat stablecoins ~$316B; RWA ex-stablecoins ~$20-40B (rwa.xyz); tokenized gold ~$5-8B. The ratios are structurally stable for now; the absolute sizes are fast-stale.</p>
+    </div>
+    <p class="as-of">Until on-chain real assets approach even 1% of their traditional counterparts, claims that they are "changing" commodity or credit markets should be read as trajectory statements, not current-fact statements. The growth rates, not the sizes, are the story worth monitoring on the live dashboard.</p>
+  </div>
+</section>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="hub-footer">
+  <div class="hub-footer-inner">
+    <div class="badge">Last updated 2026-08-12 - Next scheduled review 2026-11-01</div>
+
+    <p class="attribution">Research and maintained by <a href="https://www.withkeshav.com">Keshav Maheshwari</a>.</p>
+
+    <p class="disclaimer">This report is provided for informational and educational purposes only. It is not financial, investment, legal, or tax advice, and nothing here should be read as a recommendation to buy, sell, or hold any asset. Headline figures such as market capitalization represent one measure among several relevant ones, they do not by themselves capture trading volume, tokenized real-world-asset value, or every issuer's reserves, and different sources measure and report them differently, see the numeric-claim-precision rule above for how this report handles that. Figures are sourced and dated as noted throughout; markets and regulation move quickly, verify any figure against the cited primary source before relying on it for a decision.</p>
+
+    <h3 style="font-size:1.1rem;margin-top:2rem">Methodology</h3>
+    <p class="methodology">Three independent research passes (see .progress/ for the source reports), cross-checked against each other and against primary sources. Where sources disagree on a figure, the range is given rather than a single silently-chosen number. The four highest-stakes claims (Treasury-holder ranking, GENIUS Act effective-date mechanics, SVB/USDC low, UST collapse figure) were verified against primary sources on 2026-08-12: Treasury TIC data (Jan 2023), Morgan Lewis on the GENIUS Act, CoinGecko Research on the USDC low ($0.8789), and CoinMarketCap/Reuters/ScienceDirect on UST (~$18B supply, ~$60B combined loss). If a primary source was unreachable or ambiguous during verification, it is noted in the resolved-claim detail below rather than silently falling back to a research-file figure.</p>
+
+    <h3 style="font-size:1.1rem">Verified claims (resolved 2026-08-12)</h3>
+    <div id="verified-claims-list"></div>
+    <noscript>
+      <ol>
+        <li><strong>Treasury-holder ranking:</strong> Tether ~$141B exceeds Germany ($91.3B) and Norway ($104.4B); combined issuers ~$182B exceeds Norway. Duration-mismatched comparison. Sources: US Treasury TIC, Tether/Circle attestations.</li>
+        <li><strong>GENIUS effective date:</strong> earlier of 18 months after enactment or 120 days after final rules; estimated Nov 2026. Sources: Congress.gov S.1582, Morgan Lewis.</li>
+        <li><strong>SVB/USDC low:</strong> $0.8789 on Mar 11 2023 (CoinGecko Research); $3.3B at SVB. Sources: CoinGecko Research, CNBC.</li>
+        <li><strong>UST collapse:</strong> ~$18B UST supply peak; ~$60B combined UST+LUNA loss. Sources: ScienceDirect, Reuters, CoinMarketCap via Binance.</li>
+      </ol>
+    </noscript>
+
+    <h3 style="font-size:1.1rem">Sources</h3>
+    <ul class="sources" id="sources-list"></ul>
+    <noscript>
+      <p>Sources listed at <a href="https://stablesense.withkeshav.com/research/">the hub page</a> with JS enabled.</p>
+    </noscript>
+
+    <div class="back-link">
+      <a href="/">&larr; Open the live dashboard</a>
+    </div>
+  </div>
+</footer>
+
+<script type="module" src="./main.js"></script>
+</body>
+</html>

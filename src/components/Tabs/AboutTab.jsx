@@ -77,6 +77,26 @@ export default function AboutTab() {
         </div>
       </section>
 
+      <section class="card mb-4">
+        <div class="card-header">
+          <div class="card-title">State of Stablecoins research</div>
+        </div>
+        <div class="card-body">
+          <p>
+            Beyond the live dashboard, StableSense publishes a long-form, fully-cited research report:
+            <strong> The State of Stablecoins</strong>. It covers the wider value-referenced-token
+            taxonomy (gold-backed, crypto-collateralized, synthetic, algorithmic, tokenized funds),
+            the macroeconomic impact (Treasury-market effects, bank disintermediation, cross-border
+            payments, dollarization, systemic risk), depeg history, and the global regulatory
+            landscape, with charts and a sourced citation list. Every figure is dated and ranges are
+            shown where sources disagree.
+          </p>
+          <p class="mb-0">
+            <a class="learn-link-btn" href="/research/">Read the State of Stablecoins report &rsaquo;</a>
+          </p>
+        </div>
+      </section>
+
       <section class="card">
         <div class="card-header">
           <div class="card-title">Methodology note</div>

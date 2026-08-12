@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="The State of Stablecoins - StableSense Research">
+  <defs>
+    <style>
+      .bg { fill: #FAFAF8; }
+      .frame { stroke: #D8DBD1; stroke-width: 1.5; fill: none; }
+      .corner { stroke: #B8863D; stroke-width: 3; fill: none; stroke-linecap: square; }
+      .kicker { font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace; font-size: 22px; letter-spacing: 2.4px; fill: #B8863D; font-weight: 500; }
+      .headline { font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif; font-size: 84px; letter-spacing: -1.8px; fill: #14201A; font-weight: 600; }
+      .subhead { font-family: -apple-system, 'Segoe UI', system-ui, sans-serif; font-size: 26px; fill: #5C6B62; }
+      .rigor { font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace; font-size: 17px; fill: #5C6B62; letter-spacing: 0.3px; }
+      .attr { font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace; font-size: 17px; fill: #5C6B62; letter-spacing: 0.3px; }
+      .chart-motif { stroke: #D8DBD1; stroke-width: 1.2; fill: none; }
+      .gold-dot { fill: #B8863D; }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1200" height="630"/>
+
+  <!-- hairline frame -->
+  <rect class="frame" x="40" y="40" width="1120" height="550"/>
+
+  <!-- gold corner brackets -->
+  <path class="corner" d="M40 40 L40 90 M40 40 L90 40"/>
+  <path class="corner" d="M1160 40 L1160 90 M1160 40 L1110 40"/>
+  <path class="corner" d="M40 590 L40 540 M40 590 L90 590"/>
+  <path class="corner" d="M1160 590 L1160 540 M1160 590 L1110 590"/>
+
+  <!-- faint engraved line-chart motif top-right ending in one gold dot -->
+  <g transform="translate(820,70)">
+    <polyline class="chart-motif" points="0,120 60,108 120,114 180,96 240,102 300,78 340,60"/>
+    <circle class="gold-dot" cx="340" cy="60" r="5"/>
+  </g>
+
+  <!-- kicker -->
+  <text class="kicker" x="80" y="200">STABLESENSE RESEARCH</text>
+
+  <!-- headline -->
+  <text class="headline" x="80" y="300">The State of Stablecoins</text>
+
+  <!-- subhead: one-line thesis -->
+  <text class="subhead" x="80" y="350">Stablecoins are not just dollar tokens. They are becoming a layer of the financial system.</text>
+
+  <!-- bottom row: rigor note left, attribution right -->
+  <line class="frame" x1="80" y1="540" x2="1120" y2="540" stroke-opacity="0.5"/>
+  <text class="rigor" x="80" y="575">Every figure sourced and dated. Ranges shown where sources disagree.</text>
+  <text class="attr" x="1120" y="575" text-anchor="end">Keshav Maheshwari - withkeshav.com</text>
+</svg>

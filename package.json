@@ -1,12 +1,14 @@
 {
   "name": "stablesense",
-  "version": "3.2.0",
+  "version": "3.2.5",
   "private": false,
   "type": "module",
   "description": "StableSense - Stablecoin intelligence and learning across USDT, USDC, DAI, USDe and PYUSD.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:research": "vite build --config vite.config.research.mjs",
+    "build:all": "vite build && npm run build:research",
     "preview": "vite preview",
     "test": "vitest run"
   },

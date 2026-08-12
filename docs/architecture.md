@@ -95,3 +95,12 @@ Mobile-first is mandatory (see `AGENTS.md`):
 - Tables become stacked cards under 480px.
 - 44px minimum touch targets, safe-area insets on header and bottom nav.
 - Charts use responsive aspect ratios; the header height accounts for the notch in landscape.
+
+## Research hub (`/research`)
+
+The "State of Stablecoins" research hub is a separate static build, not a Preact route, so crawlers get fully-rendered HTML content (the SPA's client-rendered tabs are invisible to link-preview crawlers and slower for first paint, which works against the hub's SEO goal).
+
+- **Source:** `research/` (`index.html`, `styles.css`, `main.js`, `data.js`, `og.svg`/`og.png` in `research/public/`). The hub has its own engraved-ledger design system (`--hub-*` tokens), deliberately distinct from the dashboard's `--accent`/`--card` tokens. The two properties connect through one bridge element (the "Open the live dashboard" link), not a shared palette.
+- **Build:** `npm run build:research` uses a second Vite config (`vite.config.research.mjs`) with `root: 'research'`, emitting to `dist/research/`. Chart.js is the only shared dependency, lazy-loaded as a separate chunk. `npm run build:all` builds both the SPA and the hub.
+- **Serving:** nginx serves `dist/research/` at `/research/` via a dedicated `location` block before the SPA fallback (see `backend/deploy/nginx.conf`). The hub is single-page-with-anchors (`#taxonomy`, `#treasury`, etc.); distinct per-section URLs are a flagged follow-up, not the current architecture.
+- **Progressive enhancement:** `main.js` (loaded with `defer`) adds the live hero counter, IntersectionObserver scroll reveals, charts, chip filters, the remittance calculator, and accordion behavior. All section content renders as real HTML without it. Respects `prefers-reduced-motion` throughout.
