@@ -8,6 +8,7 @@ import MarketPulse from '../Sections/MarketPulse.jsx';
 import CapitalFlows from '../Sections/CapitalFlows.jsx';
 import SignalSummary from '../Sections/SignalSummary.jsx';
 import WhaleWatch from '../Sections/WhaleWatch.jsx';
+import FirstRunTour from '../ui/FirstRunTour.jsx';
 
 export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec = 900 }) {
   const cg = data?.cgSimple;
@@ -121,6 +122,7 @@ export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec
         dataQuality={data?.dataQuality}
         refreshIntervalSec={refreshIntervalSec}
       />
+      <FirstRunTour />
 
       <section class="metric-strip" aria-label="Key market metrics">
         <article class="metric-chip">

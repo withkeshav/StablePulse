@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { BrandWordmark } from '../BrandMark.jsx';
 import { SHARE_FORMATS, shareSignalCard } from '../../utils/shareChart.js';
 
@@ -20,15 +20,32 @@ export default function ShareSheet({
   sourceUrl = 'stablesense.withkeshav.com',
 }) {
   const [format, setFormat] = useState('square');
+  const sheetRef = useRef(null);
+  const closeRef = useRef(null);
 
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => {
       if (e.key === 'Escape') onClose();
+      if (e.key !== 'Tab' || !sheetRef.current) return;
+      const focusable = sheetRef.current.querySelectorAll(
+        'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener('keydown', onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    queueMicrotask(() => closeRef.current?.focus?.());
     return () => {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = prev;
@@ -69,15 +86,22 @@ export default function ShareSheet({
       aria-label="Share as Signal Card"
       onMouseDown={onClose}
     >
-      <section class="share-sheet" onMouseDown={(e) => e.stopPropagation()}>
+      <section class="share-sheet" ref={sheetRef} onMouseDown={(e) => e.stopPropagation()}>
         <header>
           <div>
             <p class="panel-kicker">SHARE AS SIGNAL CARD</p>
             <h2>Make the chart make sense.</h2>
             <p>A ready-to-share chart with the context a reader needs.</p>
           </div>
-          <button type="button" class="close-share" onClick={onClose} aria-label="Close share card">
-            ×
+          <button
+            type="button"
+            class="close-share"
+            ref={closeRef}
+            onClick={onClose}
+            aria-label="Close share sheet"
+          >
+            <span aria-hidden="true">×</span>
+            <span class="close-share-label">Close</span>
           </button>
         </header>
         <div class="share-content">
@@ -112,7 +136,7 @@ export default function ShareSheet({
           <aside class="share-controls">
             <div>
               <p class="panel-kicker">FORMAT</p>
-              <div class="format-list">
+              <div class="format-list" role="group" aria-label="Signal Card format">
                 {FORMAT_LIST.map((item) => (
                   <button
                     type="button"
@@ -134,7 +158,7 @@ export default function ShareSheet({
               <p>{read}</p>
             </div>
             <button type="button" class="primary-btn download-btn" onClick={download} disabled={!chartInstance}>
-              Download PNG
+              Download Signal Card
             </button>
             <p class="share-note">Includes date, source context, and StableSense branding.</p>
           </aside>

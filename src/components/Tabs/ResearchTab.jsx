@@ -54,10 +54,9 @@ export default function ResearchTab() {
         ))}
       </section>
 
-      <p class="sync-cadence-hint">
-        Canonical full report:{' '}
-        <a href="/research/" target="_blank" rel="noopener noreferrer">stablesense.withkeshav.com/research/</a>
-        . Case figures below are imported from the same research data module.
+      <p class="research-hub-line">
+        Read the full sourced report in{' '}
+        <a href="/research/" target="_blank" rel="noopener noreferrer">Research Hub →</a>
       </p>
 
       <DepegCaseStudy />

@@ -106,7 +106,7 @@ export default function DepegCaseStudy({ showIntro = true }) {
           </div>
           <span class="matrix-note">A mechanism map, not a price-performance chart.</span>
         </header>
-        <div class="failure-matrix glass tbl-wrap">
+        <div class="failure-matrix glass tbl-wrap failure-matrix-desktop">
           <div class="matrix-head">
             <span>Case</span>
             <span>What held the peg</span>
@@ -128,6 +128,31 @@ export default function DepegCaseStudy({ showIntro = true }) {
                   {row.recoverText}
                 </span>
               </div>
+            );
+          })}
+        </div>
+        <div class="failure-matrix-mobile" aria-label="Failure pattern comparison cards">
+          {DEPEG_CASE_ORDER.map((id) => {
+            const row = DEPEG_CASES[id];
+            return (
+              <article class="matrix-mobile-card" key={id}>
+                <h3 class={row.color}>{row.short}</h3>
+                <div class="matrix-mobile-row">
+                  <span>What held the peg</span>
+                  <strong>{row.heldPeg}</strong>
+                </div>
+                <div class="matrix-mobile-row">
+                  <span>What broke first</span>
+                  <strong>{row.brokeFirst}</strong>
+                </div>
+                <div class="matrix-mobile-row">
+                  <span>Could it recover?</span>
+                  <strong>
+                    <i class={row.couldRecover ? 'yes-dot' : 'no-dot'} aria-hidden="true" />
+                    {row.recoverText}
+                  </strong>
+                </div>
+              </article>
             );
           })}
         </div>

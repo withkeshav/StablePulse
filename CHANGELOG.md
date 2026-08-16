@@ -4,6 +4,22 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.1] - 2026-08-16
+
+### Fixed
+- **Mobile Market Pulse:** hero stacks vertically with full-width stability gauge and 2-column peg chips (no clipped two-column desktop layout).
+- **Mobile charts:** supply/peg and other dashboard grids force single column with `min-width: 0`, ~260px chart height, and no page-level horizontal overflow.
+- **Signal Card sheet:** true mobile bottom sheet with focus trap, Escape/backdrop close, body scroll lock, and **Download Signal Card** primary action.
+- **Share control:** moved out of the canvas/legend into a labeled Share toolbar (desktop + mobile).
+
+### Changed
+- **Mobile nav:** Dashboard · Assets · Research · Alerts · More (Assets opens picker; More opens instrument rail; selected asset stays labeled).
+- **First-run tour:** compact banner under Market Pulse with Skip (no full-screen dimmer).
+- **Chains:** learner takeaway plus per-coin Top-5 chain cards (absolute multi-coin bar chart removed from this view).
+- **Research matrix:** stacked comparison cards on phones; desktop matrix retained.
+- **Alerts empty state:** "No material stress detected in this refresh" with four rule cards; filters muted when zero events.
+- **P2 polish:** Research Hub canonical line, desktop Share label, darker-theme helper text contrast.
+
 ## [3.5.0] - 2026-08-16
 
 ### Added

@@ -96,6 +96,7 @@ export default function ChartWrapper({
   shareDefinition = 'Market observation from live StableSense data.',
   shareHighlight = '',
   enableShare = true,
+  sharePlacement = 'toolbar',
 }) {
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
@@ -186,30 +187,40 @@ export default function ChartWrapper({
   }, []);
 
   const wrapStyle = aspectRatio
-    ? `position:relative;width:100%;aspect-ratio:${aspectRatio};min-height:${Math.min(height, 280)}px`
-    : `height:${height}px`;
+    ? `position:relative;width:100%;max-width:100%;min-width:0;aspect-ratio:${aspectRatio};min-height:${Math.min(height, 280)}px`
+    : `height:${height}px;width:100%;max-width:100%;min-width:0`;
 
   const label = ariaLabel || `${type} chart`;
 
+  const openShare = (e) => {
+    e?.stopPropagation?.();
+    if (chartRef.current) setShareOpen(true);
+  };
+
+  const shareControl = enableShare ? (
+    <button
+      class={`share-chart-btn ${sharePlacement === 'footer' ? 'share-chart-btn-block' : ''}`}
+      type="button"
+      title="Share as Signal Card"
+      aria-label="Share chart as Signal Card"
+      onClick={openShare}
+    >
+      <span aria-hidden="true">⎘</span>
+      <span class="share-chart-label">Share</span>
+    </button>
+  ) : null;
+
   return (
-    <>
+    <div class="chart-block">
+      {enableShare && sharePlacement === 'toolbar' ? (
+        <div class="chart-share-toolbar">{shareControl}</div>
+      ) : null}
       <div class="chart-wrap chart-canvas-box" style={wrapStyle} aria-label={label} role="img">
         <canvas ref={canvasRef}></canvas>
-        {enableShare ? (
-          <button
-            class="share-btn"
-            type="button"
-            title="Share as Signal Card"
-            aria-label="Share chart as Signal Card"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (chartRef.current) setShareOpen(true);
-            }}
-          >
-            ⎘
-          </button>
-        ) : null}
       </div>
+      {enableShare && sharePlacement === 'footer' ? (
+        <div class="chart-share-footer">{shareControl}</div>
+      ) : null}
       {enableShare ? (
         <ShareSheet
           open={shareOpen}
@@ -222,6 +233,6 @@ export default function ChartWrapper({
           highlight={shareHighlight}
         />
       ) : null}
-    </>
+    </div>
   );
 }

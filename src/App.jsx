@@ -14,7 +14,6 @@ import RefreshCountdown from './components/ui/RefreshCountdown.jsx';
 import SettingsPanel from './components/SettingsPanel.jsx';
 import useTheme from './hooks/useTheme.js';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
-import FirstRunTour from './components/ui/FirstRunTour.jsx';
 import { APP_VERSION, aiApiBase } from './config.js';
 import { REFRESH_KEY, COMPACT_KEY } from './utils/storage.js';
 import { coinFromTabId, getActiveCoins } from './utils/coin-config.js';
@@ -243,8 +242,12 @@ export default function App() {
           </main>
         </div>
       </div>
-      <MobileNav activeTab={activeTab} setActiveTab={setTab} alertCount={alerts.length} />
-      <FirstRunTour />
+      <MobileNav
+        activeTab={activeTab}
+        setActiveTab={setTab}
+        alertCount={alerts.length}
+        onOpenRail={() => setRailOpen(true)}
+      />
       <SettingsPanel
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}

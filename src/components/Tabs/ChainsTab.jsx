@@ -1,15 +1,12 @@
 import { useMemo, useState } from 'preact/hooks';
-import { fmtB, fmtPct, pctChange } from '../../utils/formatters.js';
+import { fmtB, fmtPct } from '../../utils/formatters.js';
 import { getActiveCoins } from '../../utils/coin-config.js';
-import ChartWrapper from '../ui/ChartWrapper.jsx';
 
 export default function ChainsTab({ data }) {
   const assets = data?.allStables?.peggedAssets || [];
   const activeCoins = getActiveCoins();
 
-  // For each active coin, find its largest chain by circulating supply and
-  // its second-largest chain to surface the biggest supply concentration.
-  const coinPairs = useMemo(() => {
+  const coinCards = useMemo(() => {
     return activeCoins.map((cfg) => {
       const asset = assets.find((x) => x.symbol.toLowerCase() === cfg.symbol.toLowerCase());
       const bt = (asset?.chainCirculating && Object.entries(asset.chainCirculating)) || [];
@@ -19,34 +16,40 @@ export default function ChainsTab({ data }) {
           cur: info?.current?.peggedUSD || 0,
           pd: info?.circulatingPrevDay?.peggedUSD || info?.current?.peggedUSD || 0,
         }))
+        .filter((r) => r.cur > 0)
         .sort((a, b) => b.cur - a.cur);
-      const [top = {}, second = {}] = ranked;
+      const total = ranked.reduce((s, r) => s + r.cur, 0) || 1;
+      const top5 = ranked.slice(0, 5).map((r) => ({
+        ...r,
+        share: r.cur / total,
+      }));
       return {
         symbol: cfg.symbol,
         color: cfg.color,
-        top,
-        second,
-        hasTwo: ranked.length >= 2,
+        top5,
+        topShare: top5[0]?.share || 0,
+        topChain: top5[0]?.chain || '-',
+        total,
       };
-    });
+    }).filter((c) => c.top5.length);
   }, [activeCoins, assets]);
 
-  const chartData = useMemo(() => {
-    const labels = [];
-    const datasets = [];
-    activeCoins.forEach((cfg) => {
-      const pair = coinPairs.find((p) => p.symbol === cfg.symbol);
-      if (!pair || !pair.top.cur) return;
-      labels.push(`${cfg.symbol} ${pair.top.chain}`, `${cfg.symbol} ${pair.second?.chain || 'next'}`);
-      datasets.push({ label: cfg.symbol, data: [pair.top.cur, pair.second?.cur || 0], backgroundColor: [cfg.color + 'AA', cfg.color + '66'] });
-    });
-    return { labels, datasets };
-  }, [activeCoins, coinPairs]);
+  const takeaway = useMemo(() => {
+    const usdt = coinCards.find((c) => c.symbol === 'USDT');
+    const usdc = coinCards.find((c) => c.symbol === 'USDC');
+    if (usdt?.topChain && usdc?.topChain) {
+      return `USDT is concentrated on ${usdt.topChain}; USDC is concentrated on ${usdc.topChain}.`;
+    }
+    if (coinCards[0]) {
+      return `${coinCards[0].symbol} is most concentrated on ${coinCards[0].topChain}.`;
+    }
+    return 'Chain concentration shows where each tracked stablecoin\'s circulating supply sits today.';
+  }, [coinCards]);
 
   const sortedChains = useMemo(
     () => (data?.chainData || data?.allStables?.chains || [])
-      .filter((c) => (c.totalCirculatingUSD?.peggedUSD || 0) > 0)  // filter out $0 chains
-      .sort((a, b) => (b.totalCirculatingUSD?.peggedUSD || 0) - (a.totalCirculatingUSD?.peggedUSD || 0))  // descending by stablecoin circulating (not vendor order)
+      .filter((c) => (c.totalCirculatingUSD?.peggedUSD || 0) > 0)
+      .sort((a, b) => (b.totalCirculatingUSD?.peggedUSD || 0) - (a.totalCirculatingUSD?.peggedUSD || 0))
       .slice(0, 20),
     [data]
   );
@@ -57,6 +60,7 @@ export default function ChainsTab({ data }) {
     if (!q) return sortedChains;
     return sortedChains.filter((c) => (c.name || '').toLowerCase().includes(q));
   }, [sortedChains, chainQuery]);
+
   const migrations = useMemo(() => {
     const out = [];
     assets.forEach((asset) => {
@@ -67,38 +71,51 @@ export default function ChainsTab({ data }) {
         return { chain, delta: cur - pd };
       }).sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
       if (deltas.length >= 2) {
-        out.push({
-          coin: asset.symbol,
-          from: deltas.find((d) => d.delta < 0),
-          to: deltas.find((d) => d.delta > 0),
-        });
+        const from = deltas.find((d) => d.delta < 0);
+        const to = deltas.find((d) => d.delta > 0);
+        if (from && to) {
+          out.push({
+            coin: asset.symbol,
+            from,
+            to,
+            magnitude: Math.min(Math.abs(from.delta), Math.abs(to.delta)),
+          });
+        }
       }
     });
-    return out;
+    return out.sort((a, b) => b.magnitude - a.magnitude);
   }, [assets]);
-
-  const chartOptions = useMemo(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: { x: { ticks: { maxRotation: 45, autoSkip: true, font: { size: 10 } } } },
-  }), []);
 
   return (
     <div class="tab-content active">
       <div class="card mb-4">
-        <div class="card-header"><div class="card-title">Top Chain Concentration per Coin</div></div>
+        <div class="card-header"><div class="card-title">Top chain concentration per coin</div></div>
         <div class="card-body">
-          <div class="coin-pair-grid">
-            {coinPairs.filter((p) => p.top.cur).map((p) => (
-              <div class="compare-stat" key={p.symbol}>
-                <div class="cs-label">{p.symbol} · {p.top.chain}</div>
-                <div class="cs-val">{fmtB(p.top.cur)}</div>
-                <div class="cs-coin">{fmtPct(pctChange(p.top.cur, p.top.pd))} 24h</div>
-              </div>
+          <p class="chain-takeaway">{takeaway}</p>
+          <div class="chain-coin-cards">
+            {coinCards.map((card) => (
+              <article class="chain-coin-card" key={card.symbol}>
+                <h3>
+                  <i style={{ background: card.color }} aria-hidden="true" />
+                  {card.symbol}
+                  <span class="text-muted small" style="margin-left:auto;font-weight:600">
+                    Top: {card.topChain} · {fmtPct(card.topShare * 100)}
+                  </span>
+                </h3>
+                {card.top5.map((row) => (
+                  <div class="chain-top-row" key={`${card.symbol}-${row.chain}`}>
+                    <div>
+                      <strong>{row.chain}</strong>
+                      <div class="chain-bar" aria-hidden="true">
+                        <i style={{ width: `${Math.max(4, row.share * 100)}%`, background: card.color }} />
+                      </div>
+                    </div>
+                    <span class="mono">{fmtPct(row.share * 100)}</span>
+                    <span class="mono">{fmtB(row.cur)}</span>
+                  </div>
+                ))}
+              </article>
             ))}
-          </div>
-          <div class="chart-card-body">
-            <ChartWrapper type="bar" data={chartData} height={200} aspectRatio={16 / 10} options={chartOptions} />
           </div>
         </div>
       </div>
@@ -111,7 +128,10 @@ export default function ChainsTab({ data }) {
               <div class="migration-card" key={m.coin}>
                 <div class="chain-from">↓ {m.from?.chain || '-'}<br /><span>{fmtB(Math.abs(m.from?.delta || 0))}</span></div>
                 <div class="arrow-mid"></div>
-                <div class="mig-amount">{m.coin}</div>
+                <div class="mig-amount">
+                  {m.coin}
+                  <div class="text-muted small" style="margin-top:4px">Largest outflow → largest inflow hint</div>
+                </div>
                 <div class="arrow-mid" style="transform:scaleX(-1)"></div>
                 <div class="chain-to">↑ {m.to?.chain || '-'}<br /><span>{fmtB(Math.abs(m.to?.delta || 0))}</span></div>
               </div>
@@ -149,27 +169,24 @@ export default function ChainsTab({ data }) {
                       <td class="mono">{fmtB(c.totalCirculatingUSD?.peggedUSD || 0)}</td>
                     </tr>
                   );
-                }) : <tr><td colspan="3" class="info-empty">No chain matches "{chainQuery}"</td></tr>}
+                }) : (
+                  <tr><td colspan="3" class="info-empty">No chains match this filter.</td></tr>
+                )}
               </tbody>
             </table>
           </div>
-          <div class="chain-cards-mobile">
+          <div class="chain-mobile-list">
             {chainRows.length ? chainRows.map((c) => {
               const rank = sortedChains.findIndex((s) => s === c) + 1;
               return (
                 <div class="chain-mobile-card" key={c.name || rank}>
-                  <div class="cm-main">{c.name}</div>
-                  <div>
-                    <div class="cm-label">Rank</div>
-                    <div class="cm-val">{rank}</div>
-                  </div>
-                  <div>
-                    <div class="cm-label">Stablecoin Circulating</div>
-                    <div class="cm-val">{fmtB(c.totalCirculatingUSD?.peggedUSD || 0)}</div>
-                  </div>
+                  <div class="cm-rank mono">#{rank}</div>
+                  <div class="cm-name">{c.name}</div>
+                  <div class="cm-val mono">{fmtB(c.totalCirculatingUSD?.peggedUSD || 0)}</div>
+                  <div class="cm-label">Stablecoin circulating</div>
                 </div>
               );
-            }) : <div class="info-empty">No chain matches "{chainQuery}"</div>}
+            }) : <div class="info-empty">No chains match this filter.</div>}
           </div>
         </div>
       </div>

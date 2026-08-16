@@ -97,21 +97,29 @@ export default function AlertsTab({ alerts, intelligence, data, setActiveTab }) 
     <div class="tab-content active">
       <AlertHero intelligence={intelligence} alertCount={counts.all} />
 
-      <div class="card mb-4">
-        <div class="filter-bar">
+      {counts.all === 0 ? (
+        <div class="card mb-4">
+          <div class="card-body">
+            <AlertPrimer onLearn={handleLearn} />
+          </div>
+        </div>
+      ) : null}
+
+      <div class={`card mb-4 ${counts.all === 0 ? 'is-muted-card' : ''}`}>
+        <div class={`filter-bar ${counts.all === 0 ? 'is-muted' : ''}`} aria-hidden={counts.all === 0 ? 'true' : undefined}>
           {['all', 'CRITICAL', 'HIGH', 'WARNING'].map((sev) => (
-            <button key={sev} type="button" class={`filter-chip ${severity === sev ? 'active' : ''}`} onClick={() => setSeverity(sev)}>
+            <button key={sev} type="button" class={`filter-chip ${severity === sev ? 'active' : ''}`} onClick={() => setSeverity(sev)} disabled={counts.all === 0}>
               {sev === 'all' ? `All ${counts.all}` : `${sev} ${counts[sev]}`}
             </button>
           ))}
           <span class="sep"></span>
-          <select class="settings-select filter-select" value={coin} onChange={(e) => setCoin(e.currentTarget.value)}>
+          <select class="settings-select filter-select" value={coin} onChange={(e) => setCoin(e.currentTarget.value)} disabled={counts.all === 0}>
             {coins.map((c) => (
               <option key={c} value={c}>{c === 'all' ? 'All coins' : c}</option>
             ))}
           </select>
           <span class="sep"></span>
-          <select class="settings-select filter-select" value={sortBy} onChange={(e) => setSortBy(e.currentTarget.value)}>
+          <select class="settings-select filter-select" value={sortBy} onChange={(e) => setSortBy(e.currentTarget.value)} disabled={counts.all === 0}>
             <option value="latest">Latest</option>
             <option value="severity">Severity</option>
             <option value="magnitude">Magnitude</option>
@@ -121,13 +129,14 @@ export default function AlertsTab({ alerts, intelligence, data, setActiveTab }) 
             type="button"
             class={`filter-chip ${groupByRule ? 'active' : ''}`}
             onClick={() => setGroupByRule((v) => !v)}
+            disabled={counts.all === 0}
           >
             Group by rule
           </button>
         </div>
         <div class="card-body p0">
           {!filtered.length ? (
-            counts.all === 0 ? <AlertPrimer /> : <AlertsEmptyState />
+            counts.all === 0 ? null : <AlertsEmptyState />
           ) : grouped ? (
             grouped.map(([rule, items]) => (
               <div key={rule} class="alerts-rule-group">

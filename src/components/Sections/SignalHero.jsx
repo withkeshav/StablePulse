@@ -59,28 +59,28 @@ export default function SignalHero({ coins, priceByCoin, stress, intelligence, o
             Note: {dataQuality.map((d) => d.coin).join(', ')} supply data temporarily unavailable.
           </p>
         ) : null}
-        <div class="hero-actions">
-          {onLearn ? (
+        {onLearn ? (
+          <div class="hero-actions">
             <button type="button" class="primary-btn" onClick={onLearn}>
               How is this scored?
             </button>
-          ) : null}
-          <div class="signal-prices inline-prices">
-            {(coins || []).map((c) => (
-              <span key={c.symbol}>
-                {c.symbol} <strong>{fmtPrice(priceByCoin[c.symbol])}</strong>
-                <small>({bps(priceByCoin[c.symbol])} bps)</small>
-              </span>
-            ))}
           </div>
-        </div>
+        ) : null}
       </div>
       <div class="hero-gauge">
         <StabilityGauge value={stability} />
-        <div>
+        <div class="hero-gauge-copy">
           <p class="gauge-label">Peg stability index</p>
           <p class="gauge-note">{levelNote(stress?.level)} (100 minus stress score)</p>
         </div>
+      </div>
+      <div class="signal-prices inline-prices" aria-label="Tracked coin peg prices">
+        {(coins || []).map((c) => (
+          <span key={c.symbol}>
+            {c.symbol} <strong>{fmtPrice(priceByCoin[c.symbol])}</strong>
+            <small>({bps(priceByCoin[c.symbol])} bps)</small>
+          </span>
+        ))}
       </div>
     </section>
   );
