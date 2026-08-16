@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { createSharePopover } from '../../utils/shareChart.js';
+import ShareSheet from './ShareSheet.jsx';
 
 let chartPromise;
 function getChart() {
@@ -78,16 +78,30 @@ function areOptionsEqual(a, b) {
       return false;
     }
   }
-  return true;
+  return false;
 }
 
 const EMPTY_OPTIONS = {};
 
-export default function ChartWrapper({ type, data, options = {}, height = 220, aspectRatio = null }) {
+export default function ChartWrapper({
+  type,
+  data,
+  options = {},
+  height = 220,
+  aspectRatio = null,
+  ariaLabel = null,
+  shareTitle = 'StableSense chart',
+  shareRange = 'Live',
+  shareInterpretation = '',
+  shareDefinition = 'Market observation from live StableSense data.',
+  shareHighlight = '',
+  enableShare = true,
+}) {
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
   const lastRef = useRef({ type: null, data: null, options: null, aspectRatio: null, height: null, themeEpoch: -1 });
   const [themeEpoch, setThemeEpoch] = useState(0);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const resolvedOptions = Object.keys(options).length === 0 ? EMPTY_OPTIONS : options;
 
@@ -123,13 +137,12 @@ export default function ChartWrapper({ type, data, options = {}, height = 220, a
         prevNow.themeEpoch === themeEpoch
       ) return;
 
-      const grid = readCssVar('--border', '#e5e7eb');
-      const tick = readCssVar('--text2', '#6b7280');
+      const grid = readCssVar('--line', readCssVar('--border', '#dde3e8'));
+      const tick = readCssVar('--ink-faint', readCssVar('--text2', '#8b98a5'));
       const surface = readCssVar('--surface', '#ffffff');
-      const text = readCssVar('--text', '#111827');
+      const text = readCssVar('--ink', readCssVar('--text', '#172535'));
 
       const themedScales = tintScales(options?.scales, grid, tick);
-      const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
       const mergedOptions = {
         animation: false,
@@ -163,7 +176,7 @@ export default function ChartWrapper({ type, data, options = {}, height = 220, a
     return () => {
       cancelled = true;
     };
-  }, [type, data, resolvedOptions, aspectRatio, height, themeEpoch]);
+  }, [type, data, resolvedOptions, aspectRatio, height, themeEpoch, options]);
 
   useEffect(() => () => {
     if (chartRef.current) {
@@ -176,10 +189,39 @@ export default function ChartWrapper({ type, data, options = {}, height = 220, a
     ? `position:relative;width:100%;aspect-ratio:${aspectRatio};min-height:${Math.min(height, 280)}px`
     : `height:${height}px`;
 
+  const label = ariaLabel || `${type} chart`;
+
   return (
-    <div class="chart-wrap" style={wrapStyle} aria-label={`${type} chart`} role="img">
-      <canvas ref={canvasRef}></canvas>
-      <button class="share-btn" type="button" title="Share as screenshot" aria-label="Share chart as screenshot" onClick={(e) => { e.stopPropagation(); if (chartRef.current) createSharePopover(chartRef.current, 'StableSense chart', new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }), e.currentTarget); }}>⎘</button>
-    </div>
+    <>
+      <div class="chart-wrap chart-canvas-box" style={wrapStyle} aria-label={label} role="img">
+        <canvas ref={canvasRef}></canvas>
+        {enableShare ? (
+          <button
+            class="share-btn"
+            type="button"
+            title="Share as Signal Card"
+            aria-label="Share chart as Signal Card"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (chartRef.current) setShareOpen(true);
+            }}
+          >
+            ⎘
+          </button>
+        ) : null}
+      </div>
+      {enableShare ? (
+        <ShareSheet
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          chartInstance={chartRef.current}
+          title={shareTitle}
+          rangeLabel={shareRange}
+          interpretation={shareInterpretation}
+          definition={shareDefinition}
+          highlight={shareHighlight}
+        />
+      ) : null}
+    </>
   );
 }

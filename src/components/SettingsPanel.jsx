@@ -53,8 +53,10 @@ export default function SettingsPanel({
         class={`settings-panel ${isOpen ? 'open' : ''}`}
         style="max-width: 100vw; width: 320px;"
         role="dialog"
-        aria-modal="true"
+        aria-modal={isOpen ? 'true' : 'false'}
         aria-label="Settings"
+        aria-hidden={isOpen ? 'false' : 'true'}
+        hidden={!isOpen}
       >
         <div class="settings-header">
           Settings

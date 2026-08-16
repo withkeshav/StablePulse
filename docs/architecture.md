@@ -34,12 +34,14 @@ The frontend makes its live-data calls from the visitor's own IP, so no single o
 | `src/lib/derive.js` | Pure display logic (framework-free, unit tested) |
 | `src/lib/insights.js` | Pure Learn-tab observations from live data (framework-free, unit tested) |
 | `src/utils/formatters.js` | Formatting helpers (pure, unit tested) |
-| `src/utils/coin-config.js` | Stablecoin registry + active coin list |
-| `src/components/Tabs/` | Views: Home, Coin, Learn, Chains, Alerts, About. Learn covers the value-referenced-token taxonomy (peg mechanics, collateral types, gold/commodity, crypto-collateralized, synthetic, algorithmic, tokenized funds) plus the macroeconomic impact (Treasury demand, bank disintermediation, cross-border, depeg history, regulation); fast-decaying lessons carry a per-lesson `lastUpdated` date rendered next to the title |
-| `src/components/Sections/` | Page content: signal hero, market pulse, capital flows, whale watch, summary |
-| `src/components/ui/` | StatCard, Sparkline, ChartWrapper, RefreshCountdown, SkeletonLoader, AiTicker |
-| `src/components/` | Header, Sidebar, MobileNav, SettingsPanel, ThemeToggle |
-| `src/styles.css` | Single stylesheet: variables, light/dark themes, responsive rules |
+| `src/utils/coin-config.js` | Stablecoin registry + active coin list (Icewater palette; no finance green) |
+| `src/utils/depeg-cases.js` | Thin adapter over `research/data.js` depeg cases for the in-app Research tab (single source of truth) |
+| `src/utils/asset-meta.js` | Per-coin copy/meta for asset pages |
+| `src/components/Tabs/` | Views: Home, Coin, Research, Learn, Chains, Alerts, About. Learn covers the value-referenced-token taxonomy (peg mechanics, collateral types, gold/commodity, crypto-collateralized, synthetic, algorithmic, tokenized funds) plus the macroeconomic impact (Treasury demand, bank disintermediation, cross-border, depeg history, regulation); fast-decaying lessons carry a per-lesson `lastUpdated` date rendered next to the title |
+| `src/components/Sections/` | Page content: signal hero, market pulse, capital flows, whale watch, summary, depeg case study |
+| `src/components/ui/` | StatCard, Sparkline, ChartWrapper, ShareSheet, RefreshCountdown, SkeletonLoader, AiTicker |
+| `src/components/` | Header, Sidebar (instrument rail), MobileNav, SettingsPanel, ThemeToggle, BrandMark |
+| `src/styles.css` | Single stylesheet: Icewater tokens (`--page-bg`, Glacier Blue accent), light/dark themes, responsive rules |
 | `backend/` | Optional Fastify + SQLite service: history + AI narratives |
 
 ## Data layer (`src/lib/api.js`)
@@ -90,18 +92,27 @@ See [backend/README.md](../backend/README.md). Fastify + SQLite (WAL), cron jobs
 
 ## Mobile
 
-Mobile-first is mandatory (see `AGENTS.md`):
+Mobile-first layout rules:
 
-- Sidebar hidden under 768px, bottom tab bar shown instead.
+- Under 768px the instrument rail is a drawer (hamburger in the topbar); the bottom tab bar stays visible.
 - Tables become stacked cards under 480px.
 - 44px minimum touch targets, safe-area insets on header and bottom nav.
 - Charts use responsive aspect ratios; the header height accounts for the notch in landscape.
 
-## Research hub (`/research`)
+## Research surfaces
+
+Two surfaces, one data source:
+
+1. **Canonical hub** at `/research/` (static Vite build from `research/`). Full long-form article, charts, and mechanism-led depeg section.
+2. **In-app Research tab** (`ResearchTab.jsx` + `DepegCaseStudy.jsx`) for shelf browsing and interactive case study. Case facts come from `research/data.js` via `src/utils/depeg-cases.js` so lows, dates, and takeaways cannot drift.
+
+Hub logo links to the hub home; the live dashboard is a separately labeled link, never overloaded onto the brand mark.
+
+## Research hub build (`/research`)
 
 The "State of Stablecoins" research hub is a separate static build, not a Preact route, so crawlers get fully-rendered HTML content (the SPA's client-rendered tabs are invisible to link-preview crawlers and slower for first paint, which works against the hub's SEO goal).
 
-- **Source:** `research/` (`index.html`, `styles.css`, `main.js`, `data.js`, `og.svg`/`og.png` in `research/public/`). The hub has its own engraved-ledger design system (`--hub-*` tokens), deliberately distinct from the dashboard's `--accent`/`--card` tokens. The two properties connect through one bridge element (the "Open the live dashboard" link), not a shared palette.
+- **Source:** `research/` (`index.html`, `styles.css`, `main.js`, `data.js`, `og.svg`/`og.png` in `research/public/`). The hub has its own engraved-ledger design system (`--hub-*` tokens), deliberately distinct from the dashboard's Icewater tokens. The two properties connect through one bridge element (the "Open the live dashboard" link), not a shared palette.
 - **Build:** `npm run build:research` uses a second Vite config (`vite.config.research.mjs`) with `root: 'research'`, emitting to `dist/research/`. Chart.js is the only shared dependency, lazy-loaded as a separate chunk. `npm run build:all` builds both the SPA and the hub.
 - **Serving:** nginx serves `dist/research/` at `/research/` via a dedicated `location` block before the SPA fallback (see `backend/deploy/nginx.conf`). The hub is single-page-with-anchors (`#taxonomy`, `#treasury`, etc.); distinct per-section URLs are a flagged follow-up, not the current architecture.
 - **Progressive enhancement:** `main.js` (loaded with `defer`) adds the live hero counter, IntersectionObserver scroll reveals, charts, chip filters, the remittance calculator, and accordion behavior. All section content renders as real HTML without it. Respects `prefers-reduced-motion` throughout.

@@ -8,7 +8,7 @@ export const STABLECOIN_REGISTRY = {
     symbol: 'USDT',
     coingeckoId: 'tether',
     llamaStablecoinId: 1,
-    color: '#26A17B',
+    color: '#4b8cf0',
     thresholds: {
       pegCriticalBps: 50,
       pegWarnBps: 10,
@@ -20,7 +20,7 @@ export const STABLECOIN_REGISTRY = {
     symbol: 'USDC',
     coingeckoId: 'usd-coin',
     llamaStablecoinId: 2,
-    color: '#2775CA',
+    color: '#477fda',
     thresholds: {
       pegCriticalBps: 50,
       pegWarnBps: 10,
@@ -32,7 +32,7 @@ export const STABLECOIN_REGISTRY = {
     symbol: 'DAI',
     coingeckoId: 'dai',
     llamaStablecoinId: 5,
-    color: '#F3BA2F',
+    color: '#806fc2',
     thresholds: {
       pegCriticalBps: 60,
       pegWarnBps: 12,
@@ -45,7 +45,7 @@ export const STABLECOIN_REGISTRY = {
     coingeckoId: 'ethena-usde',
     llamaStablecoinId: 146,
     llamaStablecoinAliases: [146, 'ethena-usde'],
-    color: '#8B5CF6',
+    color: '#ca913b',
     thresholds: {
       pegCriticalBps: 60,
       pegWarnBps: 12,
@@ -57,7 +57,7 @@ export const STABLECOIN_REGISTRY = {
     symbol: 'PYUSD',
     coingeckoId: 'paypal-usd',
     llamaStablecoinId: 120,
-    color: '#003087',
+    color: '#739ccc',
     thresholds: {
       pegCriticalBps: 60,
       pegWarnBps: 12,

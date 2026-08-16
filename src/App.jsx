@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import Header from './components/Header.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import MobileNav from './components/MobileNav.jsx';
@@ -8,6 +8,7 @@ import ChainsTab from './components/Tabs/ChainsTab.jsx';
 import AlertsTab from './components/Tabs/AlertsTab.jsx';
 import AboutTab from './components/Tabs/AboutTab.jsx';
 import LearnTab from './components/Tabs/LearnTab.jsx';
+import ResearchTab from './components/Tabs/ResearchTab.jsx';
 import SkeletonLoader from './components/ui/SkeletonLoader.jsx';
 import RefreshCountdown from './components/ui/RefreshCountdown.jsx';
 import SettingsPanel from './components/SettingsPanel.jsx';
@@ -35,13 +36,13 @@ function readStoredRefresh() {
 function readStoredCompact() {
   try {
     const raw = localStorage.getItem(COMPACT_KEY);
-    if (raw === null) return true;   // no stored preference yet: default to compact
+    if (raw === null) return true;
     return raw === '1';
   } catch { return true; }
 }
 
 export default function App() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, effectiveTheme } = useTheme();
   const [activeTab, setActiveTab] = useState('home');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -49,6 +50,7 @@ export default function App() {
   const [apiStatus, setApiStatus] = useState({ message: '' });
   const [alerts, setAlerts] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [railOpen, setRailOpen] = useState(false);
 
   const initialStoredRefresh = readStoredRefresh();
   const [refreshIntervalSec, setRefreshIntervalSec] = useState(initialStoredRefresh ?? 900);
@@ -145,9 +147,6 @@ export default function App() {
 
   useEffect(() => {
     if (!data) return undefined;
-    // Load price charts for all active coins on initial load so the Home
-    // Peg Monitor and Supply Trend charts have data without needing a coin
-    // tab to be opened first.
     let alive = true;
     Promise.all(getActiveCoins().map((coin) => loadCoinChart(coin.symbol, data))).then(() => {
       if (alive) setData((prev) => ({ ...prev }));
@@ -155,56 +154,96 @@ export default function App() {
     return () => { alive = false; };
   }, [data?.fetchedAt]);
 
+  const priceByCoin = useMemo(() => {
+    const coins = getActiveCoins();
+    const cg = data?.cgSimple;
+    const m = {};
+    coins.forEach((c) => {
+      const live = cg?.[c.coingeckoId]?.usd ?? data?.prices?.[c.symbol]?.price;
+      m[c.symbol] = typeof live === 'number' ? live : null;
+    });
+    return m;
+  }, [data]);
+
+  const setTab = useCallback((id) => {
+    setActiveTab(id);
+    setRailOpen(false);
+  }, []);
+
   return (
-    <div id="app-layout" class="layout-wrapper">
+    <div id="app-layout" class="layout-wrapper app-shell" data-theme={effectiveTheme}>
       <a href="#main" class="skip-link">Skip to content</a>
-      <Header
-        loading={loading}
-        refreshing={refreshing}
-        apiStatus={apiStatus}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-        onRefresh={() => refresh({ background: true })}
-        buildVersion={APP_VERSION}
-        theme={theme}
-        setTheme={setTheme}
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setTab}
         alertCount={alerts.length}
-        onJumpToAlerts={() => setActiveTab('alerts')}
+        alerts={alerts}
+        priceByCoin={priceByCoin}
+        data={data}
+        lastUpdated={lastUpdated}
+        open={railOpen}
+        onClose={() => setRailOpen(false)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenMethodology={() => setTab('about')}
       />
-      <div id="body-row">
-        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} alertCount={alerts.length} alerts={alerts} />
-        <main id="main">
-          <ErrorBoundary>
-            {loading && !data ? (
-              <SkeletonLoader />
-            ) : (
-              <>
-                {apiStatus.message ? (
-                  <div class="card api-status-card">{apiStatus.message}</div>
-                ) : null}
-                {!loading && lastUpdated ? (
-                  <RefreshCountdown lastUpdated={lastUpdated} refreshIntervalSec={refreshIntervalSec} refreshing={refreshing} />
-                ) : null}
-                {activeTab === 'home' && (
-                  <HomeTab
-                    data={data}
-                    alerts={alerts}
-                    setActiveTab={setActiveTab}
-                    refreshIntervalSec={refreshIntervalSec}
-                  />
-                )}
-                {coinTab ? <CoinTab key={activeTab} coin={activeTab} data={data} /> : null}
-                {activeTab === 'chains' && <ChainsTab data={data} />}
-                {activeTab === 'alerts' && (
-                  <AlertsTab alerts={alerts} intelligence={data?.intelligence} data={data} setActiveTab={setActiveTab} />
-                )}
+      <div class="site-main">
+        <Header
+          loading={loading}
+          refreshing={refreshing}
+          apiStatus={apiStatus}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onRefresh={() => refresh({ background: true })}
+          buildVersion={APP_VERSION}
+          theme={theme}
+          setTheme={setTheme}
+          alertCount={alerts.length}
+          onJumpToAlerts={() => setTab('alerts')}
+          activeTab={activeTab}
+          onOpenRail={() => setRailOpen(true)}
+        />
+        <div id="body-row">
+          <main id="main" class="main-scroll">
+            <ErrorBoundary>
+              {loading && !data ? (
+                <SkeletonLoader />
+              ) : (
+                <>
+                  {apiStatus.message ? (
+                    <div class="card api-status-card">{apiStatus.message}</div>
+                  ) : null}
+                  {!loading && lastUpdated ? (
+                    <RefreshCountdown lastUpdated={lastUpdated} refreshIntervalSec={refreshIntervalSec} refreshing={refreshing} />
+                  ) : null}
+                  {activeTab === 'home' && (
+                    <HomeTab
+                      data={data}
+                      alerts={alerts}
+                      setActiveTab={setTab}
+                      refreshIntervalSec={refreshIntervalSec}
+                    />
+                  )}
+                  {coinTab ? (
+                    <CoinTab
+                      key={activeTab}
+                      coin={activeTab}
+                      data={data}
+                      setActiveTab={setTab}
+                    />
+                  ) : null}
+                  {activeTab === 'chains' && <ChainsTab data={data} />}
+                  {activeTab === 'alerts' && (
+                    <AlertsTab alerts={alerts} intelligence={data?.intelligence} data={data} setActiveTab={setTab} />
+                  )}
                 {activeTab === 'learn' && <LearnTab data={data} alerts={alerts} />}
+                {activeTab === 'research' && <ResearchTab />}
                 {activeTab === 'about' && <AboutTab />}
-              </>
-            )}
-          </ErrorBoundary>
-        </main>
+                </>
+              )}
+            </ErrorBoundary>
+          </main>
+        </div>
       </div>
-      <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} alertCount={alerts.length} />
+      <MobileNav activeTab={activeTab} setActiveTab={setTab} alertCount={alerts.length} />
       <FirstRunTour />
       <SettingsPanel
         isOpen={isSettingsOpen}

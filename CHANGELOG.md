@@ -4,6 +4,25 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.0] - 2026-08-16
+
+### Added
+- **Icewater Instrument shell:** fixed instrument rail, utility topbar, Glacier Blue accent tokens, Manrope + DM Serif Display, light page background (`--page-bg: #F7F5F2`).
+- **In-app Research tab** with shelf links to `/research/` and an interactive depeg case study. Case data is imported from `research/data.js` (no duplicated article facts).
+- **Brand assets:** SVG brand mark in chrome, optimized PNG wordmark, Signal Lens / learn-orb / case-study art on hero and Research surfaces only.
+- **Signal Cards:** share sheet formats (Story / Square / Landscape) via ChartWrapper + ShareSheet.
+- **Asset page hierarchy** for coin tabs (hero, metrics, peg, score, supply, chains, learn CTA).
+
+### Changed
+- **Mobile:** bottom nav preserved; hamburger opens the instrument rail as a drawer.
+- **Research hub depeg section** rewritten as mechanism selector / flow / matrix / takeaways (still canonical full hub at `/research/`).
+- **Coin colors** remapped to Icewater blues / violet / amber / coral (no finance green).
+- **Decorative washes softened:** learn orb opacity 0.05, lighter hero art, guide lines use `--blue-line`.
+- Stability gauge displays `100 - stress.score` while stress math in `derive.js` stays unchanged.
+
+### Docs
+- Public docs updated for dual Research surfaces and the Icewater shell. Local planning/agent notes stay unpublished.
+
 ## [3.4.0] - 2026-08-16
 
 ### Pass 1 - Data honesty

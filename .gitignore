@@ -41,6 +41,10 @@ backend/data/
 AGENTS.md
 CLAUDE.md
 .claude/
+.cursor/
+.opencode/
 
 # Local review/planning notes (internal, not published)
 .progress/
+*.packet/
+agent-transcripts/

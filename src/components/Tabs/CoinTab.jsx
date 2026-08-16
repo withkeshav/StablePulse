@@ -1,12 +1,23 @@
 import { useMemo, useState } from 'preact/hooks';
 import { fmtB, fmtPct, fmtPrice, pctChange, bps } from '../../utils/formatters.js';
 import { STABLECOIN_REGISTRY, getActiveCoins } from '../../utils/coin-config.js';
+import { getAssetMeta } from '../../utils/asset-meta.js';
 import { buildShareSeries, buildSupplySeries, buildWhaleWatchRows, dedupeTickers, pegChartOptions, pegRefLine, toPercentFromFirst } from '../../lib/derive.js';
 import ChartWrapper from '../ui/ChartWrapper.jsx';
+import { StabilityGauge } from '../Sections/SignalHero.jsx';
 
-export default function CoinTab({ coin, data }) {
+function coinStabilityScore(price, warnBps, critBps) {
+  const drift = Math.abs(bps(price));
+  if (!Number.isFinite(drift)) return 50;
+  if (drift >= critBps) return Math.max(5, 40 - Math.min(35, drift - critBps));
+  if (drift >= warnBps) return Math.max(55, 85 - Math.round((drift - warnBps) * 2));
+  return Math.min(99, 92 + Math.round((warnBps - drift) / 2));
+}
+
+export default function CoinTab({ coin, data, setActiveTab }) {
   const symbol = (coin || '').toUpperCase();
   const cfg = STABLECOIN_REGISTRY[symbol];
+  const meta = getAssetMeta(symbol);
   const cgKey = cfg?.coingeckoId;
   const detail = data?.[`${symbol.toLowerCase()}Detail`];
   const chartData = data?.[`cg${symbol}Chart`];
@@ -16,7 +27,11 @@ export default function CoinTab({ coin, data }) {
   const chg = data?.cgSimple?.[cgKey]?.usd_24h_change || 0;
   const supply = asset?.circulating?.peggedUSD || 0;
   const prev = asset?.circulatingPrevDay?.peggedUSD || supply;
-  const color = cfg?.color || '#3b82f6';
+  const color = cfg?.color || '#468bf0';
+  const warnBps = cfg?.thresholds?.pegWarnBps ?? 10;
+  const critBps = cfg?.thresholds?.pegCriticalBps ?? 50;
+  const score = coinStabilityScore(price, warnBps, critBps);
+  const pegBps = bps(price);
 
   const rows = useMemo(
     () =>
@@ -27,11 +42,19 @@ export default function CoinTab({ coin, data }) {
           const pd = tokens[tokens.length - 2]?.circulating?.peggedUSD || cur;
           return { chain, cur, pd, d1: pctChange(cur, pd) };
         })
-        .filter((r) => r.cur > 0)  // filter out negligible / $0 chains
+        .filter((r) => r.cur > 0)
         .sort((a, b) => b.cur - a.cur)
         .slice(0, 10),
     [detail]
   );
+
+  const chainShares = useMemo(() => {
+    const total = rows.reduce((s, r) => s + r.cur, 0) || 1;
+    return rows.slice(0, 4).map((r) => ({
+      ...r,
+      pct: Math.round((r.cur / total) * 100),
+    }));
+  }, [rows]);
 
   const supplySeries = useMemo(() => buildSupplySeries(detail), [detail]);
   const [supplyLog, setSupplyLog] = useState(false);
@@ -41,12 +64,14 @@ export default function CoinTab({ coin, data }) {
     const series = (chartData?.prices || []).slice(-90);
     const labels = series.map((p) => new Date(p[0]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
     const refColor = typeof document !== 'undefined'
-      ? getComputedStyle(document.documentElement).getPropertyValue('--text2').trim() || '#9CA3AF'
-      : '#9CA3AF';
+      ? getComputedStyle(document.documentElement).getPropertyValue('--ink-faint').trim()
+        || getComputedStyle(document.documentElement).getPropertyValue('--text2').trim()
+        || '#8b98a5'
+      : '#8b98a5';
     return {
       labels,
       datasets: [
-        { label: `${symbol} Price`, data: series.map((p) => p[1]), borderColor: color, tension: 0.2 },
+        { label: `${symbol} Price`, data: series.map((p) => p[1]), borderColor: color, tension: 0.2, fill: false },
         pegRefLine(labels, refColor),
       ],
     };
@@ -75,10 +100,10 @@ export default function CoinTab({ coin, data }) {
 
   const exchBars = useMemo(
     () => {
-      const rows = dedupeTickers(cgTickers?.tickers || [], 8);
+      const barRows = dedupeTickers(cgTickers?.tickers || [], 8);
       return {
-        labels: rows.map((r) => r.name),
-        datasets: [{ label: '24h Volume', data: rows.map((r) => r.volume), backgroundColor: color + 'AA' }],
+        labels: barRows.map((r) => r.name),
+        datasets: [{ label: '24h Volume', data: barRows.map((r) => r.volume), backgroundColor: color + 'AA' }],
       };
     },
     [cgTickers, color]
@@ -98,8 +123,6 @@ export default function CoinTab({ coin, data }) {
     return { responsive: true, maintainAspectRatio: false, ...pegChartOptions(prices) };
   }, [priceLineData]);
 
-  // Dominance: this coin's share of tracked stablecoin supply over time.
-  // Uses the ready-but-previously-uncharted buildShareSeries helper.
   const dominanceData = useMemo(() => {
     const coins = getActiveCoins();
     const supplyByCoin = {};
@@ -123,16 +146,13 @@ export default function CoinTab({ coin, data }) {
     plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${Number(ctx.parsed.y).toFixed(1)}%` } } },
   }), []);
 
-  // Peg deviation in basis points: (price - 1) * 10000. Fixed y bounds -50/+50
-  // per Workstream C §5.2 prevent the auto-band exaggeration the price chart
-  // still suffers from. A 0 bps line anchors "no deviation."
   const bpsData = useMemo(() => {
     const series = (chartData?.prices || []).slice(-90);
     if (!series.length) return null;
     const labels = series.map((p) => new Date(p[0]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
     const refColor = typeof document !== 'undefined'
-      ? getComputedStyle(document.documentElement).getPropertyValue('--text2').trim() || '#9CA3AF'
-      : '#9CA3AF';
+      ? getComputedStyle(document.documentElement).getPropertyValue('--ink-faint').trim() || '#8b98a5'
+      : '#8b98a5';
     return {
       labels,
       datasets: [
@@ -149,44 +169,182 @@ export default function CoinTab({ coin, data }) {
     plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y > 0 ? '+' : ''}${ctx.parsed.y} bps` } } },
   }), []);
 
-  return (
-    <div class="tab-content active">
-      <div class="stats-grid">
-        <div class="stat-card"><div class="stat-label">Price</div><div class="stat-value">{fmtPrice(price)}</div></div>
-        <div class="stat-card"><div class="stat-label">Market Change</div><div class="stat-value">{fmtPct(chg)}</div></div>
-        <div class="stat-card"><div class="stat-label">Supply</div><div class="stat-value">{fmtB(supply)}</div></div>
-        <div class="stat-card"><div class="stat-label">24h Supply Delta</div><div class="stat-value">{fmtB(supply - prev)}</div></div>
-      </div>
+  const watchNote = (() => {
+    if (chainShares[1] && chainShares[1].d1 > 1) {
+      return `Supply is expanding on ${chainShares[1].chain}.`;
+    }
+    if (Math.abs(pegBps) >= warnBps) {
+      return `Peg is ${Math.abs(pegBps)} bps from $1.00 - observe, do not treat as advice.`;
+    }
+    return meta.watchDefault;
+  })();
 
-      <div class="grid-2 mb-4">
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title-row">
-              <div class="card-title">{symbol} Supply History</div>
-              <div class="chart-toggles">
-                <button type="button" class={`chart-toggle${supplyPct ? ' active' : ''}`} onClick={() => setSupplyPct((v) => !v)} aria-pressed={supplyPct} title="Show percent change from first point">% from start</button>
-                <button type="button" class={`chart-toggle${supplyLog ? ' active' : ''}`} onClick={() => setSupplyLog((v) => !v)} aria-pressed={supplyLog} title="Toggle logarithmic scale">Log</button>
-              </div>
+  const goLearn = () => {
+    if (!setActiveTab) return;
+    setActiveTab('learn');
+    if (meta.learnId) {
+      setTimeout(() => {
+        document.getElementById(meta.learnId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
+    }
+  };
+
+  return (
+    <div class="tab-content active asset-page">
+      <section class="asset-hero glass signal-lens">
+        <div class="asset-identity">
+          <span class="asset-token" style={{ background: `linear-gradient(145deg, ${color}, ${color}cc)` }}>
+            {symbol.slice(0, 1)}
+          </span>
+          <div>
+            <p class="eyebrow">TRACKED ASSET · {meta.classification.toUpperCase()}</p>
+            <h1>
+              {meta.name} <em>{symbol}</em>
+            </h1>
+            <p>{meta.thesis}</p>
+          </div>
+        </div>
+        <div class="asset-watch">
+          <span>WHAT TO WATCH</span>
+          <b>{watchNote}</b>
+          <p>Observation only - not a recommendation.</p>
+        </div>
+      </section>
+
+      <section class="asset-metrics">
+        <article>
+          <span>Current price</span>
+          <strong>{fmtPrice(price)}</strong>
+          <small>{pegBps === 0 ? 'On peg' : `${pegBps > 0 ? '+' : ''}${pegBps} bp from peg`}</small>
+        </article>
+        <article>
+          <span>Peg stability</span>
+          <strong>{score} <small>/100</small></strong>
+          <small>{Math.abs(pegBps) < warnBps ? 'Normal 24h conditions' : 'Elevated drift - observe'}</small>
+        </article>
+        <article>
+          <span>Circulating supply</span>
+          <strong>{fmtB(supply)}</strong>
+          <small>{fmtPct(chg)} market · {fmtB(supply - prev)} 24h supply Δ</small>
+        </article>
+        <article>
+          <span>Reserve design</span>
+          <strong>{meta.reserveDesign}</strong>
+          <small>Classification fact, not a credit rating</small>
+        </article>
+      </section>
+
+      <section class="asset-grid">
+        <article class="panel glass asset-price-panel signal-lens">
+          <header class="panel-head">
+            <div>
+              <p class="panel-kicker">PRICE DISCIPLINE</p>
+              <h2>{symbol} around the peg</h2>
+              <p class="panel-sub">Market price versus the $1.00 reference</p>
             </div>
+          </header>
+          <div class="panel-chart">
+            <ChartWrapper
+              type="line"
+              data={priceLineData}
+              height={280}
+              aspectRatio={16 / 10}
+              options={priceChartOpts}
+              ariaLabel={`${symbol} price versus one dollar peg`}
+              shareTitle={`${symbol} peg`}
+              shareRange="~90D"
+              shareInterpretation={`${symbol} market price relative to the $1.00 reference. This is a price picture, not a reserve-quality assessment.`}
+              shareDefinition={`Secondary-market ${symbol} price versus a $1.00 peg line.`}
+              shareHighlight={`${fmtPrice(price)} now · ${pegBps > 0 ? '+' : ''}${pegBps} bp from peg`}
+            />
           </div>
-          <div class="card-body chart-card-body">
-            <ChartWrapper type="line" data={supplyLineData} options={supplyLineOptions} height={220} aspectRatio={16 / 10} />
+          <footer class="chart-footer">
+            <span><i class="legend-dot cobalt-dot" />{fmtPrice(price)} now · {pegBps > 0 ? '+' : ''}{pegBps} bp from peg</span>
+            <button type="button" onClick={goLearn}>What moves the peg?</button>
+          </footer>
+        </article>
+
+        <article class="asset-score glass">
+          <p class="panel-kicker">STABILITY INDEX</p>
+          <StabilityGauge value={score} />
+          <h2>{Math.abs(pegBps) < warnBps ? 'Normal conditions' : 'Watch conditions'}</h2>
+          <p>
+            Score from current distance to $1.00 versus this asset&apos;s warn ({warnBps} bps) and critical ({critBps} bps) bands.
+            It is not a solvency or reserve audit.
+          </p>
+        </article>
+      </section>
+
+      <section class="asset-grid lower-asset">
+        <article class="panel glass">
+          <header class="panel-head">
+            <div>
+              <p class="panel-kicker">MARKET DEPTH</p>
+              <h2>Circulating supply</h2>
+              <p class="panel-sub">{symbol} supply history</p>
+            </div>
+            <div class="segmented">
+              <button type="button" class={supplyPct ? 'selected' : ''} onClick={() => setSupplyPct((v) => !v)} aria-pressed={supplyPct}>%</button>
+              <button type="button" class={supplyLog ? 'selected' : ''} onClick={() => setSupplyLog((v) => !v)} aria-pressed={supplyLog}>Log</button>
+            </div>
+          </header>
+          <div class="panel-chart">
+            <ChartWrapper
+              type="line"
+              data={supplyLineData}
+              options={supplyLineOptions}
+              height={220}
+              aspectRatio={16 / 10}
+              ariaLabel={`${symbol} circulating supply`}
+              shareTitle={`${symbol} supply`}
+              shareRange="History"
+              shareInterpretation={`${symbol} circulating supply path from DefiLlama-backed history.`}
+              shareDefinition={`Circulating ${symbol} supply over time for this dashboard.`}
+            />
           </div>
+        </article>
+
+        <article class="panel glass chain-panel">
+          <header class="panel-head">
+            <div>
+              <p class="panel-kicker">WHERE IT MOVES</p>
+              <h2>Chain distribution</h2>
+              <p class="panel-sub">Share of tracked {symbol} supply</p>
+            </div>
+          </header>
+          <div class="chain-list">
+            {chainShares.length ? chainShares.map((r, idx) => (
+              <div key={r.chain}>
+                <span><i class={`chain-dot ${['one', 'two', 'three', 'four'][idx] || 'one'}`} />{r.chain}</span>
+                <b>{r.pct}%</b>
+                <em style={{ width: `${r.pct}%` }} />
+              </div>
+            )) : <div class="info-empty">No chain rows</div>}
+          </div>
+          <footer class="chart-footer">
+            <span>Top chains by circulating supply</span>
+            {setActiveTab ? (
+              <button type="button" onClick={() => setActiveTab('chains')}>Explore chains</button>
+            ) : null}
+          </footer>
+        </article>
+      </section>
+
+      <section class="asset-learn glass">
+        <div>
+          <p class="panel-kicker">STUDY THIS ASSET</p>
+          <h2>{meta.learnQuestion}</h2>
+          <p>A short StableSense lesson tied to this asset&apos;s design.</p>
         </div>
-        <div class="card">
-          <div class="card-header"><div class="card-title">{symbol} Price</div></div>
-          <div class="card-body chart-card-body">
-            <ChartWrapper type="line" data={priceLineData} height={220} aspectRatio={16 / 10} options={priceChartOpts} />
-          </div>
-        </div>
-      </div>
+        <button type="button" class="primary-btn" onClick={goLearn}>Read the explainer</button>
+      </section>
 
       {dominanceData ? (
-        <div class="card mb-4">
+        <div class="card mb-4 mt-4">
           <div class="card-header"><div class="card-title">{symbol} Dominance</div></div>
           <div class="card-body chart-card-body">
-            <ChartWrapper type="line" data={dominanceData} options={dominanceOpts} height={200} aspectRatio={16 / 10} />
-            <p class="text-muted small" style="margin-top:6px">{symbol}'s share of the combined tracked stablecoin supply (USDT, USDC, DAI, USDE, PYUSD) over time.</p>
+            <ChartWrapper type="line" data={dominanceData} options={dominanceOpts} height={200} aspectRatio={16 / 10} shareTitle={`${symbol} dominance`} shareDefinition={`${symbol}'s share of combined tracked stablecoin supply.`} />
+            <p class="text-muted small" style="margin-top:6px">{symbol}&apos;s share of the combined tracked stablecoin supply (USDT, USDC, DAI, USDE, PYUSD) over time.</p>
           </div>
         </div>
       ) : null}
@@ -195,7 +353,7 @@ export default function CoinTab({ coin, data }) {
         <div class="card mb-4">
           <div class="card-header"><div class="card-title">{symbol} Peg Deviation (bps)</div></div>
           <div class="card-body chart-card-body">
-            <ChartWrapper type="line" data={bpsData} options={bpsOpts} height={200} aspectRatio={16 / 10} />
+            <ChartWrapper type="line" data={bpsData} options={bpsOpts} height={200} aspectRatio={16 / 10} shareTitle={`${symbol} deviation`} shareDefinition="Distance from the $1 peg in basis points." />
             <p class="text-muted small" style="margin-top:6px">Distance from the $1 peg in basis points. Fixed -50/+50 bounds so daily noise does not look like a depeg. 0 bps = exactly on peg.</p>
           </div>
         </div>
@@ -205,7 +363,7 @@ export default function CoinTab({ coin, data }) {
         <div class="card">
           <div class="card-header"><div class="card-title">{symbol} Exchange Volume</div></div>
           <div class="card-body chart-card-body">
-            <ChartWrapper type="bar" data={exchBars} height={180} aspectRatio={16 / 10} options={chartOptions} />
+            <ChartWrapper type="bar" data={exchBars} height={180} aspectRatio={16 / 10} options={chartOptions} shareTitle={`${symbol} volume`} />
           </div>
         </div>
         <div class="card">

@@ -460,47 +460,87 @@ async function dollarizationChart() {
   });
 }
 
-// --- Section 7: depeg sparklines (hand-rolled SVG) ------------------------
+// --- Section 7: learner-first depeg mechanism flow -----------------------
 function buildDepegs() {
-  const container = document.getElementById('depeg-cards');
+  const container = document.getElementById('depeg-study');
   if (!container) return;
-  // Shared Y domain across all three cards so amplitudes are comparable
-  const Y_MIN = 0.0, Y_MAX = 1.05;
-  const w = 100, h = 60;
-  const yScale = (v) => h - ((v - Y_MIN) / (Y_MAX - Y_MIN)) * (h - 6) - 3;
-  container.innerHTML = data.depegs.map((d) => {
-    const vals = d.spark;
-    const labels = d.sparkLabels || vals.map((_, i) => i);
-    // find low point
-    let lowIdx = 0;
-    for (let i = 1; i < vals.length; i++) if (vals[i] < vals[lowIdx]) lowIdx = i;
-    const pts = vals.map((v, i) => {
-      const x = (i / (vals.length - 1)) * w;
-      const y = yScale(v);
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    }).join(' ');
-    const lowX = (lowIdx / (vals.length - 1)) * w;
-    const lowY = yScale(vals[lowIdx]);
-    const refY = yScale(1.0);
-    return `<div class="depeg-card">
-      <h3>${d.name} - ${d.date}</h3>
-      <p class="as-of">Low: <span class="num">${d.low}</span></p>
-      <svg class="depeg-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Price sparkline for ${d.name} during the event, shared scale $0.00 to $1.05">
-        <line class="spark-baseline" x1="0" y1="${refY}" x2="${w}" y2="${refY}"/>
-        <polyline class="spark-line" points="${pts}"/>
-        <circle class="spark-low-dot" cx="${lowX}" cy="${lowY}" r="2"/>
-        <text class="spark-low-label" x="${Math.min(lowX, w - 20).toFixed(1)}" y="${(lowY - 3).toFixed(1)}">${d.low}</text>
-      </svg>
-      <p class="mech">${d.mech}</p>
-      <p class="as-of" style="font-style:italic">${d.failureMode}</p>
-    </div>`;
-  }).join('');
-  // Add hover tooltips via title elements on the polyline
-  container.querySelectorAll('.depeg-spark').forEach((svg, idx) => {
-    const d = data.depegs[idx];
-    const poly = svg.querySelector('.spark-line');
-    if (poly) poly.setAttribute('tabindex', '0');
-  });
+
+  const cases = (data.depegs || []).map((d) => ({ ...d, ...(d.learner || {}) }));
+  const takeaways = data.depegTakeaways || [];
+  let selected = 0;
+
+  const render = () => {
+    const c = cases[selected];
+    if (!c) return;
+    container.innerHTML = `
+      <div class="hub-case-selector" role="tablist" aria-label="Choose a depeg case study">
+        ${cases.map((item, index) => `
+          <button type="button" class="hub-case-tab ${index === selected ? `active ${item.color || ''}` : ''}"
+            role="tab" aria-selected="${index === selected}" data-idx="${index}">
+            <span class="hub-case-num">0${index + 1}</span>
+            <span><b>${item.short || item.name}</b><small>${item.kind || ''} failure</small></span>
+          </button>
+        `).join('')}
+      </div>
+      <div class="hub-case-study" role="tabpanel">
+        <div class="hub-case-story">
+          <div class="hub-case-pill ${c.color || ''}">${c.label || c.failureMode || ''}</div>
+          <p class="hub-case-date">${c.date || ''}</p>
+          <h3>${c.title || c.name}</h3>
+          <p class="hub-case-question">"${c.question || ''}"</p>
+          <div class="hub-case-details">
+            <div><span>Lowest quoted price</span><strong>${c.low || '-'}</strong></div>
+            <div><span>What happened after</span><strong>${c.recovery || '-'}</strong></div>
+          </div>
+          <p class="mech">${c.mech || ''}</p>
+        </div>
+        <div class="hub-failure-mechanism">
+          <header>
+            <div class="kicker">The failure mechanism</div>
+            <h3>Follow the feedback loop</h3>
+            <p>${c.trigger || ''}</p>
+          </header>
+          <div class="hub-mechanism-flow">
+            ${(c.mechanism || []).map((step, index) => `
+              <div class="hub-flow-step"><span>${index + 1}</span><strong>${step}</strong></div>
+            `).join('')}
+          </div>
+          <div class="hub-lesson-box"><span>The lesson</span><p>${c.conclusion || c.failureMode || ''}</p></div>
+        </div>
+      </div>
+      <div class="hub-matrix-wrap">
+        <h3>Failure pattern matrix</h3>
+        <p class="as-of">A mechanism map, not a price-performance chart.</p>
+        <div class="hub-failure-matrix" role="table">
+          <div class="hub-matrix-head" role="row">
+            <span>Case</span><span>What held the peg</span><span>What broke first</span><span>Could it recover?</span>
+          </div>
+          ${cases.map((row) => `
+            <div class="hub-matrix-row" role="row">
+              <span class="hub-case-id ${row.color || ''}"><b>${(row.short || row.name || '').split(' · ')[0]}</b><small>${row.kind || ''}</small></span>
+              <span>${row.heldPeg || '-'}</span>
+              <span>${row.brokeFirst || '-'}</span>
+              <span>${row.recoverText || '-'}</span>
+            </div>
+          `).join('')}
+        </div>
+        <p class="section-thesis" style="margin-top:1rem">A stablecoin price alone cannot tell you which risk you are seeing. StableSense shows the mechanism beside the move.</p>
+      </div>
+      <div class="hub-takeaway-grid">
+        ${takeaways.map((t) => `
+          <article class="hub-takeaway-card"><span>${t.n}</span><h3>${t.title}</h3><p>${t.body}</p></article>
+        `).join('')}
+      </div>
+    `;
+    container.querySelectorAll('.hub-case-tab').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        selected = Number(btn.dataset.idx);
+        render();
+      });
+    });
+  };
+
+  render();
 }
 
 // --- Section 8: regulation table + chips ---------------------------------

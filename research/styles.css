@@ -276,15 +276,59 @@ hr.rule { border: 0; border-top: 1px solid var(--hub-line); margin: 0; }
 .race-bar { height: 100%; width: 0; background: var(--hub-cat-fiat-usd); transition: width 1.6s cubic-bezier(0.2, 0.7, 0.2, 1); }
 .race-bar.trad { background: var(--hub-cat-algorithmic); }
 
-/* --- depeg sparkline (Section 7) --------------------------------------- */
+/* --- depeg learner flow (Section 7) ------------------------------------ */
 .depeg-card { border: 1px solid var(--hub-line); padding: 1.2rem; margin-bottom: 1.2rem; }
 .depeg-card h3 { margin-bottom: 0.3rem; }
-.depeg-spark { display: block; width: 100%; height: 60px; margin: 0.6rem 0; }
-.depeg-spark .spark-line { stroke: var(--hub-cat-algorithmic); stroke-width: 1.25; fill: none; }
-.depeg-spark .spark-baseline { stroke: var(--hub-gold); stroke-width: 0.8; stroke-dasharray: 3 3; opacity: 0.7; }
-.depeg-spark .spark-low-dot { fill: var(--hub-gold); }
-.depeg-spark .spark-low-label { fill: var(--hub-ink2); font-size: 7px; font-family: var(--hub-mono); }
 .depeg-card .mech { font-size: 0.92rem; margin-bottom: 0; }
+
+.hub-case-selector { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin: 1.2rem 0; }
+.hub-case-tab { min-height: 64px; padding: 0.9rem; border: 1px solid var(--hub-line); background: color-mix(in oklch, var(--hub-bg) 80%, white); text-align: left; cursor: pointer; display: flex; gap: 0.75rem; align-items: center; }
+.hub-case-tab.active { border-color: var(--hub-gold); box-shadow: 0 8px 20px color-mix(in oklch, var(--hub-ink) 8%, transparent); }
+.hub-case-tab.coral.active { border-color: var(--hub-cat-algorithmic); }
+.hub-case-tab.amber.active { border-color: var(--hub-gold); }
+.hub-case-tab.violet.active { border-color: var(--hub-cat-crypto-synth); }
+.hub-case-num { font-family: var(--hub-mono); font-size: 0.75rem; color: var(--hub-ink2); font-weight: 700; }
+.hub-case-tab b { display: block; font-size: 0.92rem; }
+.hub-case-tab small { display: block; font-size: 0.75rem; color: var(--hub-ink2); margin-top: 0.15rem; }
+.hub-case-study { display: grid; grid-template-columns: 0.9fr 1.1fr; border: 1px solid var(--hub-line); margin-bottom: 1.5rem; }
+.hub-case-story { padding: 1.4rem; position: relative; }
+.hub-case-pill { display: inline-block; font-family: var(--hub-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.3rem 0.55rem; border: 1px solid var(--hub-line); margin-bottom: 0.8rem; }
+.hub-case-pill.coral { color: var(--hub-cat-algorithmic); }
+.hub-case-pill.amber { color: var(--hub-gold); }
+.hub-case-pill.violet { color: var(--hub-cat-crypto-synth); }
+.hub-case-date { font-family: var(--hub-mono); font-size: 0.72rem; color: var(--hub-ink2); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.4rem; }
+.hub-case-story h3 { font-size: clamp(1.3rem, 2.5vw, 1.8rem); margin-bottom: 0.8rem; }
+.hub-case-question { font-family: var(--hub-display); font-size: 1.15rem; line-height: 1.35; color: var(--hub-gold); margin-bottom: 1rem; }
+.hub-case-details { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.hub-case-details span { display: block; font-family: var(--hub-mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--hub-ink2); }
+.hub-case-details strong { display: block; margin-top: 0.25rem; font-size: 1rem; }
+.hub-failure-mechanism { padding: 1.4rem; border-left: 1px solid var(--hub-line); background: color-mix(in oklch, var(--hub-line) 18%, var(--hub-bg)); }
+.hub-failure-mechanism h3 { margin: 0.3rem 0 0.6rem; }
+.hub-mechanism-flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.6rem; margin: 1.2rem 0; }
+.hub-flow-step { border: 1px solid var(--hub-line); padding: 0.8rem; min-height: 88px; background: var(--hub-bg); }
+.hub-flow-step span { display: grid; place-items: center; width: 1.3rem; height: 1.3rem; border-radius: 50%; font-family: var(--hub-mono); font-size: 0.7rem; background: color-mix(in oklch, var(--hub-gold) 18%, transparent); color: var(--hub-gold); }
+.hub-flow-step strong { display: block; margin-top: 0.7rem; font-size: 0.85rem; line-height: 1.3; }
+.hub-lesson-box { border: 1px solid var(--hub-line); padding: 0.9rem; background: var(--hub-bg); }
+.hub-lesson-box span { font-family: var(--hub-mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--hub-gold); }
+.hub-lesson-box p { margin: 0.35rem 0 0; font-size: 0.9rem; color: var(--hub-ink2); line-height: 1.5; }
+.hub-matrix-wrap { margin: 1.5rem 0; }
+.hub-failure-matrix { border: 1px solid var(--hub-line); overflow-x: auto; }
+.hub-matrix-head, .hub-matrix-row { display: grid; grid-template-columns: 0.8fr 1.1fr 1.15fr 1.2fr; gap: 0.8rem; padding: 0.85rem 1rem; min-width: 640px; align-items: center; }
+.hub-matrix-head { background: color-mix(in oklch, var(--hub-line) 25%, var(--hub-bg)); font-family: var(--hub-mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--hub-ink2); }
+.hub-matrix-row { border-top: 1px solid var(--hub-line); font-size: 0.88rem; color: var(--hub-ink2); }
+.hub-case-id b { display: block; color: var(--hub-ink); }
+.hub-case-id small { display: block; font-size: 0.72rem; color: var(--hub-ink2); margin-top: 0.15rem; }
+.hub-takeaway-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.9rem; margin-top: 1.4rem; }
+.hub-takeaway-card { border-top: 2px solid var(--hub-gold); background: color-mix(in oklch, var(--hub-line) 18%, var(--hub-bg)); padding: 1rem; }
+.hub-takeaway-card span { font-family: var(--hub-mono); font-size: 0.72rem; color: var(--hub-gold); }
+.hub-takeaway-card h3 { font-size: 1rem; margin: 0.5rem 0 0.4rem; }
+.hub-takeaway-card p { font-size: 0.88rem; color: var(--hub-ink2); line-height: 1.5; margin: 0; }
+@media (max-width: 760px) {
+  .hub-case-selector, .hub-takeaway-grid { grid-template-columns: 1fr; }
+  .hub-case-study { grid-template-columns: 1fr; }
+  .hub-failure-mechanism { border-left: 0; border-top: 1px solid var(--hub-line); }
+  .hub-mechanism-flow { grid-template-columns: 1fr 1fr; }
+}
 
 /* --- footer -------------------------------------------------------------- */
 .hub-footer { border-top: 1px solid var(--hub-line); padding: clamp(3rem, 8vw, 5rem) clamp(1rem, 5vw, 2rem); margin-top: 2rem; }

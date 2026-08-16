@@ -119,7 +119,36 @@ export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec
         intelligence={data?.intelligence}
         onLearn={() => setActiveTab('learn')}
         dataQuality={data?.dataQuality}
+        refreshIntervalSec={refreshIntervalSec}
       />
+
+      <section class="metric-strip" aria-label="Key market metrics">
+        <article class="metric-chip">
+          <div class="metric-icon blue" aria-hidden="true" />
+          <div>
+            <p>Global stablecoin market cap</p>
+            <strong>{fmtB(totalMC)}</strong>
+            <span>All issuers · not only tracked coins</span>
+          </div>
+        </article>
+        <article class="metric-chip">
+          <div class="metric-icon violet" aria-hidden="true" />
+          <div>
+            <p>24h volume (tracked)</p>
+            <strong>{fmtB(vol)}</strong>
+            <span>{coins.length} coins on this dashboard</span>
+          </div>
+        </article>
+        <article class="metric-chip">
+          <div class="metric-icon amber" aria-hidden="true" />
+          <div>
+            <p>Learning signals</p>
+            <strong>{String((alerts || []).length).padStart(2, '0')}</strong>
+            <span>worth understanding</span>
+          </div>
+          <div class="signal-pips" aria-hidden="true"><i /><i /><i /></div>
+        </article>
+      </section>
 
       <a class="research-callout" href="/research/" target="_blank" rel="noopener noreferrer">
         <span class="research-callout-kicker">New</span>
@@ -141,12 +170,8 @@ export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec
             const dq = data?.dataQuality?.find((q) => q.coin === c.symbol);
             return <StatCard key={`${c.symbol}-supply`} label={`${c.symbol} Supply`} value={fmtB(asset?.circulating?.peggedUSD)} warning={dq ? 'Data unavailable' : null} />;
           })}
-          <StatCard label="Global Stablecoin MCap" value={fmtB(totalMC)} meta="All issuers" />
-          <StatCard label="24h Volume" value={fmtB(vol)} />
         </div>
       </div>
-
-      <WhaleWatch rows={whaleRows} />
 
       <MarketPulse
         supplyChartData={supplyChartData}
@@ -157,9 +182,16 @@ export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec
         onTogglePct={() => { setSupplyPct((v) => !v); if (!supplyPct) setSupplyLog(false); }}
         supplyLog={supplyLog}
         supplyPct={supplyPct}
+        onLearn={() => setActiveTab('learn')}
       />
+      <SignalSummary
+        data={data}
+        alerts={alerts}
+        onViewAll={() => setActiveTab('alerts')}
+        onLearn={() => setActiveTab('learn')}
+      />
+      <WhaleWatch rows={whaleRows} />
       <CapitalFlows migrationPairs={migrationPairs} chainFlows={chainFlows} />
-      <SignalSummary data={data} alerts={alerts} onViewAll={() => setActiveTab('alerts')} />
     </div>
   );
 }
