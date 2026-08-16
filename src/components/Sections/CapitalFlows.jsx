@@ -23,7 +23,18 @@ export default function CapitalFlows({ migrationPairs, chainFlows }) {
         </div>
       </div>
       <div class="card">
-        <div class="card-header"><div class="card-title">Mint / Burn Activity</div></div>
+        <div class="card-header">
+          <div class="card-title-row">
+            <div class="card-title">Mint / Burn Activity</div>
+            <div class="mint-burn-legend">
+              {coins.map((c) => (
+                <span class="mint-burn-key" key={c.symbol}>
+                  <span class="mint-burn-swatch" style={{ background: c.color }}></span>{c.symbol}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
         <div class="card-body p0">
           {(chainFlows || []).slice(0, 8).map((f) => (
             <div class="chain-bar-row" key={f.chain}>
@@ -37,6 +48,7 @@ export default function CapitalFlows({ migrationPairs, chainFlows }) {
                       width: `${Math.min(100, Math.max(0, (Math.abs(f.deltas?.[c.symbol] || 0) / maxAbs) * 100))}%`,
                       background: c.color,
                     }}
+                    title={`${c.symbol}: ${fmtB(f.deltas?.[c.symbol] || 0)}`}
                   ></div>
                 ))}
               </div>

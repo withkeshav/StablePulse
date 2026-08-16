@@ -564,32 +564,97 @@ async function realityChart() {
 }
 
 // --- Section 5: remittance calculator + race bars ------------------------
+// Author's teaching model, not a qualified research estimate. Stacked rows for
+// every lever (wire fee, FX markup, float, on-ramp, gas, off-ramp) so no single
+// black-box dollar figure can miseducate. The scenario table underneath is the
+// defensible product; the calculator lets the reader replay it.
 function remittanceCalc() {
   const amountEl = document.getElementById('calc-amount');
+  const scheduleEl = document.getElementById('calc-schedule');
+  const daysEl = document.getElementById('calc-days');
+  const rateEl = document.getElementById('calc-rate');
+  const onrampEl = document.getElementById('calc-onramp');
   const offrampEl = document.getElementById('calc-offramp');
-  const costTradEl = document.getElementById('calc-cost-trad');
-  const detailTradEl = document.getElementById('calc-detail-trad');
-  const costStableEl = document.getElementById('calc-cost-stable');
-  const detailStableEl = document.getElementById('calc-detail-stable');
-  if (!amountEl || !costTradEl || !costStableEl) return;
+  const presetFullEl = document.getElementById('calc-preset-full');
+  const presetHoldEl = document.getElementById('calc-preset-hold');
+  const tradOutEl = document.getElementById('calc-trad-out');
+  const stableOutEl = document.getElementById('calc-stable-out');
+  const warnEl = document.getElementById('calc-warn');
+  if (!amountEl || !tradOutEl || !stableOutEl) return;
+
+  const cfg = data.remittanceCost;
+  const fmtUsd = (n) => '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: n >= 1000 ? 0 : 2 });
+  const fmtPctRow = (n, amt) => `${(n / amt * 100).toFixed(2)}% of ${fmtUsd(amt)}`;
+
   const compute = () => {
     const amt = parseFloat(amountEl.value) || 0;
+    const schedule = cfg.traditionalSchedules.find((s) => s.id === (scheduleEl ? scheduleEl.value : cfg.defaultTraditional)) || cfg.traditionalSchedules[0];
+    const days = parseFloat(daysEl ? daysEl.value : cfg.defaultDaysInTransit) || 0;
+    const rate = parseFloat(rateEl ? rateEl.value : cfg.defaultOpportunityRate) || 0;
+    const includeOnramp = onrampEl && onrampEl.checked;
     const includeOfframp = offrampEl && offrampEl.checked;
-    const trad = data.remittanceCost.traditional;
-    const stable = data.remittanceCost.stablecoin;
-    // traditional: percentage + fixed
-    const tradCost = amt * (trad.feePct / 100) + trad.fixedUsd;
-    costTradEl.textContent = '$' + tradCost.toLocaleString('en-US', { maximumFractionDigits: 0 });
-    detailTradEl.textContent = `~${trad.feePct}% + $${trad.fixedUsd} fixed. Settles in ${trad.days}.`;
-    // stablecoin: fixed network fee + optional off-ramp spread
-    const offrampCost = includeOfframp ? amt * (stable.offrampSpreadPct / 100) : 0;
-    const stableCost = stable.networkFeeUsd + offrampCost;
-    costStableEl.textContent = '$' + stableCost.toLocaleString('en-US', { maximumFractionDigits: 2 });
-    const breakdown = `Network fee $${stable.networkFeeUsd.toFixed(2)}` + (includeOfframp ? ` [+ Off-ramp spread $${offrampCost.toFixed(2)}]` : '');
-    detailStableEl.textContent = `${breakdown}. Settles in ${stable.days}.`;
+    const stable = cfg.stablecoin;
+
+    // Traditional: stated fee + FX markup + float, never one hero number.
+    const tradFee = schedule.fixedUsd;
+    const tradFx = amt * (schedule.feePct / 100);
+    const tradFloat = amt * (rate / 100) * days / 365;
+    const tradAllIn = tradFee + tradFx + tradFloat;
+
+    // Stablecoin: on-ramp + gas + off-ramp + float, each hop its own row.
+    const onrampCost = includeOnramp ? amt * (stable.onrampPct / 100) : 0;
+    const gas = stable.networkFeeUsd;
+    const offrampCost = includeOfframp ? amt * (stable.offrampPct / 100) : 0;
+    const stableFloat = amt * (rate / 100) * (includeOnramp || includeOfframp ? 1 : 0) / 365; // ~0 on-chain, ~1d if a ramp settles to a bank
+    const stableAllIn = onrampCost + gas + offrampCost + stableFloat;
+
+    const hopOrSkip = (included, cost) => included ? fmtUsd(cost) : 'not in this path';
+
+    tradOutEl.innerHTML =
+      `<div class="calc-stack">` +
+        `<div class="calc-row"><span>Stated wire / MTO fee</span><span class="calc-val">${fmtUsd(tradFee)}</span></div>` +
+        `<div class="calc-row"><span>FX markup (${schedule.feePct}%)</span><span class="calc-val">${fmtUsd(tradFx)}</span></div>` +
+        `<div class="calc-row"><span>Float / interest (${rate}%, ${days}d)</span><span class="calc-val">${fmtUsd(tradFloat)}</span></div>` +
+        `<div class="calc-row calc-total"><span>All-in</span><span class="calc-val">${fmtUsd(tradAllIn)} (${fmtPctRow(tradAllIn, amt)})</span></div>` +
+      `</div>`;
+
+    stableOutEl.innerHTML =
+      `<div class="calc-stack">` +
+        `<div class="calc-row"><span>On-ramp</span><span class="calc-val">${hopOrSkip(includeOnramp, onrampCost)}</span></div>` +
+        `<div class="calc-row"><span>Network fee</span><span class="calc-val">${fmtUsd(gas)}</span></div>` +
+        `<div class="calc-row"><span>Off-ramp</span><span class="calc-val">${hopOrSkip(includeOfframp, offrampCost)}</span></div>` +
+        `<div class="calc-row"><span>Float / interest</span><span class="calc-val">${fmtUsd(stableFloat)}</span></div>` +
+        `<div class="calc-row calc-total"><span>All-in</span><span class="calc-val">${fmtUsd(stableAllIn)} (${fmtPctRow(stableAllIn, amt)})</span></div>` +
+      `</div>`;
+
+    // Warn when the RPW-like percentage is extrapolated beyond its survey size.
+    if (warnEl) {
+      if (schedule.warnAbove != null && amt > schedule.warnAbove) {
+        warnEl.textContent = schedule.warn || '';
+        warnEl.style.display = 'block';
+      } else {
+        warnEl.textContent = '';
+        warnEl.style.display = 'none';
+      }
+    }
   };
+
   amountEl.addEventListener('input', compute);
+  if (scheduleEl) scheduleEl.addEventListener('change', compute);
+  if (daysEl) daysEl.addEventListener('input', compute);
+  if (rateEl) rateEl.addEventListener('input', compute);
+  if (onrampEl) onrampEl.addEventListener('change', compute);
   if (offrampEl) offrampEl.addEventListener('change', compute);
+  if (presetFullEl) presetFullEl.addEventListener('click', () => {
+    if (onrampEl) onrampEl.checked = true;
+    if (offrampEl) offrampEl.checked = true;
+    compute();
+  });
+  if (presetHoldEl) presetHoldEl.addEventListener('click', () => {
+    if (onrampEl) onrampEl.checked = false;
+    if (offrampEl) offrampEl.checked = false;
+    compute();
+  });
   compute();
 }
 
@@ -679,6 +744,81 @@ function exportTableCsv(tableId, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+// --- remittance scenario table -------------------------------------------
+function buildRemittanceScenarios() {
+  const wrap = document.getElementById('remittance-scenarios');
+  if (!wrap) return;
+  const rows = data.remittanceScenarios || [];
+  wrap.innerHTML = rows.map((s) => {
+    const allowedTag = s.allowed.startsWith('Author') ? `<span class="scen-tag author">Author model</span>` : `<span class="scen-tag sourced">Sourced</span>`;
+    return `<div class="scen-row">
+      <div class="scen-head"><span class="scen-id">${s.id}</span> <span class="scen-title">${s.scenario}</span> ${allowedTag}</div>
+      <div class="scen-grid">
+        <div><div class="scen-label">Traditional</div><div class="scen-val">${s.traditional}</div></div>
+        <div><div class="scen-label">Stablecoin</div><div class="scen-val">${s.stablecoin}</div></div>
+      </div>
+      <div class="scen-why">${s.why}</div>
+      <div class="scen-source">${s.source}</div>
+    </div>`;
+  }).join('');
+}
+
+// --- Pass 3 editorial builders ------------------------------------------
+
+// Yield-bearing stablecoin debate callouts (extends Section 4).
+function buildYieldDebate() {
+  const wrap = document.getElementById('yield-callouts');
+  if (!wrap) return;
+  wrap.innerHTML = (data.yieldDebate || []).map((c) => `
+    <div class="callout">
+      <div class="callout-label">${c.label}</div>
+      <p class="stat md">${c.stat}</p>
+      <p>${c.detail}</p>
+    </div>
+  `).join('');
+}
+
+// T-bill maturity-band visual (extends Section 3).
+function buildMaturityBands() {
+  const wrap = document.getElementById('maturity-bands-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = (data.tBillMaturities || []).map((issuer) => {
+    const bars = issuer.buckets.map((b) => `
+      <div class="mb-row">
+        <div class="mb-label">${b.label}</div>
+        <div class="mb-track"><div class="mb-fill" style="width:${b.pct}%"></div></div>
+        <div class="mb-val">${b.pct}%</div>
+      </div>
+    `).join('');
+    return `<div class="mb-issuer"><div class="mb-issuer-name">${issuer.issuer}</div>${bars}</div>`;
+  }).join('');
+}
+
+// BPI full-journey callout (next to the remittance calculator).
+function buildBpiCallout() {
+  const f = data.bpiFinding;
+  if (!f) return;
+  const findingEl = document.getElementById('bpi-finding');
+  const sourceEl = document.getElementById('bpi-source');
+  const detailEl = document.getElementById('bpi-detail');
+  if (findingEl) findingEl.textContent = f.finding;
+  if (sourceEl) sourceEl.textContent = f.label;
+  if (detailEl) detailEl.textContent = f.detail;
+}
+
+// GENIUS Act rulemaking status (dated paragraph, not a live tracker).
+function buildGeniusStatus() {
+  const block = document.getElementById('genius-status-block');
+  const sourceEl = document.getElementById('genius-source');
+  const g = data.geniusStatus;
+  if (!g || !block) return;
+  block.innerHTML = `
+    <p>Enacted <strong>${g.enacted}</strong>. Full implementation takes effect <strong>${g.fullImplementation}</strong>. As of ${g.asOf}: <strong>${g.totalRulemakings}</strong> total rulemakings across <strong>${g.agencies}</strong> agencies; <strong>${g.nprmsIssued}</strong> Notices of Proposed Rulemaking issued; <strong>${g.finalRules}</strong> final rules completed.</p>
+    <p>${g.note}</p>
+  `;
+  if (sourceEl) sourceEl.innerHTML = `Source: <a href="${g.url}" target="_blank" rel="noopener noreferrer">${g.source}</a>. This is a dated snapshot, not a live tracker.`;
+}
+
 // --- init -----------------------------------------------------------------
 async function init() {
   reveals();
@@ -688,6 +828,11 @@ async function init() {
   buildCorridors();
   buildDepegs();
   buildRegulation();
+  buildRemittanceScenarios();
+  buildYieldDebate();
+  buildMaturityBands();
+  buildBpiCallout();
+  buildGeniusStatus();
   remittanceCalc();
   raceBars();
   buildFooterLists();

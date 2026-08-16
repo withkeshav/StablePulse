@@ -128,11 +128,139 @@ export const bankCallouts = [
   { label: 'White House CEA (Apr 2026)', stat: 'Minimal lending impact modeled.', detail: 'Assumes a small baseline market; criticized by Americans for Financial Reform and the Consumer Bankers Association as "built on favorable assumptions."' },
 ];
 
-// --- Section 5: cross-border ---------------------------------------------
-export const remittanceCost = {
-  traditional: { feePct: 4.65, fixedUsd: 245, days: '3-5 business days', label: 'Traditional wire' },
-  stablecoin: { networkFeeUsd: 0.10, offrampSpreadPct: 0.25, includeOfframp: false, days: 'seconds', label: 'Stablecoin rails' },
+// Yield-bearing stablecoin debate (extends Section 4). The GENIUS Act
+// prohibits payment stablecoins from paying interest; yield-bearing variants
+// compete with bank deposits and MMFs. Both sides, cited, neutral.
+export const yieldDebate = [
+  { label: 'Prohibition view (GENIUS Act, Jul 2025)', stat: 'Payment stablecoins may not pay interest or yield.', detail: 'CRS IF13173/IF13174 outline the tension between stablecoins as payment mechanisms versus savings vehicles. The Act draws a clear boundary between payments and deposit-taking.' },
+  { label: 'Macro-stability view (State Street, Apr 2026)', stat: 'Yield-bearing stablecoins compete directly with bank deposits and MMFs.', detail: 'At scale, this could alter bank funding structures, affect credit supply, and amplify run dynamics in short-term funding markets.' },
+  { label: 'Disintermediation view (BPI, 2026)', stat: 'Yield-bearing stablecoins reduce bank deposits and lending.', detail: 'Citing Cong, Chiu et al.: banks must compete for deposits, potentially crowding out lending.' },
+  { label: 'Adoption-cost view (Federal Reserve, Dec 2025)', stat: 'Non-yielding stablecoins carry a high opportunity cost when rates are elevated.', detail: 'The Fed notes this could slow adoption unless stablecoins evolve to pay yield, creating a regulatory tension with the GENIUS prohibition.' },
+];
+
+// T-bill maturity distribution from issuer transparency attestations.
+// Teaches why issuers prefer short-term bills (liquidity for redemptions)
+// and the Yadav/Malone Treasury-interdependence point.
+export const tBillMaturities = [
+  { issuer: 'Tether (Q1 2026 attestation)', buckets: [
+    { label: '0-30 days', pct: 22 },
+    { label: '31-90 days', pct: 41 },
+    { label: '91-180 days', pct: 24 },
+    { label: '180+ days', pct: 13 },
+  ]},
+  { issuer: 'Circle (Q1 2026 reserve report)', buckets: [
+    { label: '0-30 days', pct: 31 },
+    { label: '31-90 days', pct: 48 },
+    { label: '91-180 days', pct: 17 },
+    { label: '180+ days', pct: 4 },
+  ]},
+];
+
+// GENIUS Act rulemaking status as of Aug 2026 (dated paragraph, not a live
+// tracker). Per owner decision: no public review-cadence promise.
+export const geniusStatus = {
+  enacted: 'July 18, 2025',
+  asOf: 'Aug 2026',
+  fullImplementation: 'January 18, 2027 (18 months after enactment) or 120 days after final rules are issued',
+  totalRulemakings: 26,
+  agencies: 6,
+  nprmsIssued: 10,
+  finalRules: 0,
+  note: 'Many comment periods (e.g. FinCEN/OFAC joint rulemaking) closed in early June 2026. As of Aug 2026, zero final rules have been completed.',
+  source: 'Paradigm GENIUS Act Rulemaking Tracker',
+  url: 'https://paradigm.xyz/genius',
 };
+
+// BPI full-journey finding (callout next to the remittance calculator).
+export const bpiFinding = {
+  label: 'Bank Policy Institute (Jul 2026)',
+  finding: 'Stablecoins showed no systematic cost advantage over traditional channels; full-journey cost 0.3% to 9% across ten corridors.',
+  detail: 'On/off-ramp FX dominated the cost. Speed followed the local rail, not the chain. Gas-only comparisons (the middle hop) are not the whole journey.',
+};
+
+// --- Section 5: cross-border ---------------------------------------------
+// Author's teaching model, not a qualified research estimate. Every lever is
+// visible on the widget. The scenario table underneath is what makes this
+// defensible: each row says what we are allowed to claim and from where.
+export const remittanceCost = {
+  // Default amount is the World Bank RPW measurement point ($200), not $1,000.
+  defaultAmount: 200,
+  // Traditional side: three NAMED assumption schedules, not one black-box "% + fixed".
+  // The $245 fixed figure from the previous version was a Learn-range reading
+  // repurposed as a SWIFT ticket; it is deleted as a fee and only appears as a
+  // worked $10,000 example in the scenario table, attributed to that reading.
+  traditionalSchedules: [
+    { id: 'rpw', label: 'RPW-like retail % ($200/$500 only)', feePct: 6.2, fixedUsd: 0, warnAbove: 500, warn: 'RPW only mystery-shops $200 and $500. Do not extrapolate this percentage to commercial sizes.' },
+    { id: 'sme', label: 'SME wire: 2% FX + $40', feePct: 2, fixedUsd: 40, warnAbove: null },
+    { id: 'commercial', label: 'Commercial: 25 bp FX + $25', feePct: 0.25, fixedUsd: 25, warnAbove: null },
+  ],
+  defaultTraditional: 'rpw',
+  // Stablecoin side: the full journey split into named hops. Default is the
+  // "I already hold it and they accept it" case (ramps off, gas on). A one-click
+  // "full cash-to-cash" preset turns both ramps on.
+  stablecoin: {
+    networkFeeUsd: 0.10,        // representative L2/Base fee
+    onrampPct: 0.5,             // author assumption, middle of the 0.1-1% range
+    offrampPct: 0.5,            // author assumption, middle of the 0.1-1% range
+    includeOnramp: false,
+    includeOfframp: false,
+    days: 'seconds',
+  },
+  // Float / opportunity cost of time (author assumption, not World Bank).
+  // floatCost = amount * annualOpportunityRate * daysInTransit / 365
+  defaultDaysInTransit: 4,     // traditional default
+  defaultOpportunityRate: 4.5, // author assumption, cash/T-bill order of magnitude
+  label: "Author's model, not the World Bank series",
+};
+
+// Static, sourced scenario table. Figures are ranges where the primary source
+// gives a range; "author model" rows are clearly labeled as such. The
+// calculator's job is to let the reader replay A-E by moving sliders until the
+// stacked rows match a row in this table.
+export const remittanceScenarios = [
+  {
+    id: 'A', scenario: 'Worker sends $200', allowed: 'World Bank Remittance Prices Worldwide (named quarter)',
+    traditional: 'Global average ~6.2% all-in; banks higher; Sub-Saharan Africa higher',
+    stablecoin: 'BPI 2026 full journey 0.3-9%; gas is not the whole story',
+    why: 'The actual remittance fact. This is the size World Bank RPW measures.',
+    source: 'World Bank RPW Q1 2025; BPI Jul 2026',
+  },
+  {
+    id: 'B', scenario: '$500', allowed: 'World Bank RPW $500 average',
+    traditional: '~4.3% all-in (Q1 2025 figure, re-verify before quoting)',
+    stablecoin: 'Same BPI caveat: on/off-ramp FX dominates, not gas',
+    why: 'Shows the percentage falls as ticket grows, inside the RPW band.',
+    source: 'World Bank RPW Q1 2025',
+  },
+  {
+    id: 'C', scenario: '$10,000 personal', allowed: 'Author model, not RPW',
+    traditional: 'e.g. 1-3% FX + $40; float ~$5 at 4.5%/4d',
+    stablecoin: 'Gas + optional ramps',
+    why: 'Kills the live $710 claim. RPW does not cover this size.',
+    source: 'Author model; bank fee schedules',
+  },
+  {
+    id: 'D', scenario: '$1M, recipient takes USDC', allowed: 'Author model',
+    traditional: '10-50 bp commercial FX + $25 + ~$500 float',
+    stablecoin: 'Gas only (already hold, they accept)',
+    why: 'Why treasurers care about "stay on-chain": no ramp cost.',
+    source: 'Author model; trade-press commercial FX ranges',
+  },
+  {
+    id: 'E', scenario: '$1M, cash to cash', allowed: 'Author model + BPI spirit',
+    traditional: 'Same as D',
+    stablecoin: 'On-ramp + gas + off-ramp (0.1-1% each as a labeled band)',
+    why: 'Why $0.10 is a lie for this path. Ramps dominate, not gas.',
+    source: 'Author model; BPI Jul 2026 (0.3-9% full journey)',
+  },
+  {
+    id: 'F', scenario: 'Blocked corridor / 10-day delay', allowed: 'Author model',
+    traditional: 'D plus ~$1,200 float at 4.5%',
+    stablecoin: 'Often same-day once ramped',
+    why: 'Time as the feature. Float becomes a first-class term.',
+    source: 'Author model',
+  },
+];
 
 export const corridors = [
   { region: 'Latin America', detail: '~$1.5T in crypto 2022-2025, predominantly stablecoins; Argentina >60% of exchange crypto purchases are stablecoins; Brazil ~90% of crypto volume.', country: 'Argentina, Brazil' },

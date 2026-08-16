@@ -83,6 +83,30 @@ Daily supply series from the proprietary SQLite dataset:
 { "data": [ { "ts": 1720000000000, "value": 80000000000 } ] }
 ```
 
+### `GET /api/stress?[coin=USDT][&days=30]`
+
+Per-coin peg stress index over time, from the `stress_series` table (written every 10 minutes by `jobs/stress.js`). Optional coin filter and day window (default 30, max 365):
+
+```jsonc
+{
+  "data": [
+    { "ts": 1720000000000, "symbol": "USDT", "peg_stress_index": 6, "z_score": 1.2, "raw_delta": 50000000, "normalized_delta": 0.05 }
+  ]
+}
+```
+
+### `GET /api/labels?[coin=USDT][&days=30][&limit=50]`
+
+Stored alert history from the `labels` table (written by `jobs/stress.js` from the same `generateAlerts()` the frontend uses). Optional coin filter, day window, and row limit (default 50, max 200):
+
+```jsonc
+{
+  "data": [
+    { "ts": 1720000000000, "symbol": "USDT", "alert_type": "PEG_BREAK", "severity": "CRITICAL", "explanation": "USDT is -60 bps below the $1 peg.", "magnitude": 60 }
+  ]
+}
+```
+
 ## Alerts
 
 Alerts are generated **client-side** by `generateAlerts(data)` in `src/lib/derive.js` using per-coin thresholds from the registry. No backend round-trip:
@@ -99,7 +123,7 @@ Alerts are generated **client-side** by `generateAlerts(data)` in `src/lib/deriv
 }
 ```
 
-Rules: `PEG_BREAK`, `CHAIN_SPIKE`, `MEGA_SUPPLY`, `DOM_SHIFT`. Explanations are deterministic via `alertExplanation(alert)`.
+Rules: `PEG_BREAK`, `CHAIN_SPIKE`, `MEGA_SUPPLY`, `DOM_SHIFT`. Explanations are deterministic via `alertExplanation(alert)`. When the optional backend is running, `jobs/stress.js` also persists each cycle's alerts to the `labels` table (readable via `GET /api/labels`), so historical alert context accumulates over time.
 
 ## Errors and empty states
 

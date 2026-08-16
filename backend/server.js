@@ -62,4 +62,30 @@ app.get('/api/history', async (req) => {
   return { data: chains };
 });
 
+// Stored alert labels (Pass 4). Returns recent alert history so the Learn tab
+// can show real accumulated events as case studies. Optional coin filter.
+app.get('/api/labels', async (req) => {
+  const { coin, days = '30', limit = '50' } = req.query || {};
+  const nDays = Math.max(1, Math.min(365, Number(days) || 30));
+  const since = Date.now() - nDays * 86_400_000;
+  const nLimit = Math.max(1, Math.min(200, Number(limit) || 50));
+  const symbol = coin ? String(coin).toUpperCase() : null;
+  const rows = symbol
+    ? db.prepare('SELECT ts, symbol, alert_type, severity, explanation, magnitude FROM labels WHERE symbol = ? AND ts >= ? ORDER BY ts DESC LIMIT ?').all(symbol, since, nLimit)
+    : db.prepare('SELECT ts, symbol, alert_type, severity, explanation, magnitude FROM labels WHERE ts >= ? ORDER BY ts DESC LIMIT ?').all(since, nLimit);
+  return { data: rows };
+});
+
+// Stored stress series (Pass 4). Returns the per-coin peg stress index over time.
+app.get('/api/stress', async (req) => {
+  const { coin, days = '30' } = req.query || {};
+  const nDays = Math.max(1, Math.min(365, Number(days) || 30));
+  const since = Date.now() - nDays * 86_400_000;
+  const symbol = coin ? String(coin).toUpperCase() : null;
+  const rows = symbol
+    ? db.prepare('SELECT ts, symbol, peg_stress_index, z_score, raw_delta, normalized_delta FROM stress_series WHERE symbol = ? AND ts >= ? ORDER BY ts ASC').all(symbol, since)
+    : db.prepare('SELECT ts, symbol, peg_stress_index, z_score, raw_delta, normalized_delta FROM stress_series WHERE ts >= ? ORDER BY ts ASC').all(since);
+  return { data: rows };
+});
+
 app.listen({ host: '127.0.0.1', port: PORT });

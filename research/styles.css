@@ -214,6 +214,61 @@ hr.rule { border: 0; border-top: 1px solid var(--hub-line); margin: 0; }
 .calc .calc-rail-row:last-child { border-bottom: 0; }
 .calc .calc-rail-label { font-family: var(--hub-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--hub-ink2); display: block; margin-bottom: 0.2rem; }
 
+/* --- author's-model calculator (Section 5, synthesis §8.5) ------------- */
+.calc-model { max-width: 640px; }
+.calc-row-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+.calc-presets { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.calc-preset-label { font-family: var(--hub-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--hub-ink2); }
+.calc-preset { font-family: var(--hub-mono); font-size: 0.78rem; padding: 0.4rem 0.7rem; border: 1px solid var(--hub-line); background: var(--hub-bg); color: var(--hub-ink2); cursor: pointer; min-height: 36px; border-radius: 4px; }
+.calc-preset.active { background: var(--hub-gold); color: var(--hub-bg); border-color: var(--hub-gold); }
+.calc-preset:focus-visible { outline: 2px solid var(--hub-gold); outline-offset: 2px; }
+.calc-checks { display: flex; gap: 1.2rem; flex-wrap: wrap; }
+.calc-warn { font-size: 0.8rem; color: #B33F2E; padding: 0.5rem 0.7rem; border: 1px solid #B33F2E; border-radius: 4px; margin: 0.4rem 0; }
+.calc-out-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.6rem; padding-top: 1rem; border-top: 1px solid var(--hub-line); }
+.calc-rail-block { }
+.calc-rail-out { font-family: var(--hub-mono); font-variant-numeric: tabular-nums; }
+.calc-stack { display: flex; flex-direction: column; gap: 0.3rem; }
+.calc-row { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.85rem; color: var(--hub-ink2); border-bottom: 1px dotted var(--hub-line); padding-bottom: 0.2rem; }
+.calc-row.calc-total { border-bottom: 0; padding-top: 0.3rem; color: var(--hub-ink); font-weight: 600; }
+.calc-val { white-space: nowrap; }
+.calc-voice { margin-top: 0.8rem; font-style: italic; }
+
+/* --- scenario table (Section 5, synthesis §8.5) ----------------------- */
+.scen-table { margin: 1rem 0; display: flex; flex-direction: column; gap: 0.8rem; }
+.scen-row { border: 1px solid var(--hub-line); border-radius: 6px; padding: 0.9rem 1rem; background: var(--hub-bg); }
+.scen-head { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+.scen-id { font-family: var(--hub-mono); font-weight: 700; color: var(--hub-gold); }
+.scen-title { font-size: 1rem; font-weight: 600; color: var(--hub-ink); }
+.scen-tag { font-size: 0.62rem; font-family: var(--hub-mono); text-transform: uppercase; letter-spacing: 0.06em; padding: 0.1rem 0.4rem; border-radius: 3px; }
+.scen-tag.sourced { background: rgba(11,129,104,0.15); color: #0B8168; }
+.scen-tag.author { background: rgba(122,64,152,0.15); color: #7A4098; }
+[data-theme="dark"] .scen-tag.sourced { background: rgba(31,158,130,0.2); color: #1F9E82; }
+[data-theme="dark"] .scen-tag.author { background: rgba(164,101,194,0.2); color: #A465C2; }
+.scen-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-bottom: 0.5rem; }
+.scen-label { font-family: var(--hub-mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--hub-ink2); margin-bottom: 0.15rem; }
+.scen-val { font-size: 0.85rem; color: var(--hub-ink); }
+.scen-why { font-size: 0.85rem; color: var(--hub-ink); margin-bottom: 0.3rem; }
+.scen-source { font-size: 0.72rem; color: var(--hub-ink2); font-family: var(--hub-mono); }
+@media (max-width: 560px) {
+  .calc-row-2col, .calc-out-2col, .scen-grid { grid-template-columns: 1fr; }
+}
+
+/* --- Pass 3 editorial additions ---------------------------------------- */
+.single-callout { border: 1px solid var(--hub-line); border-left: 3px solid var(--hub-gold); border-radius: 6px; padding: 1rem 1.2rem; background: var(--hub-bg); }
+
+.maturity-bands-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 1rem 0; }
+.mb-issuer { }
+.mb-issuer-name { font-family: var(--hub-mono); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--hub-ink2); margin-bottom: 0.6rem; }
+.mb-row { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem; }
+.mb-label { width: 80px; font-size: 0.78rem; color: var(--hub-ink2); flex-shrink: 0; }
+.mb-track { flex: 1; height: 14px; background: var(--hub-line); border-radius: 3px; overflow: hidden; }
+.mb-fill { height: 100%; background: var(--hub-gold); border-radius: 3px; transition: width .4s; }
+.mb-val { width: 40px; text-align: right; font-family: var(--hub-mono); font-size: 0.78rem; color: var(--hub-ink); flex-shrink: 0; }
+@media (max-width: 560px) { .maturity-bands-wrap { grid-template-columns: 1fr; } }
+
+.genius-status-block { padding: 0.6rem 0; margin-bottom: 0.5rem; }
+.genius-status-block p { font-size: 0.9rem; color: var(--hub-ink); line-height: 1.6; margin-bottom: 0.5rem; }
+
 /* --- progress-bar race (Section 5) ------------------------------------- */
 .race-row { margin: 1rem 0; }
 .race-label { font-family: var(--hub-mono); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--hub-ink2); margin-bottom: 0.3rem; display: flex; justify-content: space-between; }

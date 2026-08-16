@@ -7,6 +7,9 @@
 # History snapshot: every 10 minutes.
 */10 * * * * cd /opt/stablesense/backend && /usr/bin/node jobs/fetch.js >> /var/log/stablesense/fetch.log 2>&1
 
+# Stress series + alert labels: every 10 minutes, runs after fetch.
+*/10 * * * * cd /opt/stablesense/backend && sleep 60 && /usr/bin/node jobs/stress.js >> /var/log/stablesense/stress.log 2>&1
+
 # AI narrative: checked every 30 minutes; the job self-gates on AI_CADENCE_MIN
 # (default 120), so the model is only called after a full cadence has elapsed.
 */30 * * * * cd /opt/stablesense/backend && /usr/bin/node jobs/ai.js >> /var/log/stablesense/ai.log 2>&1

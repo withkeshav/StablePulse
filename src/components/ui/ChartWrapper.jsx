@@ -9,7 +9,7 @@ function getChart() {
       Chart.register(
         m.LineController, m.BarController,
         m.LineElement, m.PointElement, m.BarElement,
-        m.CategoryScale, m.LinearScale,
+        m.CategoryScale, m.LinearScale, m.LogarithmicScale,
         m.Tooltip, m.Legend
       );
       return Chart;

@@ -4,6 +4,48 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.4.0] - 2026-08-16
+
+### Pass 1 - Data honesty
+
+#### Fixed
+- **Remittance calculator rebuilt as author's model:** the old `4.65% + $245 fixed` formula printed ~$46,745 at $1,000,000 (a retail remittance percentage applied to a wholesale ticket with a fake fixed SWIFT fee). Replaced with named assumption schedules (RPW-like retail at $200/$500 only, SME wire 2% + $40, commercial 25 bp + $25), stacked rows for every lever (wire fee, FX markup, float, on-ramp, gas, off-ramp), float as its own line, a 6-row sourced scenario table, and a "full cash-to-cash" preset. Default amount changed to $200 (the World Bank RPW measurement point). RPW-like schedule warns above $500. Learn lesson, hub thesis, and race bar rewritten in lockstep to tell one story. Kills the $46,745-at-$1M and $710-at-$10k bugs.
+- **z-score display cap:** uncapped z-scores (e.g. 1693.8sigma for a $2M move on a quiet chain) now display as `>10sigma` with the raw value in a tooltip. Added a "Share of tracked" percentage column to contextualize small-chain spikes against total flow.
+- **$1 peg line + shared band:** Home Peg Monitor and coin-tab price chart now both show a dashed $1 reference line and share the same `pegBand` helper so they cannot drift apart. The coin tab previously had neither band nor line.
+- **Chain Rankings sort + relabel:** table was unsorted vendor order (Manta #1 at $6M, Tron #7 at $92B). Now sorts descending by stablecoin circulating supply. Header relabeled from "Total TVL" to "Stablecoin Circulating" (the field is `totalCirculatingUSD.peggedUSD`, not TVL). Added name search with stable rank numbers. Migration Detector relabeled "(approximate)" since DefiLlama gives per-chain deltas, not directed hops.
+- **Exchange-ticker dedupe:** CoinGecko feed listed BTCC twice. New `dedupeTickers` helper deduplicates by `market.identifier` and suffixes name collisions ("BTCC", "BTCC (2)").
+- **Supply chart humanized ticks:** y-axis no longer renders `80,000,000,000`; uses `fmtB` ($80B). Added Log and "% from start" toggles on Home and coin supply charts. Registered `LogarithmicScale` in ChartWrapper.
+- **Taxonomy aria-label:** said "Fiat-USD dominates at over 95%" while the caption said 15-16% other. Re-derived from the chart's own data (83.8% fiat-USD); aria-label now says "around 84%", consistent with the caption.
+
+### Pass 2 - Teachable metrics
+
+#### Added
+- **Dominance chart** on the coin tab using the previously-ready-but-uncharted `buildShareSeries` helper. Shows the coin's share of tracked stablecoin supply over time with a percent axis.
+- **Peg deviation in bps chart** on the coin tab. Fixed -50/+50 bps bounds prevent the auto-band exaggeration the price chart still suffers from. Dashed 0 bps reference line.
+- **Mint/burn color legend** in CapitalFlows. A one-line coin-color key above the bars explains which color is which coin; per-segment `title` tooltips show the per-coin delta.
+- **Empty-state alert primer:** new `AlertPrimer.jsx` replaces the bare "No active alerts." with a one-paragraph explanation of the four alert rules (PEG_BREAK, CHAIN_SPIKE, MEGA_SUPPLY, DOM_SHIFT). Wired into SignalSummary (compact) and AlertsTab (full, zero-alerts case).
+
+### Pass 3 - Research hub editorial
+
+#### Added
+- **Yield-bearing stablecoin debate** (extends Banks section): four cited callouts (CRS IF13173/IF13174, State Street Apr 2026, BPI citing Cong/Chiu, Federal Reserve Dec 2025) covering the GENIUS Act yield prohibition and the contested macro-stability implications.
+- **BPI full-journey callout** next to the remittance calculator: the Bank Policy Institute Jul 2026 finding that stablecoins showed no systematic cost advantage (0.3-9% across ten corridors; on/off-ramp FX dominated; speed followed the local rail).
+- **T-bill maturity-band visual** (extends Treasury section): reserve composition by maturity for Tether and Circle from their Q1 2026 attestations. Teaches why issuers prefer short-term bills (redemption liquidity) and the Yadav/Malone interdependence point.
+- **GENIUS Act rulemaking status** (extends Regulation section): a dated paragraph (not a live tracker, no review-cadence promise) summarizing status as of Aug 2026: 26 rulemakings across 6 agencies, 10 NPRMs issued, 0 final rules, full implementation Jan 18, 2027.
+
+### Pass 4 - Insight engine (backend lock lifted)
+
+#### Added
+- **`stress_series` + `labels` SQLite tables** (`backend/lib/db.js`): INTEGER ts, WITHOUT ROWID, composite primary keys, matching the existing `snapshots` convention. Indexes on `(symbol, ts)`.
+- **`backend/jobs/stress.js`:** a third cron job that reads the latest snapshots, reuses `computePegStress` and `generateAlerts` from derive.js, and writes per-coin stress index, z-score, raw delta, and normalized delta to `stress_series`, plus active alerts to `labels`. Runs every 10 minutes after fetch with a 60s sleep. Verified end-to-end against seed data.
+- **`ai.js` prompt rewrite:** SYSTEM_PROMPT now asks the model to answer "why is this interesting" and "how was this computed" in student-explainable language. `buildContext` extended to read from the new `stress_series` and `labels` tables. Kept JSON-only, cadence self-gate, and fallback model. No second narrative job.
+- **`/api/labels` and `/api/stress` endpoints** (`backend/server.js`): expose stored alert history and stress series so the Learn tab can read accumulated events.
+- **Learn case-studies lesson:** new "Case studies: when the signal was real" lesson covering UST/Terra May 2022 and USR March 2026. USR is explicitly framed as "key compromise / unbacked mint" (an exploit), not "our index called it" (a pre-depeg signal), per synthesis section 6.6.
+
+### Tests
+- 18 new tests for the pure helpers (`pegBand`, `pegRefLine`, `pegChartOptions`, `toPercentFromFirst`, `dedupeTickers`, z-score cap, share-of-tracked). 124 total, all green.
+- Backend stress job verified manually end-to-end (5 stress_series rows + 3 labels rows against seed data); no backend test harness added per the "tests target pure modules only" convention.
+
 ## [3.3.0] - 2026-08-12
 
 ### Fixed
@@ -150,6 +192,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 Initial internal release of the intelligence dashboard (prior to open-source packaging). No public changelog kept.
 
+[3.4.0]: https://github.com/withkeshav/StableSense/releases/tag/v3.4.0
 [3.3.0]: https://github.com/withkeshav/StableSense/releases/tag/v3.3.0
 [3.2.5]: https://github.com/withkeshav/StableSense/releases/tag/v3.2.5
 [3.2.0]: https://github.com/withkeshav/StableSense/releases/tag/v3.2.0

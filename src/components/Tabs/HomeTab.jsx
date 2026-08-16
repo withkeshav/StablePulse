@@ -1,8 +1,8 @@
-import { useMemo } from 'preact/hooks';
+import { useMemo, useState } from 'preact/hooks';
 import { fmtB, fmtPrice } from '../../utils/formatters.js';
 import { getActiveCoins } from '../../utils/coin-config.js';
 import StatCard from '../ui/StatCard.jsx';
-import { buildMigrationPairs, buildSupplySeries, buildWhaleWatchRows, computePegStress, rankChainFlows } from '../../lib/derive.js';
+import { buildMigrationPairs, buildSupplySeries, buildWhaleWatchRows, computePegStress, pegChartOptions, pegRefLine, rankChainFlows, toPercentFromFirst } from '../../lib/derive.js';
 import SignalHero from '../Sections/SignalHero.jsx';
 import MarketPulse from '../Sections/MarketPulse.jsx';
 import CapitalFlows from '../Sections/CapitalFlows.jsx';
@@ -37,6 +37,9 @@ export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec
     return m;
   }, [coins, detailsByCoin]);
 
+  const [supplyLog, setSupplyLog] = useState(false);
+  const [supplyPct, setSupplyPct] = useState(false);
+
   const chainFlows = useMemo(() => rankChainFlows(detailsByCoin), [detailsByCoin]);
   const migrationPairs = useMemo(() => buildMigrationPairs(chainFlows), [chainFlows]);
   const stress = useMemo(
@@ -56,52 +59,52 @@ export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec
   }, [coins, data]);
 
   const supplyChartData = useMemo(
-    () => ({
-      labels: supplyLabels,
-      datasets: coins.map((c) => ({
-        label: c.symbol,
-        data: supplySeriesByCoin[c.symbol].map((p) => p.value),
-        borderColor: c.color,
-        tension: 0.25,
-      })),
-    }),
-    [coins, supplyLabels, supplySeriesByCoin]
+    () => {
+      const transform = (series) => (supplyPct ? toPercentFromFirst(series).map((p) => p.value) : series.map((p) => p.value));
+      return {
+        labels: supplyLabels,
+        datasets: coins.map((c) => ({
+          label: supplyPct ? `${c.symbol} %` : c.symbol,
+          data: transform(supplySeriesByCoin[c.symbol]),
+          borderColor: c.color,
+          tension: 0.25,
+        })),
+      };
+    },
+    [coins, supplyLabels, supplySeriesByCoin, supplyPct]
   );
 
+  const supplyChartOptions = useMemo(() => {
+    const yScale = supplyLog && !supplyPct
+      ? { type: 'logarithmic', ticks: { callback: (v) => fmtB(v) } }
+      : supplyPct
+        ? { ticks: { callback: (v) => (v >= 0 ? '+' : '') + Number(v).toFixed(1) + '%' } }
+        : { ticks: { callback: (v) => fmtB(v) } };
+    return { responsive: true, maintainAspectRatio: false, scales: { y: yScale } };
+  }, [supplyLog, supplyPct]);
+
   const pegChartData = useMemo(
-    () => ({
-      labels: pegLabels,
-      datasets: coins.map((c) => ({
+    () => {
+      const refColor = typeof document !== 'undefined'
+        ? getComputedStyle(document.documentElement).getPropertyValue('--text2').trim() || '#9CA3AF'
+        : '#9CA3AF';
+      const coinLines = coins.map((c) => ({
         label: c.symbol,
         data: (data?.[`cg${c.symbol}Chart`]?.prices || []).slice(-90).map((p) => p[1]),
         borderColor: c.color,
         tension: 0.25,
-      })),
-    }),
+      }));
+      return { labels: pegLabels, datasets: [...coinLines, pegRefLine(pegLabels, refColor)] };
+    },
     [coins, pegLabels, data]
   );
 
-  // Peg band: clamp y-axis to a narrow band around $1 so peg drift is visible.
-  // Widen automatically when a real depeg exceeds the default band.
-  const pegChartOptions = useMemo(() => {
-    const allPrices = pegChartData.datasets.flatMap((d) => d.data).filter((v) => typeof v === 'number' && v > 0);
-    if (!allPrices.length) return {};
-    const seriesMin = Math.min(...allPrices);
-    const seriesMax = Math.max(...allPrices);
-    const bandMin = Math.max(0.9, seriesMin - 0.005);
-    const bandMax = Math.min(1.1, seriesMax + 0.005);
-    return {
-      scales: {
-        y: {
-          min: bandMin,
-          max: bandMax,
-          ticks: { callback: (v) => '$' + Number(v).toFixed(4) },
-        },
-      },
-      plugins: {
-        tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: $${Number(ctx.parsed.y).toFixed(4)}` } },
-      },
-    };
+  const pegChartOpts = useMemo(() => {
+    const allPrices = pegChartData.datasets
+      .filter((d) => d.label !== '$1 peg')
+      .flatMap((d) => d.data)
+      .filter((v) => typeof v === 'number' && v > 0);
+    return pegChartOptions(allPrices);
   }, [pegChartData]);
 
   const totalMC = data?.allStables?.totalMarketCap?.peggedUSD || 0;
@@ -145,7 +148,16 @@ export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec
 
       <WhaleWatch rows={whaleRows} />
 
-      <MarketPulse supplyChartData={supplyChartData} pegChartData={pegChartData} pegChartOptions={pegChartOptions} />
+      <MarketPulse
+        supplyChartData={supplyChartData}
+        supplyChartOptions={supplyChartOptions}
+        pegChartData={pegChartData}
+        pegChartOptions={pegChartOpts}
+        onToggleLog={() => setSupplyLog((v) => !v)}
+        onTogglePct={() => { setSupplyPct((v) => !v); if (!supplyPct) setSupplyLog(false); }}
+        supplyLog={supplyLog}
+        supplyPct={supplyPct}
+      />
       <CapitalFlows migrationPairs={migrationPairs} chainFlows={chainFlows} />
       <SignalSummary data={data} alerts={alerts} onViewAll={() => setActiveTab('alerts')} />
     </div>

@@ -1,7 +1,7 @@
-import { useMemo } from 'preact/hooks';
-import { fmtB, fmtPct, fmtPrice, pctChange } from '../../utils/formatters.js';
-import { STABLECOIN_REGISTRY } from '../../utils/coin-config.js';
-import { buildSupplySeries, buildWhaleWatchRows } from '../../lib/derive.js';
+import { useMemo, useState } from 'preact/hooks';
+import { fmtB, fmtPct, fmtPrice, pctChange, bps } from '../../utils/formatters.js';
+import { STABLECOIN_REGISTRY, getActiveCoins } from '../../utils/coin-config.js';
+import { buildShareSeries, buildSupplySeries, buildWhaleWatchRows, dedupeTickers, pegChartOptions, pegRefLine, toPercentFromFirst } from '../../lib/derive.js';
 import ChartWrapper from '../ui/ChartWrapper.jsx';
 
 export default function CoinTab({ coin, data }) {
@@ -34,28 +34,53 @@ export default function CoinTab({ coin, data }) {
   );
 
   const supplySeries = useMemo(() => buildSupplySeries(detail), [detail]);
+  const [supplyLog, setSupplyLog] = useState(false);
+  const [supplyPct, setSupplyPct] = useState(false);
 
   const priceLineData = useMemo(() => {
     const series = (chartData?.prices || []).slice(-90);
+    const labels = series.map((p) => new Date(p[0]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+    const refColor = typeof document !== 'undefined'
+      ? getComputedStyle(document.documentElement).getPropertyValue('--text2').trim() || '#9CA3AF'
+      : '#9CA3AF';
     return {
-      labels: series.map((p) => new Date(p[0]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
-      datasets: [{ label: `${symbol} Price`, data: series.map((p) => p[1]), borderColor: color, tension: 0.2 }],
+      labels,
+      datasets: [
+        { label: `${symbol} Price`, data: series.map((p) => p[1]), borderColor: color, tension: 0.2 },
+        pegRefLine(labels, refColor),
+      ],
     };
   }, [chartData, symbol, color]);
 
   const supplyLineData = useMemo(
-    () => ({
-      labels: supplySeries.map((p) => new Date(p.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
-      datasets: [{ label: `${symbol} Supply`, data: supplySeries.map((p) => p.value), borderColor: color, tension: 0.2 }],
-    }),
-    [supplySeries, symbol, color]
+    () => {
+      const labels = supplySeries.map((p) => new Date(p.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+      const values = supplyPct ? toPercentFromFirst(supplySeries).map((p) => p.value) : supplySeries.map((p) => p.value);
+      return {
+        labels,
+        datasets: [{ label: supplyPct ? `${symbol} %` : `${symbol} Supply`, data: values, borderColor: color, tension: 0.2 }],
+      };
+    },
+    [supplySeries, symbol, color, supplyPct]
   );
 
+  const supplyLineOptions = useMemo(() => {
+    const yScale = supplyLog && !supplyPct
+      ? { type: 'logarithmic', ticks: { callback: (v) => fmtB(v) } }
+      : supplyPct
+        ? { ticks: { callback: (v) => (v >= 0 ? '+' : '') + Number(v).toFixed(1) + '%' } }
+        : { ticks: { callback: (v) => fmtB(v) } };
+    return { responsive: true, maintainAspectRatio: false, scales: { y: yScale } };
+  }, [supplyLog, supplyPct]);
+
   const exchBars = useMemo(
-    () => ({
-      labels: (cgTickers?.tickers || []).slice(0, 8).map((t) => t.market?.name || 'Unknown'),
-      datasets: [{ label: '24h Volume', data: (cgTickers?.tickers || []).slice(0, 8).map((t) => t.converted_volume?.usd || 0), backgroundColor: color + 'AA' }],
-    }),
+    () => {
+      const rows = dedupeTickers(cgTickers?.tickers || [], 8);
+      return {
+        labels: rows.map((r) => r.name),
+        datasets: [{ label: '24h Volume', data: rows.map((r) => r.volume), backgroundColor: color + 'AA' }],
+      };
+    },
     [cgTickers, color]
   );
 
@@ -65,6 +90,64 @@ export default function CoinTab({ coin, data }) {
   }, [symbol, detail]);
 
   const chartOptions = useMemo(() => ({ responsive: true, maintainAspectRatio: false }), []);
+  const priceChartOpts = useMemo(() => {
+    const prices = (priceLineData.datasets || [])
+      .filter((d) => d.label !== '$1 peg')
+      .flatMap((d) => d.data)
+      .filter((v) => typeof v === 'number' && v > 0);
+    return { responsive: true, maintainAspectRatio: false, ...pegChartOptions(prices) };
+  }, [priceLineData]);
+
+  // Dominance: this coin's share of tracked stablecoin supply over time.
+  // Uses the ready-but-previously-uncharted buildShareSeries helper.
+  const dominanceData = useMemo(() => {
+    const coins = getActiveCoins();
+    const supplyByCoin = {};
+    for (const c of coins) {
+      const d = data?.[`${c.symbol.toLowerCase()}Detail`];
+      const s = buildSupplySeries(d);
+      if (s.length >= 8) supplyByCoin[c.symbol] = s;
+    }
+    if (!supplyByCoin[symbol] || supplyByCoin[symbol].length < 2) return null;
+    const share = buildShareSeries(supplyByCoin, symbol);
+    return {
+      labels: share.map((p) => new Date(p.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+      datasets: [{ label: `${symbol} share of tracked supply`, data: share.map((p) => p.share), borderColor: color, tension: 0.2 }],
+    };
+  }, [data, symbol, color]);
+
+  const dominanceOpts = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: { y: { ticks: { callback: (v) => Number(v).toFixed(1) + '%' } } },
+    plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${Number(ctx.parsed.y).toFixed(1)}%` } } },
+  }), []);
+
+  // Peg deviation in basis points: (price - 1) * 10000. Fixed y bounds -50/+50
+  // per Workstream C §5.2 prevent the auto-band exaggeration the price chart
+  // still suffers from. A 0 bps line anchors "no deviation."
+  const bpsData = useMemo(() => {
+    const series = (chartData?.prices || []).slice(-90);
+    if (!series.length) return null;
+    const labels = series.map((p) => new Date(p[0]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+    const refColor = typeof document !== 'undefined'
+      ? getComputedStyle(document.documentElement).getPropertyValue('--text2').trim() || '#9CA3AF'
+      : '#9CA3AF';
+    return {
+      labels,
+      datasets: [
+        { label: `${symbol} deviation (bps)`, data: series.map((p) => bps(p[1])), borderColor: color, tension: 0.2 },
+        { label: '0 bps', data: labels.map(() => 0), borderColor: refColor, borderDash: [4, 4], borderWidth: 1, pointRadius: 0, tension: 0 },
+      ],
+    };
+  }, [chartData, symbol, color]);
+
+  const bpsOpts = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: { y: { min: -50, max: 50, ticks: { callback: (v) => (v > 0 ? '+' : '') + v + ' bps' } } },
+    plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y > 0 ? '+' : ''}${ctx.parsed.y} bps` } } },
+  }), []);
 
   return (
     <div class="tab-content active">
@@ -77,18 +160,46 @@ export default function CoinTab({ coin, data }) {
 
       <div class="grid-2 mb-4">
         <div class="card">
-          <div class="card-header"><div class="card-title">{symbol} Supply History</div></div>
+          <div class="card-header">
+            <div class="card-title-row">
+              <div class="card-title">{symbol} Supply History</div>
+              <div class="chart-toggles">
+                <button type="button" class={`chart-toggle${supplyPct ? ' active' : ''}`} onClick={() => setSupplyPct((v) => !v)} aria-pressed={supplyPct} title="Show percent change from first point">% from start</button>
+                <button type="button" class={`chart-toggle${supplyLog ? ' active' : ''}`} onClick={() => setSupplyLog((v) => !v)} aria-pressed={supplyLog} title="Toggle logarithmic scale">Log</button>
+              </div>
+            </div>
+          </div>
           <div class="card-body chart-card-body">
-            <ChartWrapper type="line" data={supplyLineData} height={220} aspectRatio={16 / 10} options={chartOptions} />
+            <ChartWrapper type="line" data={supplyLineData} options={supplyLineOptions} height={220} aspectRatio={16 / 10} />
           </div>
         </div>
         <div class="card">
           <div class="card-header"><div class="card-title">{symbol} Price</div></div>
           <div class="card-body chart-card-body">
-            <ChartWrapper type="line" data={priceLineData} height={220} aspectRatio={16 / 10} options={chartOptions} />
+            <ChartWrapper type="line" data={priceLineData} height={220} aspectRatio={16 / 10} options={priceChartOpts} />
           </div>
         </div>
       </div>
+
+      {dominanceData ? (
+        <div class="card mb-4">
+          <div class="card-header"><div class="card-title">{symbol} Dominance</div></div>
+          <div class="card-body chart-card-body">
+            <ChartWrapper type="line" data={dominanceData} options={dominanceOpts} height={200} aspectRatio={16 / 10} />
+            <p class="text-muted small" style="margin-top:6px">{symbol}'s share of the combined tracked stablecoin supply (USDT, USDC, DAI, USDE, PYUSD) over time.</p>
+          </div>
+        </div>
+      ) : null}
+
+      {bpsData ? (
+        <div class="card mb-4">
+          <div class="card-header"><div class="card-title">{symbol} Peg Deviation (bps)</div></div>
+          <div class="card-body chart-card-body">
+            <ChartWrapper type="line" data={bpsData} options={bpsOpts} height={200} aspectRatio={16 / 10} />
+            <p class="text-muted small" style="margin-top:6px">Distance from the $1 peg in basis points. Fixed -50/+50 bounds so daily noise does not look like a depeg. 0 bps = exactly on peg.</p>
+          </div>
+        </div>
+      ) : null}
 
       <div class="grid-2 mb-4">
         <div class="card">
@@ -142,19 +253,21 @@ export default function CoinTab({ coin, data }) {
                 <div class="whale-mobile-card" key={`cw-${idx}`}>
                   <div class="wm-main">{row.chain}</div>
                   <div><div class="wm-label">Supply Delta</div><div class="wm-val">{fmtB(row.delta)}</div></div>
-                  <div><div class="wm-label">Z-score</div><div class="wm-val">{row.z.toFixed(1)}σ</div></div>
+                  <div><div class="wm-label">Z-score</div><div class="wm-val" title={`Raw z: ${row.z.toFixed(1)}σ`}>{row.displayZ >= 10 ? '>10σ' : `${row.displayZ.toFixed(1)}σ`}</div></div>
+                  <div><div class="wm-label">Share of tracked</div><div class="wm-val">{fmtPct(row.shareOfTracked)}</div></div>
                 </div>
               ))}
             </div>
             <div class="whale-table-desktop">
               <table class="data-table whale-watch-table" style="min-width:320px">
-                <thead><tr><th>Chain</th><th>Supply Delta</th><th>Z-score</th></tr></thead>
+                <thead><tr><th>Chain</th><th>Supply Delta</th><th>Z-score</th><th>Share of tracked</th></tr></thead>
                 <tbody>
                   {whaleRows.map((row, idx) => (
                     <tr key={`tw-${idx}`}>
                       <td class="td-name">{row.chain}</td>
                       <td class="mono">{fmtB(row.delta)}</td>
-                      <td class="mono">{row.z.toFixed(1)}σ</td>
+                      <td class="mono" title={`Raw z: ${row.z.toFixed(1)}σ`}>{row.displayZ >= 10 ? '>10σ' : `${row.displayZ.toFixed(1)}σ`}</td>
+                      <td class="mono">{fmtPct(row.shareOfTracked)}</td>
                     </tr>
                   ))}
                 </tbody>

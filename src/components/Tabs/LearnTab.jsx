@@ -184,8 +184,8 @@ const MODULES = [
       {
         id: 'cross-border',
         title: 'Cheaper, faster money across borders',
-        lastUpdated: '2026-08-12',
-        body: 'A $10,000 cross-border transfer through banks costs roughly $245 to $465 in fees and FX spreads and takes one to five business days. The same transfer on stablecoin rails costs under $10 and settles in seconds. Real adoption is concentrated where it solves a real problem: Argentina and Brazil for dollar savings against currency depreciation, Nigeria for cross-border trade and remittances, and the UAE-to-India corridor for instant settlement. Even Visa now settles payments in USDC. This is stablecoins\' clearest real-world win, measured against World Bank remittance-price data.',
+        lastUpdated: '2026-08-16',
+        body: 'Cross-border cost is not one number. It is three hops: on-ramp (fiat to token), on-chain transfer, and off-ramp (token to local fiat). At worker-remittance size ($200), World Bank Remittance Prices Worldwide measures a global average near 6% all-in for banks, while stablecoin gas alone is cents; but a full cash-to-cash journey adds on-ramp and off-ramp FX, which a Bank Policy Institute study (Jul 2026) put at 0.3% to 9% across ten corridors. At commercial size ($1M), a retail remittance percentage no longer applies; the comparison is wholesale FX basis points versus ramp basis points, plus the value of time in transit. Real adoption is concentrated where it solves a real problem: Argentina and Brazil for dollar savings against currency depreciation, Nigeria for cross-border trade and remittances, and the UAE-to-India corridor for instant settlement. Even Visa now settles payments in USDC. The research hub has a teaching calculator with every lever visible and a sourced scenario table.',
       },
       {
         id: 'when-trust-breaks',
@@ -198,6 +198,12 @@ const MODULES = [
         title: 'One rulebook, many flavors',
         lastUpdated: '2026-08-12',
         body: 'By August 2026, every major financial hub has a live stablecoin framework, and they converge on full reserve backing, licensed issuers, and the effective death of algorithmic designs. The US GENIUS Act requires 1:1 T-bill or cash backing and bans paying yield to holders. The EU\'s MiCA, fully effective July 2026, splits stablecoins into single-currency and basket-pegged classes and caps non-euro usage. The UK, Japan, Singapore, Hong Kong, and the UAE each run their own models. The real battleground is whether foreign dollar stablecoins are welcomed or contained to protect local currencies.',
+      },
+      {
+        id: 'case-studies',
+        title: 'Case studies: when the signal was real',
+        lastUpdated: '2026-08-16',
+        body: 'Real depegs and stress events are the best teachers. Two stand out. In May 2022, UST/Terra\'s algorithmic death spiral erased roughly $60B in combined value in about a week: the sister-token mechanism could not absorb sell pressure, and the "peg" was an incentive, not a reserve. In March 2026, Resolv\'s USR broke not because of market pressure but because of a compromised key that minted roughly 80M unbacked tokens; the Curve pool printed near $0.025 on March 22. That is an exploit and an insolvency, not a market-driven depeg. A peg-stress index can observe the price aftermath, but the cause was a security failure, not a stress signal the index "called" in advance. When the optional backend is running, this lesson also shows recent alert history (PEG_BREAK, CHAIN_SPIKE, MEGA_SUPPLY, DOM_SHIFT) accumulated in the labels table, so you can study how each rule fires on real data.',
       },
     ],
   },

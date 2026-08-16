@@ -1,5 +1,6 @@
 import { useMemo } from 'preact/hooks';
 import AlertCard from '../Alerts/AlertCard.jsx';
+import AlertPrimer from './AlertPrimer.jsx';
 import { buildAlertSparkSeries } from '../../lib/derive.js';
 
 export default function SignalSummary({ data, alerts, onViewAll }) {
@@ -26,7 +27,7 @@ export default function SignalSummary({ data, alerts, onViewAll }) {
             />
           ))
         ) : (
-          <div class="info-empty">No active alerts.</div>
+          <AlertPrimer compact />
         )}
       </div>
     </section>

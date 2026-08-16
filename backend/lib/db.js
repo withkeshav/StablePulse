@@ -42,6 +42,35 @@ CREATE TABLE IF NOT EXISTS intelligence (
   model        TEXT,
   meta         TEXT
 );
+
+-- Derived stress series, one row per coin per fetch cycle. INTEGER ts
+-- matches the snapshots convention (epoch ms). Written by jobs/stress.js.
+CREATE TABLE IF NOT EXISTS stress_series (
+  ts                 INTEGER NOT NULL,
+  symbol             TEXT    NOT NULL,
+  peg_stress_index   REAL    NOT NULL,
+  z_score            REAL    NOT NULL,
+  raw_delta          REAL    NOT NULL,
+  normalized_delta   REAL    NOT NULL,
+  PRIMARY KEY (ts, symbol)
+) WITHOUT ROWID;
+
+CREATE INDEX IF NOT EXISTS idx_stress_series_symbol_ts ON stress_series(symbol, ts);
+
+-- Rule-based alert labels, one row per alert event. INTEGER ts. Written by
+-- jobs/stress.js from the same generateAlerts() the frontend uses, so stored
+-- history matches what the dashboard showed at the time.
+CREATE TABLE IF NOT EXISTS labels (
+  ts           INTEGER NOT NULL,
+  symbol       TEXT    NOT NULL,
+  alert_type   TEXT    NOT NULL,
+  severity     TEXT    NOT NULL,
+  explanation  TEXT    NOT NULL,
+  magnitude    REAL,
+  PRIMARY KEY (ts, symbol, alert_type)
+) WITHOUT ROWID;
+
+CREATE INDEX IF NOT EXISTS idx_labels_symbol_ts ON labels(symbol, ts);
 `;
 
 const dataDir = process.env.DATA_DIR || path.join(here, '..', 'data');

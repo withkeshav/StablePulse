@@ -7,8 +7,13 @@ import {
   buildSupplySeries,
   buildWhaleWatchRows,
   computePegStress,
+  dedupeTickers,
   generateAlerts,
+  pegBand,
+  pegChartOptions,
+  pegRefLine,
   rankChainFlows,
+  toPercentFromFirst,
 } from './derive.js';
 
 function chainDetail(tokens) {
@@ -18,6 +23,83 @@ function chainDetail(tokens) {
 function token(date, peggedUSD) {
   return { date, circulating: { peggedUSD } };
 }
+
+describe('pegBand', () => {
+  it('returns the default band when there are no valid prices', () => {
+    expect(pegBand([])).toEqual({ min: 0.9, max: 1.1 });
+    expect(pegBand(undefined)).toEqual({ min: 0.9, max: 1.1 });
+    expect(pegBand([null, 0, -1])).toEqual({ min: 0.9, max: 1.1 });
+  });
+
+  it('clamps the band to $0.90 / $1.10 and pads by 0.005', () => {
+    expect(pegBand([0.998, 1.002])).toEqual({ min: 0.993, max: 1.007 });
+  });
+
+  it('floors the band at $0.90 when a depeg breaches the lower bound', () => {
+    expect(pegBand([0.88, 1.0])).toEqual({ min: 0.9, max: 1.005 });
+  });
+
+  it('caps the upper bound at $1.10 even for a large upward depeg', () => {
+    expect(pegBand([1.0, 1.2])).toEqual({ min: 0.995, max: 1.1 });
+  });
+});
+
+describe('pegRefLine', () => {
+  it('builds a flat $1 line the length of the labels array', () => {
+    const line = pegRefLine(['a', 'b', 'c'], '#999');
+    expect(line.label).toBe('$1 peg');
+    expect(line.data).toEqual([1, 1, 1]);
+    expect(line.borderColor).toBe('#999');
+    expect(line.borderDash).toEqual([4, 4]);
+    expect(line.pointRadius).toBe(0);
+  });
+
+  it('defaults the color when none is passed', () => {
+    expect(pegRefLine(['a']).borderColor).toBe('#9CA3AF');
+  });
+});
+
+describe('pegChartOptions', () => {
+  it('returns an empty object when there are no valid prices', () => {
+    expect(pegChartOptions([])).toEqual({});
+  });
+
+  it('returns a band and a 4-decimal tick callback', () => {
+    const opts = pegChartOptions([0.998, 1.002]);
+    expect(opts.scales.y.min).toBe(0.993);
+    expect(opts.scales.y.max).toBe(1.007);
+    expect(typeof opts.scales.y.ticks.callback).toBe('function');
+    expect(opts.scales.y.ticks.callback(1.0)).toBe('$1.0000');
+  });
+});
+
+describe('toPercentFromFirst', () => {
+  it('returns an empty array for no series', () => {
+    expect(toPercentFromFirst([])).toEqual([]);
+    expect(toPercentFromFirst(undefined)).toEqual([]);
+  });
+
+  it('normalizes to percent change from the first point', () => {
+    const series = [
+      { date: 1000, value: 100 },
+      { date: 2000, value: 110 },
+      { date: 3000, value: 90 },
+    ];
+    const out = toPercentFromFirst(series);
+    expect(out.map((p) => p.date)).toEqual([1000, 2000, 3000]);
+    expect(out[0].value).toBe(0);
+    expect(out[1].value).toBeCloseTo(10, 5);
+    expect(out[2].value).toBeCloseTo(-10, 5);
+  });
+
+  it('returns zeros when the first point is zero to avoid division by zero', () => {
+    const series = [{ date: 1000, value: 0 }, { date: 2000, value: 50 }];
+    expect(toPercentFromFirst(series)).toEqual([
+      { date: 1000, value: 0 },
+      { date: 2000, value: 0 },
+    ]);
+  });
+});
 
 describe('buildSupplySeries', () => {
   it('returns an empty series for no detail', () => {
@@ -184,6 +266,30 @@ describe('buildWhaleWatchRows', () => {
     expect(rows).toHaveLength(1);
   });
 
+  it('caps the displayed z-score at 10 and keeps the raw z', () => {
+    // A low-variance baseline with a large spike produces a huge z that must be
+    // capped at 10 in display while the raw z is preserved for the tooltip.
+    // Use a small non-constant wiggle so the baseline stddev is non-zero.
+    const base = [];
+    for (let i = 0; i < 30; i += 1) base.push(token(i + 1, 100 + ((i * 7) % 5))); // 0-4 unit wiggle
+    const spike = token(31, 1e9); // large delta vs single-digit noise, clears the $750M trigger
+    const rows = buildWhaleWatchRows({ USDT: chainDetail([...base, spike]) });
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows[0].z).toBeGreaterThan(10);
+    expect(rows[0].displayZ).toBe(10);
+  });
+
+  it('adds a share-of-tracked-delta that sums to ~100 across rows', () => {
+    const spike = (v) => chainDetail([
+      token(1, 1000), token(2, 2000), token(3, 3000), token(4, 4000),
+      token(5, 5000), token(6, 6000), token(7, 7000), token(8, 8000),
+      token(9, v),
+    ]);
+    const rows = buildWhaleWatchRows({ USDT: spike(1e9), USDC: spike(2e9) });
+    const sum = rows.reduce((s, r) => s + r.shareOfTracked, 0);
+    expect(sum).toBeCloseTo(100, 0);
+  });
+
   it('returns empty when chain balances are steady', () => {
     const tokens = [];
     for (let i = 0; i < 30; i += 1) tokens.push(token(i + 1, i * 1000));
@@ -212,6 +318,57 @@ describe('buildShareSeries', () => {
     expect(series[0].share).toBe(0);
   });
 });
+
+describe('dedupeTickers', () => {
+  it('returns an empty array for no tickers', () => {
+    expect(dupeTickersSafe([])).toEqual([]);
+    expect(dupeTickersSafe(undefined)).toEqual([]);
+  });
+
+  it('deduplicates by market.identifier', () => {
+    const tickers = [
+      { market: { identifier: 'btcc', name: 'BTCC' }, converted_volume: { usd: 100 } },
+      { market: { identifier: 'btcc', name: 'BTCC' }, converted_volume: { usd: 50 } },
+      { market: { identifier: 'binance', name: 'Binance' }, converted_volume: { usd: 200 } },
+    ];
+    const rows = dedupeTickers(tickers);
+    expect(rows).toHaveLength(2);
+    expect(rows[0].name).toBe('BTCC');
+    expect(rows[1].name).toBe('Binance');
+    expect(rows[0].volume).toBe(100);
+  });
+
+  it('suffixes rows that share a display name but have distinct identifiers', () => {
+    const tickers = [
+      { market: { identifier: 'btcc-1', name: 'BTCC' }, base: 'USDT', converted_volume: { usd: 100 } },
+      { market: { identifier: 'btcc-2', name: 'BTCC' }, base: 'USDC', converted_volume: { usd: 80 } },
+      { market: { identifier: 'whitebit', name: 'WhiteBIT' }, base: 'USDT', converted_volume: { usd: 30 } },
+    ];
+    const rows = dedupeTickers(tickers);
+    expect(rows.map((r) => r.name)).toEqual(['BTCC', 'BTCC (2)', 'WhiteBIT']);
+  });
+
+  it('falls back to name+base when market.identifier is absent', () => {
+    const tickers = [
+      { market: { name: 'Binance' }, base: 'USDT', converted_volume: { usd: 100 } },
+      { market: { name: 'Binance' }, base: 'USDC', converted_volume: { usd: 50 } },
+    ];
+    const rows = dedupeTickers(tickers);
+    expect(rows).toHaveLength(2);
+  });
+
+  it('respects the limit parameter', () => {
+    const tickers = Array.from({ length: 12 }, (_, i) => ({
+      market: { identifier: `ex-${i}`, name: `Exchange ${i}` },
+      converted_volume: { usd: 100 * i },
+    }));
+    expect(dedupeTickers(tickers, 5)).toHaveLength(5);
+  });
+});
+
+function dupeTickersSafe(tickers, limit) {
+  return dedupeTickers(tickers, limit);
+}
 
 describe('buildAlertSparkSeries', () => {
   it('returns null without data', () => {

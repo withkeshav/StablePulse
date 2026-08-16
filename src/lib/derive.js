@@ -1,6 +1,83 @@
 import { bps } from '../utils/formatters.js';
 import { getActiveCoins } from '../utils/coin-config.js';
 
+/**
+ * Compute a shared peg band around $1 so peg drift is visible and Home and
+ * the coin tab cannot drift apart. Widen automatically when a real depeg
+ * exceeds the default band, but never go below $0.90 or above $1.10.
+ * @param {Array<number>} prices Flat list of peg prices from the chart's data.
+ * @returns {{min:number, max:number}} Band bounds; `{0.9,1.1}` if no prices.
+ */
+export function pegBand(prices) {
+  const valid = (prices || []).filter((v) => typeof v === 'number' && v > 0);
+  if (!valid.length) return { min: 0.9, max: 1.1 };
+  const seriesMin = Math.min(...valid);
+  const seriesMax = Math.max(...valid);
+  return {
+    min: Math.max(0.9, seriesMin - 0.005),
+    max: Math.min(1.1, seriesMax + 0.005),
+  };
+}
+
+/**
+ * Build the dashed $1 reference-line dataset shared by Home Peg Monitor and
+ * the coin-tab price chart. Drawn as a flat line at y=1 with a dashed stroke
+ * so no chartjs-plugin-annotation dependency is required.
+ * @param {Array<*>} labels The chart's label array (length sets the line).
+ * @param {string} [color] Stroke color (resolve a theme token before calling).
+ * @returns {{label:string, data:number[], borderColor:string, borderDash:number[], borderWidth:number, pointRadius:number, tension:number}}
+ */
+export function pegRefLine(labels, color = '#9CA3AF') {
+  return {
+    label: '$1 peg',
+    data: (labels || []).map(() => 1),
+    borderColor: color,
+    borderDash: [4, 4],
+    borderWidth: 1,
+    pointRadius: 0,
+    tension: 0,
+  };
+}
+
+/**
+ * Build the shared peg-chart options (band + $1 tick formatting) used by both
+ * Home and the coin tab so the two charts cannot drift apart.
+ * @param {Array<number>} prices Flat list of peg prices from the chart's data.
+ * @returns {object} Chart.js options object (empty if no prices).
+ */
+export function pegChartOptions(prices) {
+  const valid = (prices || []).filter((v) => typeof v === 'number' && v > 0);
+  if (!valid.length) return {};
+  const { min, max } = pegBand(valid);
+  return {
+    scales: {
+      y: {
+        min,
+        max,
+        ticks: { callback: (v) => '$' + Number(v).toFixed(4) },
+      },
+    },
+    plugins: {
+      tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: $${Number(ctx.parsed.y).toFixed(4)}` } },
+    },
+  };
+}
+
+/**
+ * Normalize a supply series to "percent change from the first point" so coins
+ * of very different magnitudes (USDT ~$183B vs PYUSD ~$1B) can be read on one
+ * axis. The first point becomes 0; subsequent points are `(v / first - 1) * 100`.
+ * @param {Array<{date:number, value:number}>} series Supply series.
+ * @returns {Array<{date:number, value:number}>} Normalized series (empty if no first point).
+ */
+export function toPercentFromFirst(series) {
+  const arr = series || [];
+  if (!arr.length) return [];
+  const first = arr[0].value;
+  if (!first) return arr.map((p) => ({ date: p.date, value: 0 }));
+  return arr.map((p) => ({ date: p.date, value: (p.value / first - 1) * 100 }));
+}
+
 export function buildSupplySeries(detail) {
   const chainBalances = detail?.chainBalances || {};
   const byDate = {};
@@ -86,11 +163,16 @@ export function buildWhaleWatchRows(detailsByCoin, limit = 8) {
           chain,
           delta: currentDelta,
           z,
+          displayZ: Math.min(z, 10),
         });
       }
     }
   }
-  return rows.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, limit);
+  const ranked = rows.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, limit);
+  // Share of the total absolute delta across the surfaced rows, so a tiny-chain
+  // spike is contextualized against the whole tracked flow, not shown in isolation.
+  const totalAbs = ranked.reduce((sum, r) => sum + Math.abs(r.delta), 0) || 1;
+  return ranked.map((r) => ({ ...r, shareOfTracked: (Math.abs(r.delta) / totalAbs) * 100 }));
 }
 
 /**
@@ -113,6 +195,40 @@ export function buildShareSeries(supplyByCoin, targetCoin) {
       const total = Object.entries(p).reduce((sum, [k, v]) => (k === 'date' ? sum : sum + (Number(v) || 0)), 0);
       return { date: p.date, share: total ? ((Number(p[targetCoin]) || 0) / total) * 100 : 0 };
     });
+}
+
+/**
+ * Deduplicate exchange tickers so the same venue is not shown twice (e.g. the
+ * live CoinGecko tether feed lists BTCC twice). Dedupe key is `market.identifier`
+ * (the stable exchange id), falling back to `name + base` when absent. When two
+ * distinct tickers resolve to the same display name, suffix the pair so each
+ * bar stays distinguishable: first becomes "BTCC", second "BTCC (2)".
+ * @param {Array<object>} tickers Raw CoinGecko tickers array.
+ * @param {number} [limit=8] Max rows to return.
+ * @returns {Array<{name:string, volume:number}>} Deduped, capped rows.
+ */
+export function dedupeTickers(tickers, limit = 8) {
+  const seen = new Set();
+  const nameCount = {};
+  const out = [];
+  for (const t of tickers || []) {
+    const id = t?.market?.identifier || `${t?.market?.name || ''}-${t?.base || ''}`;
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    const name = t?.market?.name || 'Unknown';
+    nameCount[name] = (nameCount[name] || 0) + 1;
+    out.push({ name, volume: t?.converted_volume?.usd || 0 });
+    if (out.length >= limit) break;
+  }
+  // Second pass: suffix duplicate display names so bars stay distinguishable.
+  const nameSeen = {};
+  return out.map((row) => {
+    if (nameCount[row.name] > 1) {
+      nameSeen[row.name] = (nameSeen[row.name] || 0) + 1;
+      if (nameSeen[row.name] > 1) row.name = `${row.name} (${nameSeen[row.name]})`;
+    }
+    return row;
+  });
 }
 
 export function buildAlertSparkSeries(alert, data) {

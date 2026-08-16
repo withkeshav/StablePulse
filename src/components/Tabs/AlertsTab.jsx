@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import AlertHero from '../Alerts/AlertHero.jsx';
 import AlertCard from '../Alerts/AlertCard.jsx';
+import AlertPrimer from '../Sections/AlertPrimer.jsx';
 import { buildAlertSparkSeries } from '../../lib/derive.js';
 
 function AlertsEmptyState() {
@@ -126,7 +127,7 @@ export default function AlertsTab({ alerts, intelligence, data, setActiveTab }) 
         </div>
         <div class="card-body p0">
           {!filtered.length ? (
-            <AlertsEmptyState />
+            counts.all === 0 ? <AlertPrimer /> : <AlertsEmptyState />
           ) : grouped ? (
             grouped.map(([rule, items]) => (
               <div key={rule} class="alerts-rule-group">

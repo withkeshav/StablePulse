@@ -1,7 +1,9 @@
-import { fmtB } from '../../utils/formatters.js';
+import { fmtB, fmtPct } from '../../utils/formatters.js';
 
 export default function WhaleWatch({ rows }) {
   if (!rows?.length) return null;
+
+  const zLabel = (row) => (row.displayZ >= 10 ? '>10σ' : `${row.displayZ.toFixed(1)}σ`);
 
   return (
     <section class="whale-watch mb-4">
@@ -11,7 +13,7 @@ export default function WhaleWatch({ rows }) {
             <div>
               <div class="signal-kicker">Whale Watch</div>
               <h3 style="font-size:var(--md);font-weight:600;margin-bottom:4px">Cross-chain supply anomalies</h3>
-              <p class="text-muted small mb-0">Highlighted chains where recent mint/burn drift cleared volatility thresholds.</p>
+              <p class="text-muted small mb-0">Highlighted chains where recent mint/burn drift cleared volatility thresholds. Z-scores above 10 are capped in display; hover the value for the raw figure.</p>
             </div>
           </div>
           <div class="whale-cards-mobile">
@@ -24,7 +26,11 @@ export default function WhaleWatch({ rows }) {
                 </div>
                 <div>
                   <div class="wm-label">Z-score</div>
-                  <div class="wm-val">{row.z.toFixed(1)}σ</div>
+                  <div class="wm-val" title={`Raw z: ${row.z.toFixed(1)}σ`}>{zLabel(row)}</div>
+                </div>
+                <div>
+                  <div class="wm-label">Share of tracked</div>
+                  <div class="wm-val">{fmtPct(row.shareOfTracked)}</div>
                 </div>
               </div>
             ))}
@@ -37,6 +43,7 @@ export default function WhaleWatch({ rows }) {
                   <th>Chain</th>
                   <th class="num">Supply Delta</th>
                   <th class="num">Z-score</th>
+                  <th class="num">Share of tracked</th>
                 </tr>
               </thead>
               <tbody>
@@ -45,7 +52,8 @@ export default function WhaleWatch({ rows }) {
                     <td class="td-name">{row.coin}</td>
                     <td class="td-name">{row.chain}</td>
                     <td class="mono">{fmtB(row.delta)}</td>
-                    <td class="mono">{row.z.toFixed(1)}σ</td>
+                    <td class="mono" title={`Raw z: ${row.z.toFixed(1)}σ`}>{zLabel(row)}</td>
+                    <td class="mono">{fmtPct(row.shareOfTracked)}</td>
                   </tr>
                 ))}
               </tbody>

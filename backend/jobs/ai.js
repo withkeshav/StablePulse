@@ -10,12 +10,15 @@ const MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 const FALLBACK_MODEL = process.env.OPENAI_FALLBACK_MODEL || '';
 
 const SYSTEM_PROMPT = [
-  'You are a stablecoin market analyst writing a short, factual brief for a dashboard.',
-  'Rules: only use the provided numbers; never invent figures or chains; mention concrete coins and chains; 2-4 sentences total; no markdown; no emojis.',
+  'You are an educational AI explaining stablecoin market movements to a student.',
+  'Rules: only use the provided numbers; never invent figures or chains; mention concrete coins and chains; no markdown; no emojis; no financial advice; objective, educational tone.',
+  'Your brief must answer two questions for a learner:',
+  '  1. "Why is this interesting?" - the educational point of the current market state.',
+  '  2. "How was this computed?" - briefly explain the Peg Stress Index and Z-score in simple terms.',
   'Return valid JSON only with exactly these keys:',
-  '  "headline": string, at most 120 characters',
-  '  "narrative": string, at most 400 characters',
-  '  "implications": string, at most 300 characters',
+  '  "headline": string, at most 120 characters, one educational hook',
+  '  "narrative": string, at most 400 characters, the "why is this interesting" answer',
+  '  "implications": string, at most 300 characters, the "how was this computed" answer with plain-language metric definitions',
 ].join('\n');
 
 function skipIfWithinCadence() {
@@ -54,6 +57,31 @@ function buildContext() {
     const price = db.prepare('SELECT price, change_24h FROM prices WHERE coin = ? ORDER BY ts DESC LIMIT 1').get(coin.symbol);
     const spot = price?.price != null ? `$${price.price.toFixed(4)} (${price.change_24h ?? 'n/a'}% 24h)` : 'n/a';
     lines.push(`${coin.symbol}: total $${(total / 1e9).toFixed(2)}B. Top chains: ${top}. Spot ${spot}.`);
+  }
+
+  // Stress series (Pass 4): the latest per-coin peg stress index, z-score,
+  // and normalized delta, so the narrative can explain "how this was computed".
+  for (const coin of getActiveCoins()) {
+    const row = db
+      .prepare('SELECT peg_stress_index, z_score, normalized_delta FROM stress_series WHERE symbol = ? ORDER BY ts DESC LIMIT 1')
+      .get(coin.symbol);
+    if (row) {
+      lines.push(`${coin.symbol} stress: Peg Stress Index ${row.peg_stress_index}/100, z-score ${row.z_score.toFixed(1)}sigma, normalized delta ${row.normalized_delta.toFixed(2)}%.`);
+    }
+  }
+
+  // Recent alert labels (Pass 4): the last cycle's active alerts, so the
+  // narrative can name the specific rule that fired.
+  const recentLabels = db
+    .prepare('SELECT symbol, alert_type, severity, explanation FROM labels ORDER BY ts DESC LIMIT 5')
+    .all();
+  if (recentLabels.length) {
+    lines.push('Recent alerts:');
+    for (const l of recentLabels) {
+      lines.push(`- ${l.symbol} ${l.alert_type} (${l.severity}): ${l.explanation}`);
+    }
+  } else {
+    lines.push('No active alerts in the last cycle. The market is calm; the Peg Stress Index is low.');
   }
 
   return lines.join('\n');

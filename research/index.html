@@ -69,7 +69,7 @@
 
     <div class="chart-wrap reveal">
       <div class="chart-canvas-box" style="height:220px">
-        <canvas id="taxonomy-chart" height="220" role="img" aria-label="Stacked horizontal bar chart showing relative scale of the six stablecoin taxonomy categories. Fiat-USD dominates at over 95% of total supply."></canvas>
+        <canvas id="taxonomy-chart" height="220" role="img" aria-label="Stacked horizontal bar chart showing relative scale of the six stablecoin taxonomy categories. Fiat-USD dominates at around 84% of total supply."></canvas>
       </div>
       <p class="chart-caption">Relative scale of the six value-referenced-token categories, mid-2026. Figures are ranges where aggregators disagree (see methodology). The other five categories combined are roughly 15-16% of the total shown here; RWA/tokenized funds is the largest of the five.</p>
     </div>
@@ -176,6 +176,11 @@
         </div>
       </div>
     </div>
+
+    <h3 style="margin-top:2.5rem" id="maturity-bands">T-bill maturity bands: why issuers stay short</h3>
+    <p class="as-of">Reserve composition by maturity, from issuer attestations. Short-term bills (under 90 days) dominate because redemptions can arrive any day; long-dated holdings would force a fire sale.</p>
+    <div id="maturity-bands-wrap" class="maturity-bands-wrap"></div>
+    <p class="as-of">Sources: Tether Q1 2026 attestation; Circle Q1 2026 reserve report. Yadav and Malone (JIEL 2025) flag the interdependence: mass redemptions of stablecoins could strain short-term Treasury liquidity.</p>
   </div>
 </section>
 
@@ -218,6 +223,11 @@
       </div>
     </div>
     <p class="as-of">Both sides are politically situated. The honest answer right now: early evidence, no consensus number.</p>
+
+    <h3 style="margin-top:2.5rem" id="yield-debate">The yield debate</h3>
+    <p class="as-of">Should stablecoins pay interest? The GENIUS Act says no for payment stablecoins; the research on yield-bearing variants is contested.</p>
+    <div class="callout-row" id="yield-callouts"></div>
+    <p class="as-of">Sources: CRS IF13173/IF13174; State Street (Apr 2026); BPI (2026, citing Cong, Chiu et al.); Federal Reserve FEDS Notes (Dec 2025).</p>
   </div>
 </section>
 
@@ -226,46 +236,80 @@
   <div class="section-inner">
     <div class="kicker">05 - Cross-border payments</div>
     <h2>Cheaper, faster money across borders</h2>
-    <p class="section-thesis">This is stablecoins' clearest real-world win, measured against World Bank remittance-price data. A $10,000 cross-border transfer through banks costs roughly $710 and takes 1-5 business days; the same transfer on stablecoin rails costs approximately under $1 (network fee only) and settles in seconds.</p>
+    <p class="section-thesis">Cross-border cost is not one number. It is three hops (on-ramp, on-chain, off-ramp) plus the value of time in transit. The calculator below is a StableSense teaching model: every lever is visible, and the scenario table underneath says what we are allowed to claim and from where. It is not a quote, and it is not the World Bank series.</p>
 
     <div class="reveal">
       <div class="race-row">
-        <div class="race-label"><span>Traditional wire - ~$710 at $10,000, 1-5 days</span><span class="num">~4.65%</span></div>
-        <div class="race-bar-track"><div class="race-bar trad" data-fill="93"></div></div>
+        <div class="race-label"><span>Traditional wire - $200 World Bank RPW average, ~6% all-in, 1-5 days</span><span class="num">~6.2%</span></div>
+        <div class="race-bar-track"><div class="race-bar trad" data-fill="62"></div></div>
       </div>
       <div class="race-row">
-        <div class="race-label"><span>Stablecoin rails - under $1 at $10,000, seconds</span><span class="num">~$0.10 fixed</span></div>
-        <div class="race-bar-track"><div class="race-bar" data-fill="0"></div></div>
+        <div class="race-label"><span>Stablecoin gas only - $200, ~$0.10, seconds (the middle hop, not the whole journey)</span><span class="num">~$0.10</span></div>
+        <div class="race-bar-track"><div class="race-bar" data-fill="1"></div></div>
       </div>
-      <p class="chart-caption">Cost of moving $10,000 across borders. Traditional: ~4.65% + $245 fixed = ~$710 (SWIFT fees + FX spread, 1-5 days). Stablecoin: ~$0.10 network fee (seconds). Network gas is fixed regardless of amount; the percentage appears only when a fiat off-ramp with FX spread is used.</p>
+      <p class="chart-caption">Cost of moving $200 across borders, the World Bank Remittance Prices Worldwide measurement point. Traditional: global average ~6.2% all-in (fee + FX margin, 1-5 days). Stablecoin gas-only: ~$0.10 network fee (seconds). The gas-only figure is the middle hop; a full fiat-to-token-to-fiat journey adds on-ramp and off-ramp FX (see the BPI 0.3-9% range in the scenario table). Race bar width is proportional to all-in cost at $200.</p>
     </div>
 
-    <h3 style="margin-top:2.5rem">Remittance cost calculator</h3>
-    <p class="as-of">Pure client-side arithmetic. Estimates only; real costs vary by corridor and off-ramp. Both rails are shown simultaneously for the entered amount.</p>
-    <form class="calc" id="remittance-calc" onsubmit="return false">
+    <h3 style="margin-top:2.5rem">Cross-border cost calculator</h3>
+    <p class="as-of">A StableSense model of cross-border cost, not a quote and not the World Bank series. Every lever is visible. Move the sliders and watch the stacked rows match a row in the scenario table below.</p>
+    <form class="calc calc-model" id="remittance-calc" onsubmit="return false">
       <div class="calc-row">
         <label for="calc-amount">Amount to send (USD)</label>
-        <input type="number" id="calc-amount" value="1000" min="1" step="1" inputmode="numeric">
+        <input type="number" id="calc-amount" value="200" min="1" step="1" inputmode="numeric">
       </div>
       <div class="calc-row">
+        <label for="calc-schedule">Traditional FX / fee schedule</label>
+        <select id="calc-schedule">
+          <option value="rpw">RPW-like retail % ($200/$500 only)</option>
+          <option value="sme">SME wire: 2% FX + $40</option>
+          <option value="commercial">Commercial: 25 bp FX + $25</option>
+        </select>
+      </div>
+      <div class="calc-row calc-row-2col">
+        <label for="calc-days">Days in transit <span class="as-of">(traditional)</span></label>
+        <input type="number" id="calc-days" value="4" min="0" step="1" inputmode="numeric">
+        <label for="calc-rate">Annual opportunity rate % <span class="as-of">(author assumption)</span></label>
+        <input type="number" id="calc-rate" value="4.5" min="0" step="0.1" inputmode="decimal">
+      </div>
+      <div class="calc-row calc-presets">
+        <span class="calc-preset-label">Stablecoin path:</span>
+        <button type="button" id="calc-preset-hold" class="calc-preset active">Hold and accept (ramps off)</button>
+        <button type="button" id="calc-preset-full" class="calc-preset">Full cash-to-cash</button>
+      </div>
+      <div class="calc-row calc-checks">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="calc-onramp" style="width:auto;min-height:auto">
+          On-ramp (+0.5%)
+        </label>
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
           <input type="checkbox" id="calc-offramp" style="width:auto;min-height:auto">
-          Include fiat off-ramp FX spread (+0.25%)
+          Off-ramp (+0.5%)
         </label>
       </div>
-      <div class="calc-out">
-        <div class="calc-rail-row">
-          <span class="calc-rail-label">Traditional wire</span>
-          <span class="stat" id="calc-cost-trad">$0</span>
-          <span class="calc-detail" id="calc-detail-trad"></span>
+      <div id="calc-warn" class="calc-warn" style="display:none"></div>
+      <div class="calc-out-2col">
+        <div class="calc-rail-block">
+          <h4 class="calc-rail-label">Traditional</h4>
+          <div id="calc-trad-out" class="calc-rail-out"></div>
         </div>
-        <div class="calc-rail-row">
-          <span class="calc-rail-label">Stablecoin rails</span>
-          <span class="stat" id="calc-cost-stable">$0</span>
-          <span class="calc-detail" id="calc-detail-stable"></span>
+        <div class="calc-rail-block">
+          <h4 class="calc-rail-label">Stablecoin</h4>
+          <div id="calc-stable-out" class="calc-rail-out"></div>
         </div>
       </div>
+      <p class="calc-voice as-of">This is a teaching model. It is not a quote, and it is not the World Bank series. Float is an author assumption at 4.5% unless you change it.</p>
     </form>
+
+    <h3 style="margin-top:2.5rem">Scenario table: what we are allowed to say</h3>
+    <p class="as-of">Each row is a named scenario. "Sourced" rows cite a primary source; "Author model" rows are clearly labeled as such. Move the calculator sliders to replay A through E.</p>
+    <div id="remittance-scenarios" class="scen-table"></div>
+
+    <div class="callout single-callout" style="margin-top:1.5rem">
+      <div class="callout-label">Full-journey evidence</div>
+      <p class="stat md" id="bpi-finding"></p>
+      <p class="as-of" id="bpi-source"></p>
+      <p id="bpi-detail"></p>
+    </div>
 
     <h3 style="margin-top:2.5rem">Where adoption is real</h3>
     <p class="as-of">Not pilot programs - real, non-trivial volume.</p>
@@ -277,7 +321,7 @@
         <li><strong>UAE-India:</strong> world's largest remittance route; businesses convert AED to stablecoins for instant settlement into India.</li>
       </ul>
     </noscript>
-    <p class="as-of" style="margin-top:1rem">Sources: Chainalysis Geography of Cryptocurrency 2025; IMF Nigeria (Jun 2026); World Bank Remittance Prices Worldwide. Visa now settles payments in USDC (live in the US since Dec 2025).</p>
+    <p class="as-of" style="margin-top:1rem">Sources: Chainalysis Geography of Cryptocurrency 2025; IMF Nigeria (Jun 2026); World Bank Remittance Prices Worldwide (Q1 2025); Bank Policy Institute (Jul 2026). Visa now settles payments in USDC (live in the US since Dec 2025).</p>
   </div>
 </section>
 
@@ -367,6 +411,10 @@
       </table>
     </div>
     <p class="as-of" style="margin-top:0.8rem">Regulatory status is the most stale-fast category in this report. MiCA enforcement dates, GENIUS rulemaking, UK Oct 2027 go-live, Hong Kong license counts all change monthly. Always timestamp.</p>
+
+    <h3 style="margin-top:2rem" id="genius-status">GENIUS Act rulemaking status (as of Aug 2026)</h3>
+    <div class="genius-status-block" id="genius-status-block"></div>
+    <p class="as-of" id="genius-source"></p>
   </div>
 </section>
 

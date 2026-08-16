@@ -13,8 +13,9 @@ Visitor's browser
 
 Backend (optional, lite VPS)
   |- jobs/fetch.js (cron, 10 min): DefiLlama + CoinGecko -> SQLite history dataset
-  |- jobs/ai.js (cron, gated by AI_CADENCE_MIN): builds narrative from snapshots
-  |- server.js: /api/healthz, /api/ai, /api/history
+  |- jobs/stress.js (cron, 10 min, runs after fetch): derive.js computePegStress + generateAlerts -> stress_series + labels tables
+  |- jobs/ai.js (cron, gated by AI_CADENCE_MIN): student-explainable narrative from snapshots + stress_series + labels
+  |- server.js: /api/healthz, /api/ai, /api/history, /api/stress, /api/labels
 ```
 
 The frontend makes its live-data calls from the visitor's own IP, so no single origin is hammered and no API keys are needed. It never depends on the backend for the core dashboard.

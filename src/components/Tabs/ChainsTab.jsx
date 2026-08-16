@@ -1,4 +1,4 @@
-import { useMemo } from 'preact/hooks';
+import { useMemo, useState } from 'preact/hooks';
 import { fmtB, fmtPct, pctChange } from '../../utils/formatters.js';
 import { getActiveCoins } from '../../utils/coin-config.js';
 import ChartWrapper from '../ui/ChartWrapper.jsx';
@@ -43,9 +43,20 @@ export default function ChainsTab({ data }) {
     return { labels, datasets };
   }, [activeCoins, coinPairs]);
 
-  const chainRows = (data?.chainData || data?.allStables?.chains || [])
-    .filter((c) => (c.totalCirculatingUSD?.peggedUSD || 0) > 0)  // filter out $0 chains
-    .slice(0, 20);
+  const sortedChains = useMemo(
+    () => (data?.chainData || data?.allStables?.chains || [])
+      .filter((c) => (c.totalCirculatingUSD?.peggedUSD || 0) > 0)  // filter out $0 chains
+      .sort((a, b) => (b.totalCirculatingUSD?.peggedUSD || 0) - (a.totalCirculatingUSD?.peggedUSD || 0))  // descending by stablecoin circulating (not vendor order)
+      .slice(0, 20),
+    [data]
+  );
+
+  const [chainQuery, setChainQuery] = useState('');
+  const chainRows = useMemo(() => {
+    const q = chainQuery.trim().toLowerCase();
+    if (!q) return sortedChains;
+    return sortedChains.filter((c) => (c.name || '').toLowerCase().includes(q));
+  }, [sortedChains, chainQuery]);
   const migrations = useMemo(() => {
     const out = [];
     assets.forEach((asset) => {
@@ -93,7 +104,7 @@ export default function ChainsTab({ data }) {
       </div>
 
       <div class="card mb-4">
-        <div class="card-header"><div class="card-title">Migration Detector</div></div>
+        <div class="card-header"><div class="card-title">Migration Detector (approximate)</div></div>
         <div class="card-body">
           <div class="mig-grid">
             {migrations.length ? migrations.map((m) => (
@@ -106,40 +117,59 @@ export default function ChainsTab({ data }) {
               </div>
             )) : <div class="info-empty">No significant cross-chain migrations detected.</div>}
           </div>
+          <p class="text-muted small" style="margin-top:8px">Approximate: DefiLlama exposes per-chain supply deltas, not directed hops. Largest outflow is paired with largest inflow as a ranked hint, not a path.</p>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-header"><div class="card-title">Chain Rankings</div></div>
+        <div class="card-header">
+          <div class="card-title-row">
+            <div class="card-title">Chain Rankings</div>
+            <input
+              type="search"
+              class="chain-search"
+              placeholder="Filter chains..."
+              value={chainQuery}
+              onInput={(e) => setChainQuery(e.target.value)}
+              aria-label="Filter chains by name"
+            />
+          </div>
+        </div>
         <div class="card-body p0">
           <div class="chain-table-desktop tbl-wrap">
             <table class="data-table">
-              <thead><tr><th>#</th><th>Chain</th><th>Total TVL</th></tr></thead>
+              <thead><tr><th>#</th><th>Chain</th><th>Stablecoin Circulating</th></tr></thead>
               <tbody>
-                {chainRows.length ? chainRows.map((c, i) => (
-                  <tr key={c.name || i}>
-                    <td class="mono">{i + 1}</td>
-                    <td class="td-name">{c.name}</td>
-                    <td class="mono">{fmtB(c.totalCirculatingUSD?.peggedUSD || 0)}</td>
-                  </tr>
-                )) : <tr><td colspan="3" class="info-empty">No chain data</td></tr>}
+                {chainRows.length ? chainRows.map((c) => {
+                  const rank = sortedChains.findIndex((s) => s === c) + 1;
+                  return (
+                    <tr key={c.name || rank}>
+                      <td class="mono">{rank}</td>
+                      <td class="td-name">{c.name}</td>
+                      <td class="mono">{fmtB(c.totalCirculatingUSD?.peggedUSD || 0)}</td>
+                    </tr>
+                  );
+                }) : <tr><td colspan="3" class="info-empty">No chain matches "{chainQuery}"</td></tr>}
               </tbody>
             </table>
           </div>
           <div class="chain-cards-mobile">
-            {chainRows.length ? chainRows.map((c, i) => (
-              <div class="chain-mobile-card" key={c.name || i}>
-                <div class="cm-main">{c.name}</div>
-                <div>
-                  <div class="cm-label">Rank</div>
-                  <div class="cm-val">{i + 1}</div>
+            {chainRows.length ? chainRows.map((c) => {
+              const rank = sortedChains.findIndex((s) => s === c) + 1;
+              return (
+                <div class="chain-mobile-card" key={c.name || rank}>
+                  <div class="cm-main">{c.name}</div>
+                  <div>
+                    <div class="cm-label">Rank</div>
+                    <div class="cm-val">{rank}</div>
+                  </div>
+                  <div>
+                    <div class="cm-label">Stablecoin Circulating</div>
+                    <div class="cm-val">{fmtB(c.totalCirculatingUSD?.peggedUSD || 0)}</div>
+                  </div>
                 </div>
-                <div>
-                  <div class="cm-label">Total TVL</div>
-                  <div class="cm-val">{fmtB(c.totalCirculatingUSD?.peggedUSD || 0)}</div>
-                </div>
-              </div>
-            )) : <div class="info-empty">No chain data</div>}
+              );
+            }) : <div class="info-empty">No chain matches "{chainQuery}"</div>}
           </div>
         </div>
       </div>
