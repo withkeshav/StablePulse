@@ -94,10 +94,12 @@ See [backend/README.md](../backend/README.md). Fastify + SQLite (WAL), cron jobs
 
 Mobile-first layout rules:
 
-- Under 768px the instrument rail is a drawer (hamburger in the topbar); the bottom tab bar stays visible.
+- Under 768px the instrument rail is a drawer (topbar hamburger or **More** in the bottom nav).
+- Bottom navigation is five destinations: **Dashboard**, **Assets** (opens a focused coin picker), **Research**, **Alerts**, and **More**. Selected assets stay labeled on the Assets control.
+- Market Pulse and chart grids stack to a single column; chart canvases use a fixed mobile height (~250-280px). Share controls sit outside the plot as labeled actions; Signal Card export uses a bottom sheet.
 - Tables become stacked cards under 480px.
 - 44px minimum touch targets, safe-area insets on header and bottom nav.
-- Charts use responsive aspect ratios; the header height accounts for the notch in landscape.
+- Page-level horizontal overflow is clipped; layouts are verified from about 320px through desktop widths.
 
 ## Research surfaces
 

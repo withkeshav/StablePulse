@@ -20,6 +20,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Alerts empty state:** "No material stress detected in this refresh" with four rule cards; filters muted when zero events.
 - **P2 polish:** Research Hub canonical line, desktop Share label, darker-theme helper text contrast.
 
+### Docs
+- README and architecture docs aligned to the five-item mobile nav, stacked Market Pulse/charts, Share toolbar, and Signal Card sheet.
+- Changelog wording scrubbed of unpublished local tooling paths; packaging described as source-available (not open-source).
+
 ## [3.5.0] - 2026-08-16
 
 ### Added
@@ -37,7 +41,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Stability gauge displays `100 - stress.score` while stress math in `derive.js` stays unchanged.
 
 ### Docs
-- Public docs updated for dual Research surfaces and the Icewater shell. Local planning/agent notes stay unpublished.
+- Public docs updated for dual Research surfaces and the Icewater shell. Unpublished local tooling notes are excluded from the repository.
 
 ## [3.4.0] - 2026-08-16
 
@@ -125,7 +129,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Research hub: "State of Stablecoins" at `/research/` - a public, fully-cited, chart-driven report on the stablecoin landscape and economic impact. Nine sections (taxonomy, scale, Treasury holdings, banks vs. stablecoins, cross-border payments, dollarization, depeg history, regulation, reality check) plus a live hero counter, remittance calculator, and deduplicated source list. Built as a separate static page (second Vite config) for SEO, not a Preact route.
 - Hub cross-links from Learn's intro card, the bottom of the "Beyond the dollar" and "The bigger picture" modules, and the About tab. No nav slot added (mobile nav already at 10 items).
 - Hub OG share image (`og.png`, 1200x630) with the engraved-ledger design - no headline number, per the numeric-claim-precision rule.
-- Numeric-claim-precision standing rule added to `AGENTS.md` (local): every prominent single-number display must state what it measures and excludes in the visible label.
+- Numeric-claim-precision standing rule: every prominent single-number display must state what it measures and excludes in the visible label.
 - Hub build pipeline: `npm run build:research` (uses `vite.config.research.mjs`) and `npm run build:all`. nginx `/research/` location block added to `backend/deploy/nginx.conf`.
 - App-wide meta tags strengthened in `index.html` (broader description mentioning the value-referenced-token definition, canonical URL, `og:url`, Twitter large-image card).
 
@@ -204,7 +208,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Content-visibility hints for below-fold sections.
 - AI narrative and per-alert explanations rendered from whatever the worker returns (provider-agnostic).
 - Theme settings: Light default, with Dark and System options.
-- Security policy (`SECURITY.md`), agent conventions (`AGENTS.md`), architecture/API/scaling docs, CI workflow, and issue templates.
+- Security policy (`SECURITY.md`), architecture/API/scaling docs, CI workflow, and issue templates.
 - Source-available license, README, changelog, and release packaging (`license`, `engines`, npm test script).
 
 ### Fixed
@@ -225,7 +229,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [1.0.0] - before 2026-08-10
 
-Initial internal release of the intelligence dashboard (prior to open-source packaging). No public changelog kept.
+Initial packaged release of the intelligence dashboard (prior to source-available packaging). No public changelog kept.
 
 [3.4.0]: https://github.com/withkeshav/StableSense/releases/tag/v3.4.0
 [3.3.0]: https://github.com/withkeshav/StableSense/releases/tag/v3.3.0
