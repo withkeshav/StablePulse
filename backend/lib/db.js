@@ -71,6 +71,37 @@ CREATE TABLE IF NOT EXISTS labels (
 ) WITHOUT ROWID;
 
 CREATE INDEX IF NOT EXISTS idx_labels_symbol_ts ON labels(symbol, ts);
+
+-- Canonical alert lifecycle. event_id is a deterministic fingerprint
+-- (coin + observation window + classification + chains), not a render timestamp.
+CREATE TABLE IF NOT EXISTS alert_events (
+  event_id           TEXT PRIMARY KEY,
+  rule               TEXT    NOT NULL,
+  classification     TEXT    NOT NULL,
+  symbol             TEXT    NOT NULL,
+  severity           TEXT    NOT NULL,
+  state              TEXT    NOT NULL,
+  headline           TEXT    NOT NULL,
+  explanation        TEXT    NOT NULL,
+  magnitude          REAL,
+  gross_flow         REAL,
+  net_supply_delta   REAL,
+  source_ts_current  INTEGER,
+  source_ts_previous INTEGER,
+  interval_hours     REAL,
+  interval_label     TEXT,
+  observed_at        INTEGER,
+  detected_at        INTEGER,
+  published_at       INTEGER,
+  involved_chains    TEXT,
+  provenance         TEXT,
+  confidence         TEXT,
+  cadence_valid      INTEGER,
+  updated_at         INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_alert_events_symbol_obs ON alert_events(symbol, observed_at);
+CREATE INDEX IF NOT EXISTS idx_alert_events_state ON alert_events(state, detected_at);
 `;
 
 const dataDir = process.env.DATA_DIR || path.join(here, '..', 'data');

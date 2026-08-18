@@ -22,6 +22,7 @@ export default function Header({
   onJumpToAlerts,
   activeTab,
   onOpenRail,
+  dataState,
 }) {
   const hasMessageError = Boolean(apiStatus && typeof apiStatus.message === 'string' && apiStatus.message.trim());
   const anyFailed = hasMessageError || Object.values(apiStatus || {}).some((entry) => {
@@ -32,7 +33,13 @@ export default function Header({
     ? `${String(activeTab).replace(/^coin-/, '').toUpperCase()} asset view`
     : 'Market overview');
 
-  const statusText = loading ? 'Syncing…' : refreshing ? 'Refreshing…' : anyFailed ? 'Partial' : 'Live';
+  const statusText = loading
+    ? 'Syncing…'
+    : refreshing
+      ? 'Refreshing…'
+      : anyFailed
+        ? 'Partial'
+        : (dataState && dataState !== 'Current' && dataState !== 'Delayed' ? dataState : 'Checked');
 
   return (
     <header id="header" class="topbar">
@@ -45,7 +52,7 @@ export default function Header({
         <b>{crumb}</b>
       </div>
       <div class="status-bar top-status">
-        <div id="status-dot" class={`live-dot ${loading || refreshing ? 'pulse' : ''} ${anyFailed ? 'warn' : ''}`} />
+        <div id="status-dot" class={`live-dot ${loading || refreshing ? 'pulse' : ''} ${anyFailed || dataState === 'Stale' || dataState === 'Unavailable' ? 'warn' : ''}`} />
         <span id="status-text">{statusText}</span>
       </div>
       <div class="top-actions">

@@ -26,11 +26,15 @@ Everything StableSense shows comes from two keyless, CORS-open upstreams, fetche
 
 ## Freshness
 
-- DefiLlama daily history is updated a few times per day (daily data points).
-- CoinGecko spot prices are near real-time.
-- History snapshots land in the backend every 10 minutes; AI narratives follow `AI_CADENCE_MIN` (default 120 min).
+The dashboard shows three clocks (`src/lib/freshness.js`), not one "last updated" time:
+
+- **Checked:** when this browser fetch succeeded.
+- **Market observed:** upstream observation time (CoinGecko `last_updated_at` when present; otherwise the assembled payload). DefiLlama daily supply can be several hours old and still on cadence.
+- **Historical snapshot:** optional SQLite last-sync from `/api/healthz`. If the backend is not connected, this clock says so and does not mark a successful live fetch as Unavailable.
+
+Overall state is Current / Delayed / Stale / Unavailable from the market (or checked) clock, with supply cadence treating under 28h as Current. AI narratives follow `AI_CADENCE_MIN` (default 120 min).
 
 ## Privacy
 
 - Browser-direct fetches come from the visitor's own IP (no central aggregator, no API keys exposed).
-- `/api/ai` is the only backend call and contains no PII.
+- Optional backend reads (`/api/healthz`, `/api/ai`, `/api/alerts`, `/api/history`) contain no PII.

@@ -13,9 +13,9 @@ Visitor's browser
 
 Backend (optional, lite VPS)
   |- jobs/fetch.js (cron, 10 min): DefiLlama + CoinGecko -> SQLite history dataset
-  |- jobs/stress.js (cron, 10 min, runs after fetch): derive.js computePegStress + generateAlerts -> stress_series + labels tables
-  |- jobs/ai.js (cron, gated by AI_CADENCE_MIN): student-explainable narrative from snapshots + stress_series + labels
-  |- server.js: /api/healthz, /api/ai, /api/history, /api/stress, /api/labels
+  |- jobs/stress.js (cron, 10 min, runs after fetch): derive.js computePegStress + generateAlerts -> stress_series + labels + alert_events
+  |- jobs/ai.js (cron, gated by AI_CADENCE_MIN): student-explainable narrative from snapshots + stress_series + alert_events
+  |- server.js: /api/healthz, /api/ai, /api/history, /api/stress, /api/labels, /api/alerts
 ```
 
 The frontend makes its live-data calls from the visitor's own IP, so no single origin is hammered and no API keys are needed. It never depends on the backend for the core dashboard.
@@ -31,6 +31,7 @@ The frontend makes its live-data calls from the visitor's own IP, so no single o
 | `src/hooks/useTheme.js` | Theme state: Light default, Dark/System options |
 | `src/lib/api.js` | Browser-direct data layer: DefiLlama + CoinGecko with SWR caching |
 | `src/lib/ai.js` | AI narrative fetch from `aiApiBase` |
+| `src/lib/freshness.js` | Three-clock data age: browser check, upstream observation, optional persisted snapshot |
 | `src/lib/derive.js` | Pure display logic (framework-free, unit tested) |
 | `src/lib/insights.js` | Pure Learn-tab observations from live data (framework-free, unit tested) |
 | `src/utils/formatters.js` | Formatting helpers (pure, unit tested) |
@@ -42,7 +43,7 @@ The frontend makes its live-data calls from the visitor's own IP, so no single o
 | `src/components/ui/` | StatCard, Sparkline, ChartWrapper, ShareSheet, RefreshCountdown, SkeletonLoader, AiTicker |
 | `src/components/` | Header, Sidebar (instrument rail), MobileNav, SettingsPanel, ThemeToggle, BrandMark |
 | `src/styles.css` | Single stylesheet: Icewater tokens (`--page-bg`, Glacier Blue accent), light/dark themes, responsive rules |
-| `backend/` | Optional Fastify + SQLite service: history + AI narratives |
+| `backend/` | Optional Fastify + SQLite service: history, canonical alert events, AI narratives |
 
 ## Data layer (`src/lib/api.js`)
 
@@ -74,14 +75,14 @@ All functions are pure and deterministic, which is what makes them unit-testable
 - `buildWhaleWatchRows(detailsByCoin, limit)`: z-score based supply anomaly rows.
 - `buildShareSeries(supplyByCoin, targetCoin)`: target coin share of total supply over time.
 - `buildAlertSparkSeries(alert, data)`: sparkline series for an alert.
-- `generateAlerts(data)`: deterministic alert engine (PEG_BREAK, CHAIN_SPIKE, MEGA_SUPPLY, DOM_SHIFT).
-- `alertExplanation(alert)`: local, deterministic explanation text (no AI round-trip).
+- `generateAlerts(data)`: deterministic alert engine (PEG_BREAK, CHAIN_FLOW, MIGRATION, NET_MINT, NET_BURN, DOM_SHIFT, DATA_QUALITY). Event time is the upstream observation, never browser Date.now().
+- `alertEventId` / `pairOpposingFlows`: stable fingerprints and 10% opposing-flow pairing for `MIGRATION` events.
 
 The UI never re-computes these per animation frame: chart series and derive outputs are memoized, and the refresh countdown is isolated in `RefreshCountdown` so it re-renders alone.
 
 ## Backend (`backend/`)
 
-See [backend/README.md](../backend/README.md). Fastify + SQLite (WAL), cron jobs for history and AI, served same-origin behind nginx.
+See [backend/README.md](../backend/README.md). Fastify + SQLite (WAL), cron jobs for history, stress/alert persistence, and AI, served same-origin behind nginx. The `alert_events` table starts empty; the UI does not invent historical events.
 
 ## Theming
 
@@ -96,7 +97,8 @@ Mobile-first layout rules:
 
 - Under 768px the instrument rail is a drawer (topbar hamburger or **More** in the bottom nav).
 - Bottom navigation is five destinations: **Dashboard**, **Assets** (opens a focused coin picker), **Research**, **Alerts**, and **More**. Selected assets stay labeled on the Assets control.
-- Market Pulse and chart grids stack to a single column; chart canvases use a fixed mobile height (~250-280px). Share controls sit outside the plot as labeled actions; Signal Card export uses a bottom sheet.
+- Market Pulse and chart grids stack to a single column; chart canvases use a fixed mobile height (280-340px). Share controls sit outside the plot as labeled actions; Signal Card export uses a bottom sheet.
+- Home metric chips under Peg Stability Index are `grid-template-columns: 1fr` at phone width.
 - Tables become stacked cards under 480px.
 - 44px minimum touch targets, safe-area insets on header and bottom nav.
 - Page-level horizontal overflow is clipped; layouts are verified from about 320px through desktop widths.
@@ -116,5 +118,5 @@ The "State of Stablecoins" research hub is a separate static build, not a Preact
 
 - **Source:** `research/` (`index.html`, `styles.css`, `main.js`, `data.js`, `og.svg`/`og.png` in `research/public/`). The hub has its own engraved-ledger design system (`--hub-*` tokens), deliberately distinct from the dashboard's Icewater tokens. The two properties connect through one bridge element (the "Open the live dashboard" link), not a shared palette.
 - **Build:** `npm run build:research` uses a second Vite config (`vite.config.research.mjs`) with `root: 'research'`, emitting to `dist/research/`. Chart.js is the only shared dependency, lazy-loaded as a separate chunk. `npm run build:all` builds both the SPA and the hub.
-- **Serving:** nginx serves `dist/research/` at `/research/` via a dedicated `location` block before the SPA fallback (see `backend/deploy/nginx.conf`). The hub is single-page-with-anchors (`#taxonomy`, `#treasury`, etc.); distinct per-section URLs are a flagged follow-up, not the current architecture.
+- **Serving:** nginx serves `dist/research/` at `/research/` via a dedicated `location` block. An exact `location = /research` 301s slashless URLs to `/research/` before the SPA fallback (see `backend/deploy/nginx.conf`). The hub is single-page-with-anchors (`#taxonomy`, `#treasury`, etc.); distinct per-section URLs are a flagged follow-up, not the current architecture.
 - **Progressive enhancement:** `main.js` (loaded with `defer`) adds the live hero counter, IntersectionObserver scroll reveals, charts, chip filters, the remittance calculator, and accordion behavior. All section content renders as real HTML without it. Respects `prefers-reduced-motion` throughout.

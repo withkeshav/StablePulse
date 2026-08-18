@@ -10,7 +10,7 @@ import SignalSummary from '../Sections/SignalSummary.jsx';
 import WhaleWatch from '../Sections/WhaleWatch.jsx';
 import FirstRunTour from '../ui/FirstRunTour.jsx';
 
-export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec = 900 }) {
+export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec = 900, freshness = null }) {
   const cg = data?.cgSimple;
   const coins = getActiveCoins();
 
@@ -121,6 +121,7 @@ export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec
         onLearn={() => setActiveTab('learn')}
         dataQuality={data?.dataQuality}
         refreshIntervalSec={refreshIntervalSec}
+        freshness={freshness}
       />
       <FirstRunTour />
 
@@ -159,7 +160,7 @@ export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec
       </a>
 
       <p class="sync-cadence-hint">
-        Data refreshes on your chosen cadence from live market sources; the strip above shows the countdown to the next refresh.
+        Checked time is this browser's last successful fetch. Market observation is the upstream snapshot used in the math. Historical snapshot is the last row written to the StableSense database. They are three different clocks.
       </p>
 
       <div class="sticky-stats-wrap">

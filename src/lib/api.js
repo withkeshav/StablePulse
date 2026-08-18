@@ -1,5 +1,7 @@
 import { getActiveCoins, STABLECOIN_REGISTRY } from '../utils/coin-config.js';
 import { CACHE_PREFIX } from '../utils/storage.js';
+import { aiApiBase } from '../config.js';
+import { extractMarketObservedAt, extractSpotObservedAt, extractSupplyObservedAt } from './freshness.js';
 
 const LLAMA_BASE = 'https://stablecoins.llama.fi';
 const CG_BASE = 'https://api.coingecko.com/api/v3';
@@ -131,7 +133,7 @@ function llamaStablecoinUrl(id) {
 
 function cgSimpleUrl(coins) {
   const ids = coins.map((c) => c.coingeckoId).join(',');
-  return `${CG_BASE}/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true`;
+  return `${CG_BASE}/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true&include_last_updated_at=true`;
 }
 
 function cgChartUrl(id) {
@@ -244,6 +246,9 @@ export async function fetchDashboardData({ signal } = {}) {
   );
 
   data.fetchedAt = Date.now();
+  data.spotObservedAt = extractSpotObservedAt(data);
+  data.supplyObservedAt = extractSupplyObservedAt(data);
+  data.marketObservedAt = extractMarketObservedAt(data);
   return data;
 }
 
@@ -269,5 +274,37 @@ export async function loadCoinChart(symbol, data, { signal } = {}) {
   }).catch(() => null);
   if (tickers && Array.isArray(tickers?.tickers)) {
     data[`cg${symbol}`] = { tickers: tickers.tickers.slice(0, 8) };
+  }
+}
+
+function backendUrl(path) {
+  const base = String(aiApiBase || '').replace(/\/+$/, '');
+  return `${base}${path}`;
+}
+
+/**
+ * Optional backend health: last persisted market snapshot and AI run.
+ * Returns null when the lite backend is not served on this origin.
+ */
+export async function fetchHealthz({ signal } = {}) {
+  try {
+    const res = await fetch(backendUrl('/api/healthz'), { signal });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Canonical alert lifecycle from SQLite. Returns null when the backend is absent.
+ */
+export async function fetchCanonicalAlerts({ signal, days = 30, state = 'all' } = {}) {
+  try {
+    const res = await fetch(backendUrl(`/api/alerts?days=${days}&state=${encodeURIComponent(state)}`), { signal });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
   }
 }

@@ -26,8 +26,12 @@ function levelNote(level) {
   return 'Normal market conditions';
 }
 
-export default function SignalHero({ coins, priceByCoin, stress, intelligence, onLearn, dataQuality, refreshIntervalSec }) {
-  const cadence = refreshIntervalSec ? `${Math.round(refreshIntervalSec / 60)} MINUTE DATA` : 'LIVE DATA';
+export default function SignalHero({ coins, priceByCoin, stress, intelligence, onLearn, dataQuality, refreshIntervalSec, freshness }) {
+  const state = freshness?.overallState || 'Current';
+  const cadence = freshness
+    ? `${String(state).toUpperCase()} MARKET CLOCK`
+    : (refreshIntervalSec ? `${Math.round(refreshIntervalSec / 60)} MINUTE CHECK CADENCE` : 'MARKET CHECK');
+  const live = state === 'Current' || state === 'Delayed';
   const stressScore = Number(stress?.score) || 0;
   const stability = Math.max(0, Math.min(100, 100 - stressScore));
   const steadyWord = stressScore >= 70 ? 'stressed' : stressScore >= 40 ? 'watchful' : 'steady';
@@ -41,7 +45,7 @@ export default function SignalHero({ coins, priceByCoin, stress, intelligence, o
       <img class="hero-art" src="/stablesense-signal-lens.jpg" alt="" loading="lazy" width="1400" height="787" />
       <div class="hero-copy">
         <div class="eyebrow">
-          <span class="live-dot" aria-hidden="true" />
+          <span class={`live-dot ${live ? '' : 'is-stale'}`} aria-hidden="true" />
           MARKET PULSE
           <span class="eyebrow-divider" />
           {cadence}

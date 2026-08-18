@@ -41,9 +41,9 @@ export default function Sidebar({
   const ago = (() => {
     if (!lastUpdated) return 'Waiting for first sync';
     const mins = Math.max(0, Math.round((Date.now() - lastUpdated) / 60000));
-    if (mins < 1) return 'Updated just now';
-    if (mins === 1) return 'Last update 1 min ago';
-    return `Last update ${mins} min ago`;
+    if (mins < 1) return 'Checked just now';
+    if (mins === 1) return 'Checked 1 min ago';
+    return `Checked ${mins} min ago`;
   })();
 
   const go = (id) => {

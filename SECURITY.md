@@ -24,6 +24,6 @@ Out of scope:
 
 - The frontend holds no secrets. The AI model key lives only in `backend/.env` (server-side) and never reaches the browser.
 - Never commit `OPENAI_*` values or any other tokens to this repository.
-- The backend exposes read-only endpoints (`/api/healthz`, `/api/ai`, `/api/history`) with no write surface. Bind it to localhost behind nginx; if it must be public, rate-limit `/api/ai` (e.g. `limit_req`).
+- The backend exposes read-only endpoints (`/api/healthz`, `/api/ai`, `/api/history`, `/api/alerts`, `/api/stress`, `/api/labels`) with no write surface. Bind it to localhost behind nginx; if it must be public, rate-limit `/api/ai` (e.g. `limit_req`).
 - Upstream API responses are untrusted input; the frontend renders them through guarded formatters and `derive.js` sanitization.
 - Browser-direct data calls come from visitor IPs and require no credentials; do not add keyed upstream calls that would leak secrets into the bundle.

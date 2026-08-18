@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fmtB, fmtPct, fmtPrice, pctChange, chgClass, bps, timeAgo } from './formatters.js';
+import { fmtB, fmtPct, fmtPrice, pctChange, chgClass, bps, timeAgo, formatUtc } from './formatters.js';
 
 describe('fmtB', () => {
   it('formats values below 1000 with 2 decimals', () => {
@@ -248,7 +248,12 @@ describe('timeAgo', () => {
 
   it('formats hours ago', () => {
     expect(timeAgo(NOW - 3 * 3600_000)).toBe('3h ago');
-    expect(timeAgo(NOW - 25 * 3600_000)).toBe('25h ago');
+    expect(timeAgo(NOW - 23 * 3600_000)).toBe('23h ago');
+  });
+
+  it('formats days ago after 24 hours', () => {
+    expect(timeAgo(NOW - 2 * 86400_000)).toBe('2d ago');
+    expect(timeAgo(NOW - 6.0972 * 86400_000)).toBe('6d ago');
   });
 
   it('accepts a Date object instance', () => {
@@ -275,5 +280,17 @@ describe('timeAgo', () => {
   it('returns a hyphen placeholder for null and undefined inputs', () => {
     expect(timeAgo(null)).toBe('-');
     expect(timeAgo(undefined)).toBe('-');
+  });
+});
+
+describe('formatUtc', () => {
+  it('renders a UTC clock label', () => {
+    expect(formatUtc(Date.UTC(2026, 7, 18, 5, 0, 0))).toBe('18 Aug 2026, 05:00 UTC');
+  });
+
+  it('returns a hyphen for invalid input', () => {
+    expect(formatUtc(null)).toBe('-');
+    expect(formatUtc(0)).toBe('-');
+    expect(formatUtc('nope')).toBe('-');
   });
 });

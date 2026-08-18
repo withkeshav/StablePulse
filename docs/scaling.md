@@ -4,12 +4,12 @@ Guidance for operating and scaling the lite VPS backend (`backend/`) plus the br
 
 ## Why browser-direct scales for free
 
-Live market data is fetched from each visitor's own IP, so traffic is spread across many client IPs rather than hammering one origin. The backend is never in the hot path for live data, which keeps it tiny: it only accumulates history and serves the occasional AI narrative.
+Live market data is fetched from each visitor's own IP, so traffic is spread across many client IPs rather than hammering one origin. The backend is never in the hot path for live data, which keeps it tiny: it only accumulates history, persists alert events, and serves the occasional AI narrative.
 
 ## Backend capacity
 
 - SQLite (WAL) with 10-minute snapshots across 5 coins is tiny: roughly **0.5-1 MB per month**. Years of history fit in tens of MB; no database tuning needed until well past that.
-- The backend handles a handful of requests per minute in normal operation (`/api/healthz`, `/api/ai`, occasional `/api/history`).
+- The backend handles a handful of requests per minute in normal operation (`/api/healthz`, `/api/ai`, `/api/alerts`, occasional `/api/history`).
 - `AI_CADENCE_MIN` (default 120) caps model spend and rate-limit pressure on the OpenAI-compatible provider.
 
 ## Operations

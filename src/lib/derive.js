@@ -1,5 +1,6 @@
 import { bps } from '../utils/formatters.js';
 import { getActiveCoins } from '../utils/coin-config.js';
+import { formatIntervalLabel, intervalHours, isNominal24h } from './freshness.js';
 
 /**
  * Compute a shared peg band around $1 so peg drift is visible and Home and
@@ -249,11 +250,27 @@ export function buildAlertSparkSeries(alert, data) {
       color,
     };
   }
-  if (rule === 'MEGA_SUPPLY' || rule === 'CHAIN_SPIKE') {
+  if (
+    rule === 'MEGA_SUPPLY' ||
+    rule === 'CHAIN_SPIKE' ||
+    rule === 'CHAIN_FLOW' ||
+    rule === 'MIGRATION' ||
+    rule === 'NET_MINT' ||
+    rule === 'NET_BURN'
+  ) {
     const detail = data?.[`${coin?.toLowerCase()}Detail`];
-    const chainData = detail?.chainBalances?.[alert.chain];
+    const chainName = alert.chain || alert.chains?.[0];
+    const chainData = chainName ? detail?.chainBalances?.[chainName] : null;
     const tokens = (chainData?.tokens || []).slice(-14);
-    if (!tokens.length) return null;
+    if (!tokens.length) {
+      const series = buildSupplySeries(detail).slice(-14);
+      if (!series.length) return null;
+      return {
+        labels: series.map((_, i) => String(i)),
+        values: series.map((p) => p.value),
+        color,
+      };
+    }
     return {
       labels: tokens.map((_, i) => String(i)),
       values: tokens.map((t) => t?.circulating?.peggedUSD || 0),
@@ -280,28 +297,94 @@ export function buildAlertSparkSeries(alert, data) {
 }
 
 const SEVERITY_RANK = { CRITICAL: 0, HIGH: 1, WARNING: 2 };
+const MIGRATION_MATCH_TOL = 0.10;
+const MIGRATION_NET_FRAC = 0.15;
 
-function dayBucket(ts = Date.now()) {
-  const d = new Date(ts);
-  d.setHours(0, 0, 0, 0);
-  return d.getTime();
+function tokenTsMs(token) {
+  const d = Number(token?.date);
+  if (!Number.isFinite(d) || d <= 0) return null;
+  return d < 1e12 ? d * 1000 : d;
 }
 
-function alertId(rule, coin, chain) {
-  const base = `${rule}:${coin}${chain ? `:${chain}` : ''}:${dayBucket()}`;
-  let hash = 0;
-  for (let i = 0; i < base.length; i += 1) {
-    hash = (hash * 31 + base.charCodeAt(i)) >>> 0;
+function fnv1a(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i += 1) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
   }
-  return `${rule.toLowerCase()}-${coin.toLowerCase()}${chain ? `-${chain.toLowerCase()}` : ''}-${hash.toString(36)}`;
+  return (h >>> 0).toString(36);
+}
+
+/**
+ * Deterministic event id from coin, observation window, classification, and chains.
+ * Does not include render time or a random nonce.
+ */
+export function alertEventId({ rule, coin, chains = [], sourceTsCurrent = 0, sourceTsPrevious = 0 }) {
+  const chainKey = [...new Set([...chains].filter(Boolean).map(String))].sort().join(',');
+  const base = [rule, coin, chainKey, Number(sourceTsCurrent) || 0, Number(sourceTsPrevious) || 0].join('|');
+  return `${String(rule).toLowerCase()}-${String(coin).toLowerCase()}-${fnv1a(base)}`;
+}
+
+/**
+ * Pair positive and negative chain flows whose magnitudes are within 10%.
+ * Greedy: largest unmatched magnitudes first.
+ */
+export function pairOpposingFlows(positives, negatives, tolerance = MIGRATION_MATCH_TOL) {
+  const pos = [...(positives || [])].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+  const neg = [...(negatives || [])].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+  const usedP = new Set();
+  const usedN = new Set();
+  const pairs = [];
+  for (let i = 0; i < pos.length; i += 1) {
+    const p = pos[i];
+    for (let j = 0; j < neg.length; j += 1) {
+      if (usedN.has(j)) continue;
+      const n = neg[j];
+      const magP = Math.abs(p.delta);
+      const magN = Math.abs(n.delta);
+      const denom = Math.max(magP, magN);
+      if (!denom) continue;
+      if (Math.abs(magP - magN) / denom <= tolerance) {
+        usedP.add(i);
+        usedN.add(j);
+        pairs.push({ from: n, to: p, grossFlow: Math.min(magP, magN) });
+        break;
+      }
+    }
+  }
+  return { pairs, unpairedPos: pos.filter((_, i) => !usedP.has(i)), unpairedNeg: neg.filter((_, i) => !usedN.has(i)) };
+}
+
+export function chainObservation(detail, chain) {
+  const tokens = detail?.chainBalances?.[chain]?.tokens || [];
+  const valid = tokens.filter((t) => {
+    const v = t?.circulating?.peggedUSD;
+    return typeof v === 'number' && Number.isFinite(v);
+  });
+  if (valid.length < 2) return null;
+  const cur = valid[valid.length - 1];
+  const prev = valid[valid.length - 2];
+  const current = cur.circulating.peggedUSD;
+  const previous = prev.circulating.peggedUSD;
+  const sourceTsCurrent = tokenTsMs(cur);
+  const sourceTsPrevious = tokenTsMs(prev);
+  const hours = intervalHours(sourceTsPrevious, sourceTsCurrent);
+  return {
+    chain,
+    current,
+    previous,
+    delta: current - previous,
+    sourceTsCurrent,
+    sourceTsPrevious,
+    intervalHours: hours,
+    cadenceValid: isNominal24h(hours),
+    intervalLabel: formatIntervalLabel(hours),
+    invalidSupply: current < 0 || previous < 0,
+  };
 }
 
 function chainDelta(detail, chain) {
-  const tokens = detail?.chainBalances?.[chain]?.tokens || [];
-  const cur = tokens[tokens.length - 1]?.circulating?.peggedUSD;
-  const prev = tokens[tokens.length - 2]?.circulating?.peggedUSD;
-  if (typeof cur !== 'number' || typeof prev !== 'number') return 0;
-  return cur - prev;
+  return chainObservation(detail, chain)?.delta || 0;
 }
 
 function coinTotalDelta(detail) {
@@ -310,27 +393,120 @@ function coinTotalDelta(detail) {
 }
 
 function fmtUsd(n) {
-  return Math.abs(n) >= 1e9 ? `${(Math.abs(n) / 1e9).toFixed(2)}B` : `${(Math.abs(n) / 1e6).toFixed(0)}M`;
+  const abs = Math.abs(n);
+  if (abs >= 1e9) return `$${(abs / 1e9).toFixed(2)}B`;
+  if (abs >= 1e6) return `$${Math.round(abs / 1e6)}M`;
+  if (abs >= 1e3) return `$${Math.round(abs / 1e3)}K`;
+  return `$${Math.round(abs)}`;
+}
+
+function signedUsd(n) {
+  const mag = fmtUsd(n);
+  if (n > 0) return `+${mag}`;
+  if (n < 0) return `-${mag}`;
+  return mag;
+}
+
+function windowMeta(obsList) {
+  const currents = obsList.map((o) => o.sourceTsCurrent).filter((v) => v != null);
+  const previous = obsList.map((o) => o.sourceTsPrevious).filter((v) => v != null);
+  const hoursList = obsList.map((o) => o.intervalHours).filter((v) => v != null);
+  const sourceTsCurrent = currents.length ? Math.max(...currents) : null;
+  const sourceTsPrevious = previous.length ? Math.min(...previous) : null;
+  const hours = hoursList.length ? hoursList.reduce((a, b) => a + b, 0) / hoursList.length : intervalHours(sourceTsPrevious, sourceTsCurrent);
+  const cadenceValid = hoursList.length ? hoursList.every((h) => isNominal24h(h)) : isNominal24h(hours);
+  return {
+    sourceTsCurrent,
+    sourceTsPrevious,
+    intervalHours: hours,
+    cadenceValid,
+    intervalLabel: formatIntervalLabel(hours),
+    observedAt: sourceTsCurrent,
+  };
+}
+
+function makeAlert({
+  rule,
+  coin,
+  severity,
+  magnitude,
+  chains = [],
+  chain = null,
+  headline,
+  explanation,
+  grossFlow = null,
+  netSupplyDelta = null,
+  window = {},
+  confidence = 'medium',
+  confidenceNote = '',
+  detectedAt = null,
+  state = 'open',
+  provenance = {},
+}) {
+  const sourceTsCurrent = window.sourceTsCurrent ?? null;
+  const sourceTsPrevious = window.sourceTsPrevious ?? null;
+  const observedAt = window.observedAt ?? sourceTsCurrent ?? null;
+  return {
+    id: alertEventId({
+      rule,
+      coin,
+      chains: chain ? [chain, ...chains] : chains,
+      sourceTsCurrent,
+      sourceTsPrevious,
+    }),
+    rule,
+    classification: rule,
+    coin,
+    chain,
+    chains: chain ? Array.from(new Set([chain, ...chains])) : [...chains],
+    severity,
+    magnitude,
+    grossFlow,
+    netSupplyDelta,
+    headline,
+    rationale: headline,
+    explanation,
+    timestamp: observedAt,
+    observedAt,
+    detectedAt,
+    publishedAt: null,
+    sourceTsCurrent,
+    sourceTsPrevious,
+    intervalHours: window.intervalHours ?? null,
+    intervalLabel: window.intervalLabel || formatIntervalLabel(window.intervalHours),
+    cadenceValid: Boolean(window.cadenceValid),
+    confidence,
+    confidenceNote,
+    state,
+    provenance,
+  };
 }
 
 /**
- * Derive alert events from the dashboard payload using the per-coin
- * thresholds in the stablecoin registry. Deterministic and local: no AI,
- * no network, no server round-trip. Rules:
+ * Derive alert events from the dashboard payload using per-coin thresholds.
+ * Event time is the upstream observation timestamp, never browser Date.now().
+ * Rules:
  *   PEG_BREAK   per-coin spot price drift from $1
- *   CHAIN_SPIKE per-chain 24h supply delta on a single chain
- *   MEGA_SUPPLY coin-wide 24h mint/burn total
+ *   MIGRATION   matched opposing chain flows within 10% magnitude
+ *   CHAIN_FLOW  unpaired per-chain supply delta above threshold
+ *   NET_MINT / NET_BURN  coin-wide net supply change above threshold
  *   DOM_SHIFT   weekly change in a coin's share of tracked supply
+ *   DATA_QUALITY invalid/non-finite/negative supply observations
+ *
+ * @param {object} data Dashboard payload.
+ * @param {{detectedAt?:number|null}} [opts] Server detection time only; never used as event time.
  */
-export function generateAlerts(data) {
+export function generateAlerts(data, opts = {}) {
   if (!data) return [];
   const alerts = [];
-  const now = Date.now();
+  const detectedAt = Number.isFinite(opts.detectedAt) ? opts.detectedAt : null;
   const coins = getActiveCoins();
 
   for (const cfg of coins) {
     const price = data?.cgSimple?.[cfg.coingeckoId]?.usd;
+    const lastUpdatedAt = data?.cgSimple?.[cfg.coingeckoId]?.last_updated_at;
     const detail = data?.[`${cfg.symbol.toLowerCase()}Detail`];
+    const provenance = { source: 'deflama+coingecko', coin: cfg.symbol };
 
     if (typeof price === 'number') {
       const devBps = bps(price);
@@ -339,50 +515,140 @@ export function generateAlerts(data) {
       if (absDev >= cfg.thresholds.pegCriticalBps) severity = 'CRITICAL';
       else if (absDev >= cfg.thresholds.pegWarnBps) severity = 'HIGH';
       if (severity) {
-        alerts.push({
-          id: alertId('PEG_BREAK', cfg.symbol),
+        const observedAt = tokenTsMs({ date: lastUpdatedAt });
+        alerts.push(makeAlert({
           rule: 'PEG_BREAK',
           coin: cfg.symbol,
           severity,
           magnitude: absDev,
-          timestamp: now,
-          rationale: `${cfg.symbol} is ${devBps} bps ${devBps < 0 ? 'below' : 'above'} the $1 peg (price ${price.toFixed(4)}).`,
-        });
+          headline: `${cfg.symbol} is ${devBps} bps ${devBps < 0 ? 'below' : 'above'} the $1 peg (price ${price.toFixed(4)}).`,
+          explanation: `This is a secondary-market price observation, not a reserve or redemption proof.`,
+          window: {
+            sourceTsCurrent: observedAt,
+            observedAt,
+            cadenceValid: observedAt != null,
+            intervalLabel: observedAt != null ? 'spot price observation' : 'observation interval unavailable',
+          },
+          confidence: observedAt != null ? 'high' : 'low',
+          confidenceNote: observedAt != null ? 'Peg distance from live spot price.' : 'Spot timestamp missing; recency is unknown.',
+          detectedAt,
+          provenance: { ...provenance, field: 'cgSimple.usd' },
+        }));
       }
     }
 
-    const spikes = [];
-    for (const chain of Object.keys(detail?.chainBalances || {})) {
-      const delta = chainDelta(detail, chain);
-      if (Math.abs(delta) >= cfg.thresholds.chainSpikeUsd) spikes.push({ chain, delta });
+    const observations = Object.keys(detail?.chainBalances || {})
+      .map((chain) => chainObservation(detail, chain))
+      .filter(Boolean);
+
+    for (const obs of observations) {
+      if (obs.invalidSupply || !Number.isFinite(obs.current) || !Number.isFinite(obs.previous)) {
+        alerts.push(makeAlert({
+          rule: 'DATA_QUALITY',
+          coin: cfg.symbol,
+          chain: obs.chain,
+          severity: 'WARNING',
+          magnitude: Math.abs(obs.delta) || 0,
+          headline: `${cfg.symbol} on ${obs.chain} failed supply validation (non-finite or negative circulating USD).`,
+          explanation: 'This observation was quarantined. It is not a mint, burn, or migration event.',
+          window: obs,
+          confidence: 'low',
+          confidenceNote: 'Invalid circulating-USD observation.',
+          detectedAt,
+          provenance,
+        }));
+      }
     }
-    for (const spike of spikes) {
+
+    const usable = observations.filter((o) => !o.invalidSupply && Number.isFinite(o.delta));
+    const positives = usable.filter((o) => o.delta >= cfg.thresholds.chainSpikeUsd);
+    const negatives = usable.filter((o) => o.delta <= -cfg.thresholds.chainSpikeUsd);
+    const { pairs, unpairedPos, unpairedNeg } = pairOpposingFlows(positives, negatives);
+    const netSupplyDelta = usable.reduce((sum, o) => sum + o.delta, 0);
+    const pairedChains = new Set();
+
+    for (const pair of pairs) {
+      const grossFlow = pair.grossFlow;
+      const netCap = Math.max(MIGRATION_NET_FRAC * grossFlow, cfg.thresholds.megaSupplyUsd);
+      const window = windowMeta([pair.from, pair.to]);
+      const cadenceOk = window.cadenceValid;
+      const confidence = cadenceOk ? 'high' : 'low';
+      const headline = `${cfg.symbol} liquidity moved: ${pair.from.chain} → ${pair.to.chain}`;
+      const netNote = Math.abs(netSupplyDelta) < netCap
+        ? `net ${cfg.symbol} supply broadly unchanged (${signedUsd(netSupplyDelta)})`
+        : `net ${cfg.symbol} supply ${signedUsd(netSupplyDelta)}`;
+      alerts.push(makeAlert({
+        rule: 'MIGRATION',
+        coin: cfg.symbol,
+        chains: [pair.from.chain, pair.to.chain],
+        chain: pair.to.chain,
+        severity: grossFlow >= 2 * cfg.thresholds.chainSpikeUsd ? 'HIGH' : 'WARNING',
+        magnitude: grossFlow,
+        grossFlow,
+        netSupplyDelta,
+        headline,
+        explanation: `${fmtUsd(grossFlow)} gross chain movement; ${netNote}. This is a chain allocation correlation from successive circulating-supply snapshots, not evidence on its own of a depeg, whale, or reserve problem.`,
+        window,
+        confidence,
+        confidenceNote: cadenceOk
+          ? 'High: matched opposing chain movements.'
+          : 'Low: matched opposing flows, but the observation interval is not a valid 24h window.',
+        detectedAt,
+        provenance,
+      }));
+      pairedChains.add(pair.from.chain);
+      pairedChains.add(pair.to.chain);
+    }
+
+    const unpaired = [...unpairedPos, ...unpairedNeg].filter((o) => !pairedChains.has(o.chain));
+    for (const spike of unpaired) {
       const severity = Math.abs(spike.delta) >= 2 * cfg.thresholds.chainSpikeUsd ? 'HIGH' : 'WARNING';
-      alerts.push({
-        id: alertId('CHAIN_SPIKE', cfg.symbol, spike.chain),
-        rule: 'CHAIN_SPIKE',
+      const direction = spike.delta > 0 ? 'increased' : 'decreased';
+      const confidence = spike.cadenceValid ? 'medium' : 'low';
+      alerts.push(makeAlert({
+        rule: 'CHAIN_FLOW',
         coin: cfg.symbol,
         chain: spike.chain,
         severity,
         magnitude: Math.abs(spike.delta),
-        timestamp: now,
-        rationale: `${cfg.symbol} supply ${spike.delta > 0 ? 'surged' : 'dropped'} by ${fmtUsd(spike.delta)} on ${spike.chain} in the last 24h.`,
-      });
+        grossFlow: Math.abs(spike.delta),
+        netSupplyDelta,
+        headline: `${cfg.symbol} supply ${direction} by ${fmtUsd(spike.delta)} on ${spike.chain} ${spike.intervalLabel}.`,
+        explanation: `Single-chain circulating-supply change from the latest two DefiLlama snapshots. This is not by itself a mint, burn, whale, or depeg conclusion.`,
+        window: spike,
+        confidence,
+        confidenceNote: spike.cadenceValid
+          ? 'Directional chain flow above threshold.'
+          : 'Low: interval is outside the 20-28h 24h band.',
+        detectedAt,
+        provenance,
+      }));
     }
 
     if (detail && Object.keys(detail.chainBalances || {}).length) {
-      const total = coinTotalDelta(detail);
+      const total = netSupplyDelta;
       if (Math.abs(total) >= cfg.thresholds.megaSupplyUsd) {
+        const rule = total >= 0 ? 'NET_MINT' : 'NET_BURN';
         const severity = Math.abs(total) >= 3 * cfg.thresholds.megaSupplyUsd ? 'CRITICAL' : 'HIGH';
-        alerts.push({
-          id: alertId('MEGA_SUPPLY', cfg.symbol),
-          rule: 'MEGA_SUPPLY',
+        const window = windowMeta(usable);
+        alerts.push(makeAlert({
+          rule,
           coin: cfg.symbol,
+          chains: usable.map((o) => o.chain),
           severity,
           magnitude: Math.abs(total),
-          timestamp: now,
-          rationale: `${cfg.symbol} minted or burned ${fmtUsd(total)} across all chains in the last 24h.`,
-        });
+          grossFlow: usable.reduce((sum, o) => sum + Math.abs(o.delta), 0),
+          netSupplyDelta: total,
+          headline: `${cfg.symbol} net supply ${total >= 0 ? 'increased' : 'decreased'} by ${fmtUsd(total)} across tracked chains ${window.intervalLabel}.`,
+          explanation: `Coin-wide net circulating-USD change after summing every chain snapshot. Paired migrations are still shown separately when they match.`,
+          window,
+          confidence: window.cadenceValid ? 'medium' : 'low',
+          confidenceNote: window.cadenceValid
+            ? 'Net issuance or burn cleared the coin threshold.'
+            : 'Low: net change cleared the threshold but the observation interval is not a valid 24h window.',
+          detectedAt,
+          provenance,
+        }));
       }
     }
   }
@@ -398,20 +664,32 @@ export function generateAlerts(data) {
       if (!supplyByCoin[cfg.symbol]) continue;
       const share = buildShareSeries(supplyByCoin, cfg.symbol);
       if (share.length < 8) continue;
-      const latest = share[share.length - 1].share;
-      const ref = share[share.length - 8].share;
-      const drift = latest - ref;
+      const latest = share[share.length - 1];
+      const ref = share[share.length - 8];
+      const drift = latest.share - ref.share;
       if (Math.abs(drift) >= 1) {
         const severity = Math.abs(drift) >= 3 ? 'HIGH' : 'WARNING';
-        alerts.push({
-          id: alertId('DOM_SHIFT', cfg.symbol),
+        const hours = intervalHours(ref.date, latest.date);
+        alerts.push(makeAlert({
           rule: 'DOM_SHIFT',
           coin: cfg.symbol,
           severity,
           magnitude: Math.abs(drift),
-          timestamp: now,
-          rationale: `${cfg.symbol} dominance ${drift > 0 ? 'gained' : 'lost'} ${Math.abs(drift).toFixed(1)} pts of tracked stablecoin supply over the past week.`,
-        });
+          headline: `${cfg.symbol} dominance ${drift > 0 ? 'gained' : 'lost'} ${Math.abs(drift).toFixed(1)} pts of tracked stablecoin supply over the observed share window.`,
+          explanation: 'Share of the five tracked coins on this dashboard, not of the global stablecoin market.',
+          window: {
+            sourceTsCurrent: latest.date,
+            sourceTsPrevious: ref.date,
+            observedAt: latest.date,
+            intervalHours: hours,
+            cadenceValid: hours != null && hours >= 5 * 24 && hours <= 9 * 24,
+            intervalLabel: formatIntervalLabel(hours),
+          },
+          confidence: hours != null && hours >= 5 * 24 && hours <= 9 * 24 ? 'medium' : 'low',
+          confidenceNote: 'Dominance uses the latest vs ~7-point-prior share observations.',
+          detectedAt,
+          provenance: { source: 'deflama', field: 'share-series' },
+        }));
       }
     }
   }
@@ -439,16 +717,31 @@ export function alertExplanation(alert) {
         confidence: Math.min(0.9, 0.4 + Math.abs(alert.magnitude) / 100),
       };
     case 'CHAIN_SPIKE':
+    case 'CHAIN_FLOW':
       return {
-        whyItMatters: `A single-chain 24h supply move this large is usually a coordinated mint or burn, often tied to one venue such as an exchange, treasury, or protocol.`,
-        whatToWatch: 'Check the next daily snapshot: does the chain hold the level or reverse?',
-        confidence: 0.7,
+        whyItMatters: `A single-chain circulating-supply move this large is a chain allocation change. It is not by itself a mint, burn, whale, or depeg.`,
+        whatToWatch: 'Compare the offsetting chain, the net coin-wide delta, and the next snapshot. Reversal or a matching opposite flow points to migration rather than issuance.',
+        confidence: alert.cadenceValid ? 0.7 : 0.4,
+      };
+    case 'MIGRATION':
+      return {
+        whyItMatters: `${alert.coin} shows matched opposing chain flows. That is a reallocation signature, not two independent supply shocks.`,
+        whatToWatch: 'Watch whether net coin supply stays near unchanged on the next observation. A later net mint or burn is a separate event.',
+        confidence: alert.cadenceValid ? 0.85 : 0.45,
       };
     case 'MEGA_SUPPLY':
+    case 'NET_MINT':
+    case 'NET_BURN':
       return {
-        whyItMatters: 'A coin-wide mint or burn on this scale shifts total stablecoin liquidity and can precede broader market moves.',
-        whatToWatch: 'Cross-check the affected chains in the chain rankings and watch for follow-on issuance.',
-        confidence: 0.75,
+        whyItMatters: 'A coin-wide net circulating-USD change on this scale shifts tracked stablecoin liquidity. It is still not proof of a named minter or a reserve problem.',
+        whatToWatch: 'Cross-check the affected chains and whether a paired migration already explains most of the gross flow.',
+        confidence: alert.cadenceValid ? 0.75 : 0.4,
+      };
+    case 'DATA_QUALITY':
+      return {
+        whyItMatters: 'The observation failed validation (missing interval, non-finite or negative supply). Publishing it as a market event would overstate confidence.',
+        whatToWatch: 'Wait for the next valid snapshot before treating chain or peg figures as current.',
+        confidence: 0.2,
       };
     case 'DOM_SHIFT':
       return {

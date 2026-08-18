@@ -112,7 +112,7 @@ const MODULES = [
         id: 'reading-alerts',
         title: 'Reading alert severity',
         observationId: 'alert-count',
-        body: 'Alerts are deterministic rules, not opinions. PEG_BREAK fires when a coin trades past its drift threshold from $1. CHAIN_SPIKE flags a single chain moving $500M or more (less for smaller coins) in 24 hours. MEGA_SUPPLY catches a coin-wide mint or burn. DOM_SHIFT tracks a coin gaining or losing supply share week over week. Severity orders them WARNING, HIGH, CRITICAL. Each card explains why it matters and what to watch next.',
+        body: 'Alerts are deterministic rules, not opinions. PEG_BREAK fires when a coin trades past its drift threshold from $1. CHAIN_FLOW flags a single unmatched chain move above threshold. MIGRATION pairs opposite chain flows of similar size when net supply is broadly unchanged. NET_MINT and NET_BURN catch coin-wide issuance. DOM_SHIFT tracks a coin gaining or losing supply share. Severity orders them WARNING, HIGH, CRITICAL. Event time is the source observation, not the moment this page loaded.',
       },
     ],
   },
@@ -203,7 +203,7 @@ const MODULES = [
         id: 'case-studies',
         title: 'Case studies: when the signal was real',
         lastUpdated: '2026-08-16',
-        body: 'Real depegs and stress events are the best teachers. Two stand out. In May 2022, UST/Terra\'s algorithmic death spiral erased roughly $60B in combined value in about a week: the sister-token mechanism could not absorb sell pressure, and the "peg" was an incentive, not a reserve. In March 2026, Resolv\'s USR broke not because of market pressure but because of a compromised key that minted roughly 80M unbacked tokens; the Curve pool printed near $0.025 on March 22. That is an exploit and an insolvency, not a market-driven depeg. A peg-stress index can observe the price aftermath, but the cause was a security failure, not a stress signal the index "called" in advance. When the optional backend is running, this lesson also shows recent alert history (PEG_BREAK, CHAIN_SPIKE, MEGA_SUPPLY, DOM_SHIFT) accumulated in the labels table, so you can study how each rule fires on real data.',
+        body: 'Real depegs and stress events are the best teachers. Two stand out. In May 2022, UST/Terra\'s algorithmic death spiral erased roughly $60B in combined value in about a week: the sister-token mechanism could not absorb sell pressure, and the "peg" was an incentive, not a reserve. In March 2026, Resolv\'s USR broke not because of market pressure but because of a compromised key that minted roughly 80M unbacked tokens; the Curve pool printed near $0.025 on March 22. That is an exploit and an insolvency, not a market-driven depeg. A peg-stress index can observe the price aftermath, but the cause was a security failure, not a stress signal the index "called" in advance. When the optional backend is running, this lesson also shows the same persisted alert events used by the Alerts tab (open and resolved), keyed by a stable event ID.',
       },
     ],
   },
@@ -211,7 +211,7 @@ const MODULES = [
 
 const OBSERVATION_NOTE = 'Live, computed from this dashboard\'s data - not AI-generated.';
 
-export default function LearnTab({ data, alerts }) {
+export default function LearnTab({ data, alerts, alertHistory = [], alertSource = 'local' }) {
   const [openModule, setOpenModule] = useState(MODULES[0]?.id || null);
 
   const observationsById = useMemo(() => {
@@ -292,6 +292,29 @@ export default function LearnTab({ data, alerts }) {
           </div>
         </section>
       ))}
+
+      <section class="card mb-4">
+        <div class="card-header">
+          <div class="card-title">Persisted alert history</div>
+        </div>
+        <div class="card-body">
+          {alertSource !== 'canonical' || !alertHistory.length ? (
+            <p class="mb-0 text-muted small">
+              No stored alert events yet. The event table starts empty on a new backend and is not backfilled with invented history. Current Alerts may still show live derivation until the first stress job writes rows.
+            </p>
+          ) : (
+            <div class="learn-alert-history">
+              {alertHistory.slice(0, 12).map((event) => (
+                <article key={event.id} class="learn-history-row">
+                  <strong>{event.rule}</strong>
+                  <span>{event.coin} · {event.state || 'open'} · {event.id}</span>
+                  <p>{event.headline || event.rationale}</p>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
 
       <section class="card">
         <div class="card-header">

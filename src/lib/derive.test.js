@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import {
+  alertEventId,
   alertExplanation,
   buildAlertSparkSeries,
   buildMigrationPairs,
   buildShareSeries,
   buildSupplySeries,
   buildWhaleWatchRows,
+  chainObservation,
   computePegStress,
   dedupeTickers,
   generateAlerts,
+  pairOpposingFlows,
   pegBand,
   pegChartOptions,
   pegRefLine,
@@ -23,6 +26,11 @@ function chainDetail(tokens) {
 function token(date, peggedUSD) {
   return { date, circulating: { peggedUSD } };
 }
+
+const T0 = 1_700_000_000;
+const H24 = 86_400;
+const T1 = T0 + H24;
+const T72 = T0 + 3 * H24;
 
 describe('pegBand', () => {
   it('returns the default band when there are no valid prices', () => {
@@ -398,18 +406,32 @@ describe('generateAlerts', () => {
   it('returns no alerts for a steady-state payload', () => {
     const data = {
       cgSimple: { tether: { usd: 1.0002 }, 'usd-coin': { usd: 0.9999 } },
-      usdtDetail: { chainBalances: { Ethereum: { tokens: [token(1, 1e10), token(2, 1.002e10)] } } },
+      usdtDetail: { chainBalances: { Ethereum: { tokens: [token(T0, 1e10), token(T1, 1.002e10)] } } },
     };
     expect(generateAlerts(data)).toEqual([]);
   });
 
   it('flags a CRITICAL peg break when drift clears the threshold', () => {
-    const data = { cgSimple: { tether: { usd: 0.994 } } };
+    const observed = T1;
+    const data = { cgSimple: { tether: { usd: 0.994, last_updated_at: observed } } };
     const peg = generateAlerts(data).find((a) => a.rule === 'PEG_BREAK' && a.coin === 'USDT');
     expect(peg).toBeDefined();
     expect(peg.severity).toBe('CRITICAL');
     expect(peg.magnitude).toBe(60);
     expect(peg.rationale).toContain('60 bps');
+    expect(peg.observedAt).toBe(observed * 1000);
+    expect(peg.timestamp).toBe(observed * 1000);
+  });
+
+  it('does not stamp alert time with Date.now()', () => {
+    const before = Date.now();
+    const data = { cgSimple: { tether: { usd: 0.994, last_updated_at: T1 } } };
+    const peg = generateAlerts(data).find((a) => a.rule === 'PEG_BREAK');
+    const after = Date.now();
+    expect(peg.timestamp).toBe(T1 * 1000);
+    expect(peg.timestamp).toBeLessThan(before);
+    expect(peg.detectedAt).toBeNull();
+    expect(after).toBeGreaterThanOrEqual(before);
   });
 
   it('marks peg drift above the warning band as HIGH', () => {
@@ -418,29 +440,108 @@ describe('generateAlerts', () => {
     expect(peg.severity).toBe('HIGH');
   });
 
-  it('flags a CHAIN_SPIKE once the per-chain delta clears the threshold', () => {
+  it('flags a directional CHAIN_FLOW once the per-chain delta clears the threshold', () => {
     const data = {
-      usdtDetail: { chainBalances: { Tron: { tokens: [token(1, 2e10), token(2, 2.06e10)] } } },
+      usdtDetail: { chainBalances: { Tron: { tokens: [token(T0, 2e10), token(T1, 2.06e10)] } } },
     };
-    const spike = generateAlerts(data).find((a) => a.rule === 'CHAIN_SPIKE' && a.coin === 'USDT' && a.chain === 'Tron');
+    const spike = generateAlerts(data).find((a) => a.rule === 'CHAIN_FLOW' && a.coin === 'USDT' && a.chain === 'Tron');
     expect(spike).toBeDefined();
     expect(spike.severity).toBe('WARNING');
     expect(spike.magnitude).toBe(600e6);
+    expect(spike.intervalLabel).toBe('in the last 24h');
+    expect(spike.rationale).toContain('in the last 24h');
+    expect(spike.rationale).not.toContain('surged');
   });
 
-  it('escalates CHAIN_SPIKE to HIGH at double the threshold', () => {
+  it('escalates CHAIN_FLOW to HIGH at double the threshold', () => {
     const data = {
-      usdtDetail: { chainBalances: { Tron: { tokens: [token(1, 2e10), token(2, 3.2e10)] } } },
+      usdtDetail: { chainBalances: { Tron: { tokens: [token(T0, 2e10), token(T1, 3.2e10)] } } },
     };
-    const spike = generateAlerts(data).find((a) => a.rule === 'CHAIN_SPIKE' && a.coin === 'USDT');
+    const spike = generateAlerts(data).find((a) => a.rule === 'CHAIN_FLOW' && a.coin === 'USDT');
     expect(spike.severity).toBe('HIGH');
   });
 
-  it('flags a MEGA_SUPPLY coin-wide mint above the threshold', () => {
+  it('pairs the DAI offsetting-flow fixture as one MIGRATION and suppresses child spikes', () => {
     const data = {
-      usdtDetail: { chainBalances: { Ethereum: { tokens: [token(1, 1e10), token(2, 1.2e10)] } } },
+      daiDetail: {
+        chainBalances: {
+          Ethereum: { tokens: [token(T0, 1e9), token(T1, 1e9 + 391e6)] },
+          Polygon: { tokens: [token(T0, 1e9), token(T1, 1e9 - 391e6)] },
+        },
+      },
     };
-    const mega = generateAlerts(data).find((a) => a.rule === 'MEGA_SUPPLY' && a.coin === 'USDT');
+    const alerts = generateAlerts(data);
+    const migrations = alerts.filter((a) => a.rule === 'MIGRATION' && a.coin === 'DAI');
+    const flows = alerts.filter((a) => a.rule === 'CHAIN_FLOW' && a.coin === 'DAI');
+    const nets = alerts.filter((a) => (a.rule === 'NET_MINT' || a.rule === 'NET_BURN') && a.coin === 'DAI');
+    expect(migrations).toHaveLength(1);
+    expect(flows).toHaveLength(0);
+    expect(nets).toHaveLength(0);
+    expect(migrations[0].headline).toBe('DAI liquidity moved: Polygon → Ethereum');
+    expect(migrations[0].grossFlow).toBe(391e6);
+    expect(migrations[0].netSupplyDelta).toBe(0);
+    expect(migrations[0].explanation).toMatch(/\$391M gross/);
+    expect(migrations[0].explanation).toMatch(/broadly unchanged/);
+    expect(migrations[0].cadenceValid).toBe(true);
+    const again = generateAlerts(data);
+    expect(again.find((a) => a.rule === 'MIGRATION').id).toBe(migrations[0].id);
+  });
+
+  it('keeps a MIGRATION and a NET_MINT when paired flows still leave a large net', () => {
+    const data = {
+      daiDetail: {
+        chainBalances: {
+          Ethereum: { tokens: [token(T0, 1e9), token(T1, 1e9 + 3000e6)] },
+          Polygon: { tokens: [token(T0, 5e9), token(T1, 5e9 - 2700e6)] },
+        },
+      },
+    };
+    const alerts = generateAlerts(data).filter((a) => a.coin === 'DAI');
+    expect(alerts.some((a) => a.rule === 'MIGRATION')).toBe(true);
+    const net = alerts.find((a) => a.rule === 'NET_MINT');
+    expect(net).toBeDefined();
+    expect(net.magnitude).toBe(300e6);
+    expect(alerts.filter((a) => a.rule === 'CHAIN_FLOW')).toHaveLength(0);
+  });
+
+  it('flags a true net burn without inventing a migration', () => {
+    const data = {
+      daiDetail: { chainBalances: { Ethereum: { tokens: [token(T0, 2e9), token(T1, 2e9 - 300e6)] } } },
+    };
+    const alerts = generateAlerts(data).filter((a) => a.coin === 'DAI');
+    expect(alerts.some((a) => a.rule === 'MIGRATION')).toBe(false);
+    const burn = alerts.find((a) => a.rule === 'NET_BURN');
+    expect(burn).toBeDefined();
+    expect(burn.magnitude).toBe(300e6);
+    const flow = alerts.find((a) => a.rule === 'CHAIN_FLOW');
+    expect(flow).toBeDefined();
+  });
+
+  it('does not call a stale interval the last 24h', () => {
+    const data = {
+      usdtDetail: { chainBalances: { Tron: { tokens: [token(T0, 2e10), token(T72, 2.06e10)] } } },
+    };
+    const spike = generateAlerts(data).find((a) => a.rule === 'CHAIN_FLOW');
+    expect(spike.cadenceValid).toBe(false);
+    expect(spike.confidence).toBe('low');
+    expect(spike.intervalLabel).toBe('between the latest two observations (72h apart)');
+    expect(spike.rationale).not.toContain('in the last 24h');
+  });
+
+  it('emits DATA_QUALITY when circulating USD is invalid', () => {
+    const data = {
+      daiDetail: { chainBalances: { Ethereum: { tokens: [token(T0, 1e9), token(T1, -10)] } } },
+    };
+    const dq = generateAlerts(data).find((a) => a.rule === 'DATA_QUALITY' && a.coin === 'DAI');
+    expect(dq).toBeDefined();
+    expect(dq.confidence).toBe('low');
+  });
+
+  it('flags a NET_MINT coin-wide increase above the threshold', () => {
+    const data = {
+      usdtDetail: { chainBalances: { Ethereum: { tokens: [token(T0, 1e10), token(T1, 1.2e10)] } } },
+    };
+    const mega = generateAlerts(data).find((a) => a.rule === 'NET_MINT' && a.coin === 'USDT');
     expect(mega).toBeDefined();
     expect(mega.severity).toBe('HIGH');
     expect(mega.magnitude).toBe(2e9);
@@ -449,9 +550,9 @@ describe('generateAlerts', () => {
   it('flags a DOM_SHIFT when a coin gains tracked supply share', () => {
     const usdtTokens = [];
     const usdcTokens = [];
-    for (let i = 1; i <= 10; i += 1) {
-      usdtTokens.push(token(i, 1000));
-      usdcTokens.push(token(i, i <= 3 ? 500 : 1000));
+    for (let i = 0; i < 10; i += 1) {
+      usdtTokens.push(token(T0 + i * H24, 1000));
+      usdcTokens.push(token(T0 + i * H24, i <= 2 ? 500 : 1000));
     }
     const data = {
       usdtDetail: { chainBalances: { Ethereum: { tokens: usdtTokens } } },
@@ -466,16 +567,62 @@ describe('generateAlerts', () => {
   it('sorts alerts by severity then magnitude', () => {
     const data = {
       cgSimple: { tether: { usd: 0.99 } },
-      usdtDetail: { chainBalances: { Tron: { tokens: [token(1, 2e10), token(2, 2.6e10)] } } },
+      usdtDetail: { chainBalances: { Tron: { tokens: [token(T0, 2e10), token(T1, 2.6e10)] } } },
     };
     const alerts = generateAlerts(data);
     expect(alerts[0].severity).toBe('CRITICAL');
+  });
+
+  it('uses a stable fingerprint that ignores detection time', () => {
+    const data = {
+      daiDetail: {
+        chainBalances: {
+          Ethereum: { tokens: [token(T0, 1e9), token(T1, 1e9 + 391e6)] },
+          Polygon: { tokens: [token(T0, 1e9), token(T1, 1e9 - 391e6)] },
+        },
+      },
+    };
+    const a = generateAlerts(data, { detectedAt: 1 })[0];
+    const b = generateAlerts(data, { detectedAt: 999 })[0];
+    expect(a.id).toBe(b.id);
+    expect(a.id).toBe(alertEventId({
+      rule: 'MIGRATION',
+      coin: 'DAI',
+      chains: ['Ethereum', 'Polygon'],
+      sourceTsCurrent: T1 * 1000,
+      sourceTsPrevious: T0 * 1000,
+    }));
+  });
+});
+
+describe('pairOpposingFlows', () => {
+  it('pairs magnitudes within 10% and leaves the rest unmatched', () => {
+    const { pairs, unpairedPos } = pairOpposingFlows(
+      [{ chain: 'Ethereum', delta: 391e6 }],
+      [{ chain: 'Polygon', delta: -391e6 }, { chain: 'Arbitrum', delta: -50e6 }]
+    );
+    expect(pairs).toHaveLength(1);
+    expect(pairs[0].from.chain).toBe('Polygon');
+    expect(pairs[0].to.chain).toBe('Ethereum');
+    expect(unpairedPos).toHaveLength(0);
+  });
+});
+
+describe('chainObservation', () => {
+  it('exposes source timestamps and interval hours', () => {
+    const obs = chainObservation(
+      { chainBalances: { Ethereum: { tokens: [token(T0, 1), token(T1, 2)] } } },
+      'Ethereum'
+    );
+    expect(obs.sourceTsCurrent).toBe(T1 * 1000);
+    expect(obs.intervalHours).toBe(24);
+    expect(obs.cadenceValid).toBe(true);
   });
 });
 
 describe('alertExplanation', () => {
   it('returns guidance for each supported rule without data', () => {
-    for (const rule of ['PEG_BREAK', 'CHAIN_SPIKE', 'MEGA_SUPPLY', 'DOM_SHIFT']) {
+    for (const rule of ['PEG_BREAK', 'CHAIN_FLOW', 'MIGRATION', 'NET_MINT', 'NET_BURN', 'DOM_SHIFT', 'DATA_QUALITY']) {
       const e = alertExplanation({ rule, coin: 'USDT', magnitude: 50 });
       expect(typeof e.whyItMatters).toBe('string');
       expect(typeof e.whatToWatch).toBe('string');

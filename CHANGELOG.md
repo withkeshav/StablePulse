@@ -4,6 +4,26 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.6.0] - 2026-08-18
+
+### Fixed
+- **Truthful freshness:** the dashboard no longer treats browser `Date.now()` as market time. The strip shows Checked (this fetch), Market observed (upstream snapshot), and Historical snapshot (SQLite), with Current / Delayed / Stale / Unavailable state. A missing optional backend snapshot does not mark a successful live fetch as Unavailable; DefiLlama's daily supply age (for example 8h) is on cadence, not a failed check.
+- **Alert event time:** alerts use source observation timestamps and a stable event fingerprint. Reloading does not mint a new "2m ago" event.
+- **DAI-style opposing flows:** matched chain deltas within 10% become one `MIGRATION` event (gross + net) and the paired child flow cards are suppressed from the primary feed.
+- **Interval wording:** "in the last 24h" is used only when the two snapshots are 20-28 hours apart; otherwise the copy names the actual gap and confidence drops.
+- **Mobile Home:** metric chips under Peg Stability Index and chart grids stack full width at phone widths (Icewater desktop rules no longer override the mobile stack). Chart canvases are 280-340px tall.
+- **`/research` deep link:** nginx exact `location = /research` 301s to `/research/` before SPA fallback.
+
+### Added
+- Canonical `alert_events` SQLite table and `GET /api/alerts` lifecycle feed (open / resolved). Current Alerts and Learn history share the same event IDs.
+- Signal Card share stays outside the canvas (toolbar / mobile bottom sheet) with Story, Square, and Landscape export.
+
+### Changed
+- Alert rules: `CHAIN_FLOW`, `MIGRATION`, `NET_MINT`, `NET_BURN` (legacy CHAIN_SPIKE / MEGA_SUPPLY explanations still apply). Filters by severity and coin are unchanged.
+
+### Docs
+- Public docs (README, architecture, API protocol, data sources, scaling, backend README, SECURITY, issue templates) aligned to three-clock freshness, canonical `alert_events`, `/research` redirect, and source-available (not OSI) licensing. Local agent notes stay unpublished.
+
 ## [3.5.1] - 2026-08-16
 
 ### Fixed
@@ -186,7 +206,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Dropped the Cloudflare Worker `/api/dashboard` aggregator; the frontend no longer depends on a single pre-aggregated JSON payload.
 - Runtime config key renamed from `apiBase` to `aiApiBase` (build-time `STABLEPULSE_AI_API_BASE`).
 - Market-cap total now summed from all registered coins (DefiLlama no longer reports a global aggregate).
-- README/docs updated for the hybrid topology; scaling playbook rewritten for the VPS backend.
+- README/docs updated for the hybrid topology; scaling guide rewritten for the VPS backend.
 
 ### Fixed
 
@@ -231,6 +251,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 Initial packaged release of the intelligence dashboard (prior to source-available packaging). No public changelog kept.
 
+[3.6.0]: https://github.com/withkeshav/StableSense/releases/tag/v3.6.0
+[3.5.1]: https://github.com/withkeshav/StableSense/releases/tag/v3.5.1
 [3.4.0]: https://github.com/withkeshav/StableSense/releases/tag/v3.4.0
 [3.3.0]: https://github.com/withkeshav/StableSense/releases/tag/v3.3.0
 [3.2.5]: https://github.com/withkeshav/StableSense/releases/tag/v3.2.5

@@ -72,16 +72,26 @@ function buildContext() {
 
   // Recent alert labels (Pass 4): the last cycle's active alerts, so the
   // narrative can name the specific rule that fired.
-  const recentLabels = db
-    .prepare('SELECT symbol, alert_type, severity, explanation FROM labels ORDER BY ts DESC LIMIT 5')
-    .all();
-  if (recentLabels.length) {
+  const recentEvents = db
+    .prepare('SELECT symbol, rule, severity, headline FROM alert_events WHERE state = ? ORDER BY detected_at DESC LIMIT 5')
+    .all('open');
+  if (recentEvents.length) {
     lines.push('Recent alerts:');
-    for (const l of recentLabels) {
-      lines.push(`- ${l.symbol} ${l.alert_type} (${l.severity}): ${l.explanation}`);
+    for (const l of recentEvents) {
+      lines.push(`- ${l.symbol} ${l.rule} (${l.severity}): ${l.headline}`);
     }
   } else {
-    lines.push('No active alerts in the last cycle. The market is calm; the Peg Stress Index is low.');
+    const recentLabels = db
+      .prepare('SELECT symbol, alert_type, severity, explanation FROM labels ORDER BY ts DESC LIMIT 5')
+      .all();
+    if (recentLabels.length) {
+      lines.push('Recent alerts:');
+      for (const l of recentLabels) {
+        lines.push(`- ${l.symbol} ${l.alert_type} (${l.severity}): ${l.explanation}`);
+      }
+    } else {
+      lines.push('No persisted alert events yet. The event log starts empty until the first stress job writes rows.');
+    }
   }
 
   return lines.join('\n');

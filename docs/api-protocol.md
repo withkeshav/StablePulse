@@ -1,6 +1,6 @@
 # API Protocol
 
-This document covers how the frontend gets data: browser-direct calls to DefiLlama/CoinGecko, plus the optional backend endpoints for AI and history.
+This document covers how the frontend gets data: browser-direct calls to DefiLlama/CoinGecko, plus the optional backend endpoints for AI, history, and canonical alerts.
 
 ## Base URL
 
@@ -41,9 +41,12 @@ The frontend fetches these from the visitor's own IP. Requests are throttled, de
   "usdeDetail": { ... },
   "pyusdDetail": { ... },
   "intelligence": { "headline": "...", "narrative": "...", "implications": "...", "ts": 1720000000000 } | null,
-  "fetchedAt": 1720000000000
+  "fetchedAt": 1720000000000,
+  "marketObservedAt": 1720000000000
 }
 ```
+
+`fetchedAt` is the browser check clock. `marketObservedAt` (or CoinGecko `last_updated_at` when present) is the upstream observation clock. See [data-sources.md](./data-sources.md) for how `src/lib/freshness.js` labels Current / Delayed / Stale / Unavailable.
 
 Per-coin keys use the registry entry's `coingeckoId` / `llamaStablecoinId`. Adding a coin requires only the config entry; the data layer resolves URLs generically.
 
@@ -54,7 +57,7 @@ The backend is optional. When present it is served same-origin behind nginx (no 
 ### `GET /api/healthz`
 
 ```jsonc
-{ "ok": true, "db": "ok", "lastMarketSync": 1720000000000, "lastAiRun": 1720000000000, "now": 1720000000000 }
+{ "ok": true, "db": "ok", "lastMarketSync": 1720000000000, "lastAiRun": 1720000000000, "lastAlertEvent": 1720000000000, "alertEventCount": 0, "now": 1720000000000 }
 ```
 
 ### `GET /api/ai`
@@ -109,21 +112,37 @@ Stored alert history from the `labels` table (written by `jobs/stress.js` from t
 
 ## Alerts
 
-Alerts are generated **client-side** by `generateAlerts(data)` in `src/lib/derive.js` using per-coin thresholds from the registry. No backend round-trip:
+Alerts are derived by `generateAlerts(data)` in `src/lib/derive.js` from per-coin thresholds. Event time is the upstream observation (`observedAt`), never the browser clock. When the optional backend is running, `jobs/stress.js` persists the same events to `alert_events` and the UI prefers `GET /api/alerts` as the canonical feed. If that table is empty, the UI says so and shows live derivation until the first job writes rows.
 
 ```jsonc
 {
-  "id": "peg_break-usdt-<ts>",
-  "rule": "PEG_BREAK",
-  "coin": "USDT",
-  "severity": "critical",
-  "magnitude": 60,
-  "timestamp": 1700000000000,
-  "rationale": "USDT is -60 bps below the $1 peg."
+  "id": "migration-dai-<fingerprint>",
+  "rule": "MIGRATION",
+  "coin": "DAI",
+  "severity": "WARNING",
+  "magnitude": 391000000,
+  "grossFlow": 391000000,
+  "netSupplyDelta": 0,
+  "observedAt": 1720000000000,
+  "detectedAt": 1720000400000,
+  "intervalLabel": "in the last 24h",
+  "headline": "DAI liquidity moved: Polygon → Ethereum",
+  "state": "open"
 }
 ```
 
-Rules: `PEG_BREAK`, `CHAIN_SPIKE`, `MEGA_SUPPLY`, `DOM_SHIFT`. Explanations are deterministic via `alertExplanation(alert)`. When the optional backend is running, `jobs/stress.js` also persists each cycle's alerts to the `labels` table (readable via `GET /api/labels`), so historical alert context accumulates over time.
+Rules: `PEG_BREAK`, `CHAIN_FLOW`, `MIGRATION`, `NET_MINT`, `NET_BURN`, `DOM_SHIFT`, `DATA_QUALITY`. Explanations are deterministic via `alertExplanation(alert)`.
+
+### `GET /api/alerts?[coin=DAI][&days=30][&state=open|resolved|all]`
+
+Canonical lifecycle records from `alert_events`:
+
+```jsonc
+{
+  "data": [ { "id": "migration-dai-…", "rule": "MIGRATION", "state": "open" } ],
+  "meta": { "persistedCount": 1, "empty": false, "canonical": true }
+}
+```
 
 ## Errors and empty states
 

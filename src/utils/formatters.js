@@ -93,5 +93,34 @@ export function timeAgo(ts) {
   const s = Math.max(0, Math.floor((Date.now() - tsMs) / 1000));
   if (s < 60) return s + 's ago';
   if (s < 3600) return Math.floor(s / 60) + 'm ago';
-  return Math.floor(s / 3600) + 'h ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  return Math.floor(s / 86400) + 'd ago';
+}
+
+/**
+ * Format an epoch timestamp as a UTC clock label for alert provenance.
+ * @param {number|string|Date|null|undefined} ts
+ * @returns {string} e.g. `18 Aug 2026, 05:00 UTC`, or `-` on invalid input.
+ */
+export function formatUtc(ts) {
+  if (ts === null || ts === undefined) return '-';
+  const tsMs = ts instanceof Date ? ts.getTime() : Number(ts);
+  if (!Number.isFinite(tsMs) || tsMs <= 0) return '-';
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'UTC',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date(tsMs));
+  const get = (type) => parts.find((p) => p.type === type)?.value || '';
+  const day = get('day');
+  const month = get('month');
+  const year = get('year');
+  const hour = get('hour');
+  const minute = get('minute');
+  if (!day || !month || !hour) return '-';
+  return `${day} ${month} ${year}, ${hour}:${minute} UTC`;
 }

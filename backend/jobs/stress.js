@@ -34,9 +34,9 @@ function buildPricesByCoin(coins) {
   const out = {};
   for (const coin of coins) {
     const row = db
-      .prepare('SELECT price FROM prices WHERE coin = ? ORDER BY ts DESC LIMIT 1')
+      .prepare('SELECT price, ts FROM prices WHERE coin = ? ORDER BY ts DESC LIMIT 1')
       .get(coin.symbol);
-    out[coin.symbol] = row?.price ?? 1;
+    out[coin.symbol] = { price: row?.price ?? 1, ts: row?.ts ?? null };
   }
   return out;
 }
@@ -44,7 +44,11 @@ function buildPricesByCoin(coins) {
 function buildData(coins, detailsByCoin, pricesByCoin) {
   const data = { cgSimple: {} };
   for (const coin of coins) {
-    data.cgSimple[coin.coingeckoId] = { usd: pricesByCoin[coin.symbol] };
+    const row = pricesByCoin[coin.symbol];
+    data.cgSimple[coin.coingeckoId] = {
+      usd: row?.price ?? 1,
+      last_updated_at: row?.ts ? Math.floor(row.ts / 1000) : undefined,
+    };
     data[`${coin.symbol.toLowerCase()}Detail`] = detailsByCoin[coin.symbol];
   }
   return data;
@@ -57,7 +61,7 @@ const detailsByCoin = buildDetailsByCoin(coins);
 const pricesByCoin = buildPricesByCoin(coins);
 const data = buildData(coins, detailsByCoin, pricesByCoin);
 
-const alerts = generateAlerts(data);
+const alerts = generateAlerts(data, { detectedAt: now });
 
 // Chain-flow top delta (same input computePegStress expects).
 let topChainFlow = 0;
@@ -73,8 +77,9 @@ for (const coin of coins) {
   }
 }
 
+const pricesFlat = Object.fromEntries(coins.map((c) => [c.symbol, pricesByCoin[c.symbol]?.price ?? 1]));
 const stress = computePegStress({
-  pricesByCoin,
+  pricesByCoin: pricesFlat,
   alerts,
   topChainFlow,
 });
@@ -119,6 +124,24 @@ const insertLabelBatch = db.transaction((rows) => {
   for (const r of rows) insertLabel.run(r);
 });
 
+const insertEvent = db.prepare(
+  `INSERT OR REPLACE INTO alert_events (
+     event_id, rule, classification, symbol, severity, state, headline, explanation,
+     magnitude, gross_flow, net_supply_delta, source_ts_current, source_ts_previous,
+     interval_hours, interval_label, observed_at, detected_at, published_at,
+     involved_chains, provenance, confidence, cadence_valid, updated_at
+   ) VALUES (
+     @event_id, @rule, @classification, @symbol, @severity, @state, @headline, @explanation,
+     @magnitude, @gross_flow, @net_supply_delta, @source_ts_current, @source_ts_previous,
+     @interval_hours, @interval_label, @observed_at, @detected_at, @published_at,
+     @involved_chains, @provenance, @confidence, @cadence_valid, @updated_at
+   )`
+);
+
+const insertEventBatch = db.transaction((rows) => {
+  for (const r of rows) insertEvent.run(r);
+});
+
 const stressRows = [];
 for (const coin of coins) {
   const detail = detailsByCoin[coin.symbol];
@@ -137,7 +160,7 @@ for (const coin of coins) {
     return mx;
   })();
   const coinStress = computePegStress({
-    pricesByCoin: { [coin.symbol]: pricesByCoin[coin.symbol] },
+    pricesByCoin: { [coin.symbol]: pricesByCoin[coin.symbol]?.price ?? 1 },
     alerts: coinAlerts,
     topChainFlow: coinTopFlow,
   });
@@ -156,11 +179,11 @@ console.log(`[stress] stress_series: ${stressRows.length} rows`);
 const labelRows = [];
 for (const alert of alerts) {
   labelRows.push({
-    ts: now,
+    ts: alert.observedAt || now,
     symbol: alert.coin,
     type: alert.rule,
     severity: alert.severity,
-    explanation: alert.rationale,
+    explanation: alert.headline || alert.rationale,
     magnitude: alert.magnitude ?? null,
   });
 }
@@ -170,5 +193,44 @@ if (labelRows.length) {
 } else {
   console.log('[labels] no active alerts this cycle');
 }
+
+const eventRows = alerts.map((alert) => ({
+  event_id: alert.id,
+  rule: alert.rule,
+  classification: alert.classification || alert.rule,
+  symbol: alert.coin,
+  severity: alert.severity,
+  state: 'open',
+  headline: alert.headline || alert.rationale,
+  explanation: alert.explanation || alert.headline || alert.rationale,
+  magnitude: alert.magnitude ?? null,
+  gross_flow: alert.grossFlow ?? null,
+  net_supply_delta: alert.netSupplyDelta ?? null,
+  source_ts_current: alert.sourceTsCurrent ?? null,
+  source_ts_previous: alert.sourceTsPrevious ?? null,
+  interval_hours: alert.intervalHours ?? null,
+  interval_label: alert.intervalLabel ?? null,
+  observed_at: alert.observedAt ?? null,
+  detected_at: now,
+  published_at: now,
+  involved_chains: JSON.stringify(alert.chains || (alert.chain ? [alert.chain] : [])),
+  provenance: JSON.stringify(alert.provenance || { source: 'stress-job' }),
+  confidence: alert.confidence || 'medium',
+  cadence_valid: alert.cadenceValid ? 1 : 0,
+  updated_at: now,
+}));
+if (eventRows.length) insertEventBatch(eventRows);
+
+const openIds = new Set(eventRows.map((r) => r.event_id));
+const staleOpen = db.prepare(`SELECT event_id FROM alert_events WHERE state = 'open'`).all();
+const resolveStmt = db.prepare(`UPDATE alert_events SET state = 'resolved', updated_at = ? WHERE event_id = ?`);
+let resolved = 0;
+for (const row of staleOpen) {
+  if (!openIds.has(row.event_id)) {
+    resolveStmt.run(now, row.event_id);
+    resolved += 1;
+  }
+}
+console.log(`[alert_events] open=${eventRows.length} resolved=${resolved}`);
 
 console.log('[stress] done');

@@ -11,6 +11,10 @@ the browser.
   from DefiLlama, spot prices + 24h change/volume from CoinGecko, and the
   aggregate stablecoin market cap. Rows are upserted into SQLite. The first
   run backfills the full daily history; later runs append only the newest day.
+- **`jobs/stress.js`** (cron, every 10 min, after fetch): reads stored snapshots,
+  runs the same `generateAlerts` / `computePegStress` logic as the dashboard, and
+  writes `stress_series`, `labels`, and canonical `alert_events` (open/resolved).
+  Event IDs are deterministic from coin, observation window, rule, and chains.
 - **`jobs/ai.js`** (cron, checked every 30 min, self-gated on `AI_CADENCE_MIN`): builds a compact
   data brief from the accumulated snapshots and asks an OpenAI-compatible
   model for a short narrative. Falls back to `OPENAI_FALLBACK_MODEL` if the
@@ -18,9 +22,11 @@ the browser.
   crontab entry is only a cheap check; the model is called at most once per
   `AI_CADENCE_MIN` (default 120 minutes).
 - **`server.js`**: Fastify API on `127.0.0.1:8787`.
-  - `GET /api/healthz` - liveness + last sync times
+  - `GET /api/healthz` - liveness, last market sync, last AI run, alert event count
   - `GET /api/ai` - latest narrative `{ intelligence: { headline, narrative, implications, model, ts, nextUpdateAt, cadenceMin } }`
   - `GET /api/history?coin=USDT[&chain=Ethereum][&days=30]` - daily supply series from the stored dataset
+  - `GET /api/alerts?[coin=DAI][&days=30][&state=open|resolved|all]` - canonical alert lifecycle
+  - `GET /api/labels` / `GET /api/stress` - stored labels and stress series
 
 ## Requirements
 
@@ -34,6 +40,7 @@ cd backend
 npm install
 cp .env.example .env        # fill OPENAI_* values; never commit .env
 npm run fetch               # backfills the dataset, creates data/stablesense.db
+npm run stress              # writes stress series and canonical alert events
 npm run ai                  # generates the first narrative (needs a valid key)
 npm start                   # serves the API on 127.0.0.1:8787
 ```
@@ -76,13 +83,13 @@ crontab -e      # paste the lines from deploy/crontab.txt
 ```
 
 `nginx.conf` serves `dist/` and reverse-proxies `/api` to Fastify on the same
-origin, so there is zero CORS. The frontend only calls the backend through
-`/api/ai`; set `window.STABLESENSE_CONFIG = { aiApiBase: '' }` (default) to use
-the same origin.
+origin, so there is zero CORS. Slashless `/research` 301s to `/research/` before
+the SPA fallback. The frontend reads `/api/healthz`, `/api/ai`, and `/api/alerts`
+on the same origin.
 
 ## Notes
 
 - WAL mode is on; the daily backup uses `sqlite3 .backup` which is
   WAL-safe (no plain `cp` of the db file).
 - The frontend never talks to the model. The key exists only in `backend/.env`.
-- No visitor traffic touches this service except the light `/api/ai` read.
+- No visitor traffic touches this service except the light `/api/ai`, `/api/alerts`, and `/api/healthz` reads.

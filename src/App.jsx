@@ -17,9 +17,10 @@ import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { APP_VERSION, aiApiBase } from './config.js';
 import { REFRESH_KEY, COMPACT_KEY } from './utils/storage.js';
 import { coinFromTabId, getActiveCoins } from './utils/coin-config.js';
-import { fetchDashboardData, loadCoinChart } from './lib/api.js';
+import { fetchDashboardData, fetchCanonicalAlerts, fetchHealthz, loadCoinChart } from './lib/api.js';
 import { fetchIntelligence } from './lib/ai.js';
 import { generateAlerts } from './lib/derive.js';
+import { buildFreshness } from './lib/freshness.js';
 
 const REFRESH_OPTIONS = [60, 180, 300, 600, 900];
 
@@ -48,7 +49,10 @@ export default function App() {
   const [refreshing, setRefreshing] = useState(false);
   const [apiStatus, setApiStatus] = useState({ message: '' });
   const [alerts, setAlerts] = useState([]);
+  const [alertHistory, setAlertHistory] = useState([]);
+  const [alertSource, setAlertSource] = useState('local');
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [freshness, setFreshness] = useState(null);
   const [railOpen, setRailOpen] = useState(false);
 
   const initialStoredRefresh = readStoredRefresh();
@@ -83,12 +87,41 @@ export default function App() {
     }
 
     try {
-      const result = await fetchDashboardData({ signal: ctrl.signal });
+      const [dashRes, healthRes, canonicalRes] = await Promise.allSettled([
+        fetchDashboardData({ signal: ctrl.signal }),
+        fetchHealthz({ signal: ctrl.signal }),
+        fetchCanonicalAlerts({ signal: ctrl.signal }),
+      ]);
       if (!aliveRef.current) return;
+      if (dashRes.status !== 'fulfilled') throw dashRes.reason;
+      const result = dashRes.value;
+      const health = healthRes.status === 'fulfilled' ? healthRes.value : null;
+      const canonical = canonicalRes.status === 'fulfilled' ? canonicalRes.value : null;
       const nextData = { ...result, intelligence: intelligenceRef.current || null };
+      const localAlerts = generateAlerts(nextData);
+      const persistedCount = canonical?.meta?.persistedCount || 0;
+      const rows = canonical?.data || [];
+      const open = rows.filter((a) => a.state === 'open');
+      let nextAlerts = localAlerts;
+      let source = 'local';
+      if (canonical && persistedCount > 0) {
+        nextAlerts = open;
+        source = 'canonical';
+      } else if (canonical && canonical.meta?.empty) {
+        source = 'provisional';
+      }
       setData(nextData);
-      setAlerts(generateAlerts(nextData));
-      setLastUpdated(Date.now());
+      setAlerts(nextAlerts);
+      setAlertHistory(rows);
+      setAlertSource(source);
+      setLastUpdated(result.fetchedAt);
+      setFreshness(buildFreshness({
+        checkedAt: result.fetchedAt,
+        spotObservedAt: result.spotObservedAt,
+        supplyObservedAt: result.supplyObservedAt,
+        marketObservedAt: result.marketObservedAt,
+        snapshotAt: health?.lastMarketSync ?? null,
+      }));
       setApiStatus({ message: '' });
     } catch (err) {
       if (!aliveRef.current || err?.name === 'AbortError') return;
@@ -199,6 +232,7 @@ export default function App() {
           onJumpToAlerts={() => setTab('alerts')}
           activeTab={activeTab}
           onOpenRail={() => setRailOpen(true)}
+          dataState={freshness?.overallState}
         />
         <div id="body-row">
           <main id="main" class="main-scroll">
@@ -211,7 +245,13 @@ export default function App() {
                     <div class="card api-status-card">{apiStatus.message}</div>
                   ) : null}
                   {!loading && lastUpdated ? (
-                    <RefreshCountdown lastUpdated={lastUpdated} refreshIntervalSec={refreshIntervalSec} refreshing={refreshing} />
+                    <RefreshCountdown
+                      lastUpdated={lastUpdated}
+                      refreshIntervalSec={refreshIntervalSec}
+                      refreshing={refreshing}
+                      freshness={freshness}
+                      dataState={freshness?.overallState}
+                    />
                   ) : null}
                   {activeTab === 'home' && (
                     <HomeTab
@@ -219,6 +259,7 @@ export default function App() {
                       alerts={alerts}
                       setActiveTab={setTab}
                       refreshIntervalSec={refreshIntervalSec}
+                      freshness={freshness}
                     />
                   )}
                   {coinTab ? (
@@ -231,9 +272,16 @@ export default function App() {
                   ) : null}
                   {activeTab === 'chains' && <ChainsTab data={data} />}
                   {activeTab === 'alerts' && (
-                    <AlertsTab alerts={alerts} intelligence={data?.intelligence} data={data} setActiveTab={setTab} />
+                    <AlertsTab
+                      alerts={alerts}
+                      intelligence={data?.intelligence}
+                      data={data}
+                      setActiveTab={setTab}
+                      alertSource={alertSource}
+                      alertHistory={alertHistory}
+                    />
                   )}
-                {activeTab === 'learn' && <LearnTab data={data} alerts={alerts} />}
+                {activeTab === 'learn' && <LearnTab data={data} alerts={alerts} alertHistory={alertHistory} alertSource={alertSource} />}
                 {activeTab === 'research' && <ResearchTab />}
                 {activeTab === 'about' && <AboutTab />}
                 </>

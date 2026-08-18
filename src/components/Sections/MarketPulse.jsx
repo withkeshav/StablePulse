@@ -25,7 +25,7 @@ export default function MarketPulse({
             <button type="button" class={supplyLog ? 'selected' : ''} onClick={onToggleLog} aria-pressed={supplyLog} title="Toggle logarithmic scale so small coins are visible">Log</button>
           </div>
         </header>
-        <div class="chart-wrap panel-chart">
+        <div class="panel-chart">
           <ChartWrapper
             type="line"
             data={supplyChartData}
@@ -55,7 +55,7 @@ export default function MarketPulse({
             <p class="panel-sub">Market price versus the $1.00 reference</p>
           </div>
         </header>
-        <div class="chart-wrap panel-chart">
+        <div class="panel-chart">
           <ChartWrapper
             type="line"
             data={pegChartData}

@@ -1,6 +1,6 @@
 {
   "name": "stablesense-backend",
-  "version": "3.4.0",
+  "version": "3.6.0",
   "private": true,
   "type": "module",
   "description": "StableSense lite VPS backend: history accumulation (SQLite) + AI narrative service.",
@@ -8,7 +8,8 @@
     "start": "node server.js",
     "fetch": "node jobs/fetch.js",
     "ai": "node jobs/ai.js",
-    "sync": "node jobs/fetch.js && node jobs/ai.js"
+    "stress": "node jobs/stress.js",
+    "sync": "node jobs/fetch.js && node jobs/stress.js && node jobs/ai.js"
   },
   "engines": {
     "node": ">=20"

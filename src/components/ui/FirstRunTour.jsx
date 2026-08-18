@@ -12,7 +12,7 @@ const STEPS = [
   },
   {
     title: 'Alerts',
-    body: 'Deterministic alerts (PEG_BREAK, CHAIN_SPIKE, MEGA_SUPPLY, DOM_SHIFT) fire automatically when thresholds are crossed. Check the Alerts tab for details.',
+    body: 'Deterministic alerts (PEG_BREAK, CHAIN_FLOW, MIGRATION, NET_MINT/NET_BURN, DOM_SHIFT) fire when thresholds are crossed. Event time is the market observation, not this page load.',
   },
 ];
 

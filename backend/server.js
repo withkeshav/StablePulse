@@ -11,11 +11,14 @@ const app = Fastify({ logger: true });
 app.get('/api/healthz', async () => {
   const market = db.prepare('SELECT MAX(ts) AS ts FROM market_snapshots').get();
   const ai = db.prepare('SELECT MAX(ts) AS ts FROM intelligence').get();
+  const events = db.prepare('SELECT COUNT(*) AS n, MAX(updated_at) AS ts FROM alert_events').get();
   return {
     ok: true,
     db: 'ok',
     lastMarketSync: market?.ts ?? null,
     lastAiRun: ai?.ts ?? null,
+    lastAlertEvent: events?.ts ?? null,
+    alertEventCount: events?.n ?? 0,
     now: Date.now(),
   };
 });
@@ -86,6 +89,86 @@ app.get('/api/stress', async (req) => {
     ? db.prepare('SELECT ts, symbol, peg_stress_index, z_score, raw_delta, normalized_delta FROM stress_series WHERE symbol = ? AND ts >= ? ORDER BY ts ASC').all(symbol, since)
     : db.prepare('SELECT ts, symbol, peg_stress_index, z_score, raw_delta, normalized_delta FROM stress_series WHERE ts >= ? ORDER BY ts ASC').all(since);
   return { data: rows };
+});
+
+function parseJson(value, fallback) {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+function rowToAlert(row) {
+  const chains = parseJson(row.involved_chains, []);
+  return {
+    id: row.event_id,
+    rule: row.rule,
+    classification: row.classification,
+    coin: row.symbol,
+    chain: chains[0] || null,
+    chains,
+    severity: row.severity,
+    magnitude: row.magnitude,
+    grossFlow: row.gross_flow,
+    netSupplyDelta: row.net_supply_delta,
+    headline: row.headline,
+    rationale: row.headline,
+    explanation: row.explanation,
+    timestamp: row.observed_at,
+    observedAt: row.observed_at,
+    detectedAt: row.detected_at,
+    publishedAt: row.published_at,
+    sourceTsCurrent: row.source_ts_current,
+    sourceTsPrevious: row.source_ts_previous,
+    intervalHours: row.interval_hours,
+    intervalLabel: row.interval_label,
+    cadenceValid: Boolean(row.cadence_valid),
+    confidence: row.confidence,
+    state: row.state,
+    provenance: parseJson(row.provenance, {}),
+  };
+}
+
+// Canonical alert lifecycle. Open events are the current feed; history includes resolved rows.
+app.get('/api/alerts', async (req) => {
+  const { coin, days = '30', limit = '100', state = 'all' } = req.query || {};
+  const nDays = Math.max(1, Math.min(365, Number(days) || 30));
+  const since = Date.now() - nDays * 86_400_000;
+  const nLimit = Math.max(1, Math.min(500, Number(limit) || 100));
+  const symbol = coin ? String(coin).toUpperCase() : null;
+  const wantedState = String(state || 'all').toLowerCase();
+  const countRow = db.prepare('SELECT COUNT(*) AS n FROM alert_events').get();
+  const persistedCount = countRow?.n || 0;
+
+  let rows;
+  if (symbol && wantedState !== 'all') {
+    rows = db.prepare(
+      `SELECT * FROM alert_events WHERE symbol = ? AND state = ? AND COALESCE(observed_at, detected_at, updated_at) >= ? ORDER BY COALESCE(observed_at, detected_at) DESC LIMIT ?`
+    ).all(symbol, wantedState, since, nLimit);
+  } else if (symbol) {
+    rows = db.prepare(
+      `SELECT * FROM alert_events WHERE symbol = ? AND COALESCE(observed_at, detected_at, updated_at) >= ? ORDER BY COALESCE(observed_at, detected_at) DESC LIMIT ?`
+    ).all(symbol, since, nLimit);
+  } else if (wantedState !== 'all') {
+    rows = db.prepare(
+      `SELECT * FROM alert_events WHERE state = ? AND COALESCE(observed_at, detected_at, updated_at) >= ? ORDER BY COALESCE(observed_at, detected_at) DESC LIMIT ?`
+    ).all(wantedState, since, nLimit);
+  } else {
+    rows = db.prepare(
+      `SELECT * FROM alert_events WHERE COALESCE(observed_at, detected_at, updated_at) >= ? ORDER BY COALESCE(observed_at, detected_at) DESC LIMIT ?`
+    ).all(since, nLimit);
+  }
+
+  return {
+    data: rows.map(rowToAlert),
+    meta: {
+      persistedCount,
+      empty: persistedCount === 0,
+      canonical: true,
+    },
+  };
 });
 
 app.listen({ host: '127.0.0.1', port: PORT });

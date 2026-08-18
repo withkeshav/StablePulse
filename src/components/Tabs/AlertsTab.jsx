@@ -24,7 +24,7 @@ function AlertsEmptyState() {
   );
 }
 
-export default function AlertsTab({ alerts, intelligence, data, setActiveTab }) {
+export default function AlertsTab({ alerts, intelligence, data, setActiveTab, alertSource = 'local', alertHistory = [] }) {
   const [severity, setSeverity] = useState('all');
   const [coin, setCoin] = useState('all');
   const [sortBy, setSortBy] = useState('latest');
@@ -97,6 +97,16 @@ export default function AlertsTab({ alerts, intelligence, data, setActiveTab }) 
     <div class="tab-content active">
       <AlertHero intelligence={intelligence} alertCount={counts.all} />
 
+      {alertSource === 'provisional' ? (
+        <p class="alert-source-note">The event log is empty until the first backend persistence run. Showing live derivation from the latest market snapshots, not stored history.</p>
+      ) : null}
+      {alertSource === 'canonical' ? (
+        <p class="alert-source-note">Current alerts and Learn history share the same stored event IDs. Timestamps are source observation time, not this page load.</p>
+      ) : null}
+      {alertSource === 'local' ? (
+        <p class="alert-source-note">Showing locally derived events from this browser's market snapshots. Persist them on the optional backend to keep a lifecycle history.</p>
+      ) : null}
+
       {counts.all === 0 ? (
         <div class="card mb-4">
           <div class="card-body">
@@ -149,6 +159,14 @@ export default function AlertsTab({ alerts, intelligence, data, setActiveTab }) 
           )}
         </div>
       </div>
+      {alertSource === 'canonical' && (alertHistory || []).some((a) => a.state === 'resolved') ? (
+        <div class="card mb-4">
+          <div class="card-header"><div class="card-title">Recently resolved</div></div>
+          <div class="card-body p0">
+            {alertHistory.filter((a) => a.state === 'resolved').slice(0, 8).map(renderCard)}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
