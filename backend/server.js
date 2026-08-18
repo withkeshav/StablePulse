@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import { loadEnv } from './lib/env.js';
 import db from './lib/db.js';
+import { readJobs } from './lib/job-run.js';
 
 loadEnv();
 
@@ -10,15 +11,21 @@ const app = Fastify({ logger: true });
 
 app.get('/api/healthz', async () => {
   const market = db.prepare('SELECT MAX(ts) AS ts FROM market_snapshots').get();
+  const snapshot = db.prepare('SELECT MAX(ts) AS ts FROM snapshots').get();
   const ai = db.prepare('SELECT MAX(ts) AS ts FROM intelligence').get();
   const events = db.prepare('SELECT COUNT(*) AS n, MAX(updated_at) AS ts FROM alert_events').get();
+  const jobs = readJobs();
+  const failed = Object.values(jobs).find((j) => j && j.finishedAt && !j.ok);
   return {
     ok: true,
     db: 'ok',
     lastMarketSync: market?.ts ?? null,
+    lastSnapshotTs: snapshot?.ts ?? null,
     lastAiRun: ai?.ts ?? null,
     lastAlertEvent: events?.ts ?? null,
     alertEventCount: events?.n ?? 0,
+    jobs,
+    lastJobError: failed?.error ?? null,
     now: Date.now(),
   };
 });
@@ -102,6 +109,7 @@ function parseJson(value, fallback) {
 
 function rowToAlert(row) {
   const chains = parseJson(row.involved_chains, []);
+  const provenance = parseJson(row.provenance, {});
   return {
     id: row.event_id,
     rule: row.rule,
@@ -109,6 +117,8 @@ function rowToAlert(row) {
     coin: row.symbol,
     chain: chains[0] || null,
     chains,
+    fromChain: provenance.fromChain || chains[0] || null,
+    toChain: provenance.toChain || chains[1] || null,
     severity: row.severity,
     magnitude: row.magnitude,
     grossFlow: row.gross_flow,
@@ -127,7 +137,7 @@ function rowToAlert(row) {
     cadenceValid: Boolean(row.cadence_valid),
     confidence: row.confidence,
     state: row.state,
-    provenance: parseJson(row.provenance, {}),
+    provenance,
   };
 }
 

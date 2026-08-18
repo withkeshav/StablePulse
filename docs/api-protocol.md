@@ -57,7 +57,7 @@ The backend is optional. When present it is served same-origin behind nginx (no 
 ### `GET /api/healthz`
 
 ```jsonc
-{ "ok": true, "db": "ok", "lastMarketSync": 1720000000000, "lastAiRun": 1720000000000, "lastAlertEvent": 1720000000000, "alertEventCount": 0, "now": 1720000000000 }
+{ "ok": true, "db": "ok", "lastMarketSync": 1720000000000, "lastSnapshotTs": 1720000000000, "lastAiRun": 1720000000000, "lastAlertEvent": 1720000000000, "alertEventCount": 0, "jobs": { "fetch": { "runId": "abc", "ok": true } }, "lastJobError": null, "now": 1720000000000 }
 ```
 
 ### `GET /api/ai`

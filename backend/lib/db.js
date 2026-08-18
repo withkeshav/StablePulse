@@ -102,7 +102,18 @@ CREATE TABLE IF NOT EXISTS alert_events (
 
 CREATE INDEX IF NOT EXISTS idx_alert_events_symbol_obs ON alert_events(symbol, observed_at);
 CREATE INDEX IF NOT EXISTS idx_alert_events_state ON alert_events(state, detected_at);
-`;
+
+-- Latest run of each cron job (fetch / stress / ai). One row per job name.
+CREATE TABLE IF NOT EXISTS job_runs (
+  job         TEXT PRIMARY KEY,
+  run_id      TEXT    NOT NULL,
+  started_at  INTEGER NOT NULL,
+  finished_at INTEGER,
+  ok          INTEGER NOT NULL DEFAULT 0,
+  error       TEXT,
+  source_ts   INTEGER
+);
+`
 
 const dataDir = process.env.DATA_DIR || path.join(here, '..', 'data');
 mkdirSync(dataDir, { recursive: true });

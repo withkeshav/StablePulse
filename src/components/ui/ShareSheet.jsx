@@ -20,8 +20,10 @@ export default function ShareSheet({
   sourceUrl = 'stablesense.withkeshav.com',
 }) {
   const [format, setFormat] = useState('square');
+  const [previewOpen, setPreviewOpen] = useState(false);
   const sheetRef = useRef(null);
   const closeRef = useRef(null);
+  const scrollerRef = useRef(null);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -45,10 +47,17 @@ export default function ShareSheet({
     document.addEventListener('keydown', onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    queueMicrotask(() => closeRef.current?.focus?.());
+    document.body.classList.add('sheet-open');
+    setPreviewOpen(false);
+    queueMicrotask(() => {
+      closeRef.current?.focus?.();
+      if (scrollerRef.current) scrollerRef.current.scrollTop = 0;
+      if (sheetRef.current) sheetRef.current.scrollTop = 0;
+    });
     return () => {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = prev;
+      document.body.classList.remove('sheet-open');
     };
   }, [open, onClose]);
 
@@ -104,34 +113,44 @@ export default function ShareSheet({
             <span class="close-share-label">Close</span>
           </button>
         </header>
-        <div class="share-content">
-          <div class={`signal-card ${format}`} style={{ aspectRatio: current.ratio.replace(' / ', '/') }}>
-            <div class="signal-card-top">
-              <BrandWordmark size={22} />
-              <span>{String(rangeLabel).toUpperCase()}</span>
+        <div class="share-content" ref={scrollerRef}>
+          <div class={`share-preview ${previewOpen ? 'is-open' : ''}`}>
+            <button
+              type="button"
+              class="share-preview-toggle"
+              aria-expanded={previewOpen ? 'true' : 'false'}
+              onClick={() => setPreviewOpen((v) => !v)}
+            >
+              {previewOpen ? 'Hide card preview' : 'Preview card'}
+            </button>
+            <div class={`signal-card ${format}`} style={{ aspectRatio: current.ratio.replace(' / ', '/') }}>
+              <div class="signal-card-top">
+                <BrandWordmark size={22} />
+                <span>{String(rangeLabel).toUpperCase()}</span>
+              </div>
+              <div class="signal-card-copy">
+                <p>{String(title).toUpperCase()}</p>
+                <h3>{read}</h3>
+                {highlight ? <strong>{highlight}</strong> : null}
+              </div>
+              <div class="signal-card-chart signal-card-chart-note">
+                <p>Export captures the live Chart.js rendering, including the visible $1.00 peg reference when present.</p>
+              </div>
+              <div class="signal-card-meta">
+                <span>
+                  <b>What this measures</b>
+                  {definition}
+                </span>
+                <span>
+                  <b>As of</b>
+                  {stamp}
+                </span>
+              </div>
+              <footer>
+                <span>{sourceUrl}</span>
+                <span>StableSense · Research, not advice</span>
+              </footer>
             </div>
-            <div class="signal-card-copy">
-              <p>{String(title).toUpperCase()}</p>
-              <h3>{read}</h3>
-              {highlight ? <strong>{highlight}</strong> : null}
-            </div>
-            <div class="signal-card-chart signal-card-chart-note">
-              <p>Export captures the live Chart.js rendering, including the visible $1.00 peg reference when present.</p>
-            </div>
-            <div class="signal-card-meta">
-              <span>
-                <b>What this measures</b>
-                {definition}
-              </span>
-              <span>
-                <b>As of</b>
-                {stamp}
-              </span>
-            </div>
-            <footer>
-              <span>{sourceUrl}</span>
-              <span>StableSense · Research, not advice</span>
-            </footer>
           </div>
           <aside class="share-controls">
             <div>
@@ -157,11 +176,13 @@ export default function ShareSheet({
               <p class="panel-kicker">SIGNAL READ</p>
               <p>{read}</p>
             </div>
-            <button type="button" class="primary-btn download-btn" onClick={download} disabled={!chartInstance}>
-              Download Signal Card
-            </button>
-            <p class="share-note">Includes date, source context, and StableSense branding.</p>
           </aside>
+        </div>
+        <div class="share-sheet-actions">
+          <button type="button" class="primary-btn download-btn" onClick={download} disabled={!chartInstance}>
+            Download Signal Card
+          </button>
+          <p class="share-note">Includes date, source context, and StableSense branding.</p>
         </div>
       </section>
     </div>

@@ -432,6 +432,8 @@ function makeAlert({
   magnitude,
   chains = [],
   chain = null,
+  fromChain = null,
+  toChain = null,
   headline,
   explanation,
   grossFlow = null,
@@ -446,19 +448,24 @@ function makeAlert({
   const sourceTsCurrent = window.sourceTsCurrent ?? null;
   const sourceTsPrevious = window.sourceTsPrevious ?? null;
   const observedAt = window.observedAt ?? sourceTsCurrent ?? null;
+  const orderedChains = fromChain && toChain
+    ? [fromChain, toChain]
+    : (chain ? Array.from(new Set([chain, ...chains])) : [...chains]);
   return {
     id: alertEventId({
       rule,
       coin,
-      chains: chain ? [chain, ...chains] : chains,
+      chains: orderedChains,
       sourceTsCurrent,
       sourceTsPrevious,
     }),
     rule,
     classification: rule,
     coin,
-    chain,
-    chains: chain ? Array.from(new Set([chain, ...chains])) : [...chains],
+    chain: chain || orderedChains[0] || null,
+    chains: orderedChains,
+    fromChain,
+    toChain,
     severity,
     magnitude,
     grossFlow,
@@ -478,7 +485,10 @@ function makeAlert({
     confidence,
     confidenceNote,
     state,
-    provenance,
+    provenance: {
+      ...provenance,
+      ...(fromChain ? { fromChain, toChain } : {}),
+    },
   };
 }
 
@@ -581,7 +591,9 @@ export function generateAlerts(data, opts = {}) {
         rule: 'MIGRATION',
         coin: cfg.symbol,
         chains: [pair.from.chain, pair.to.chain],
-        chain: pair.to.chain,
+        chain: pair.from.chain,
+        fromChain: pair.from.chain,
+        toChain: pair.to.chain,
         severity: grossFlow >= 2 * cfg.thresholds.chainSpikeUsd ? 'HIGH' : 'WARNING',
         magnitude: grossFlow,
         grossFlow,
@@ -757,3 +769,84 @@ export function alertExplanation(alert) {
       };
   }
 }
+
+function coinChainKey(coin, chain) {
+  return `${coin}|${chain}`;
+}
+
+/**
+ * Index MIGRATION alerts as per-coin chain legs so other modules can label
+ * matched opposing flows instead of treating them as independent events.
+ */
+export function migrationLegsFromAlerts(alerts) {
+  const legs = [];
+  for (const alert of alerts || []) {
+    if (alert?.rule !== 'MIGRATION') continue;
+    const from = alert.fromChain || alert.provenance?.fromChain || alert.chains?.[0];
+    const to = alert.toChain || alert.provenance?.toChain || alert.chains?.[1];
+    if (!alert.coin || !from || !to) continue;
+    legs.push({
+      id: alert.id,
+      coin: alert.coin,
+      from,
+      to,
+      label: `${from} → ${to}`,
+    });
+  }
+  return legs;
+}
+
+export function annotateWhaleRows(rows, alerts) {
+  const index = new Map();
+  for (const leg of migrationLegsFromAlerts(alerts)) {
+    const meta = { id: leg.id, from: leg.from, to: leg.to, label: leg.label };
+    index.set(coinChainKey(leg.coin, leg.from), { ...meta, role: 'source' });
+    index.set(coinChainKey(leg.coin, leg.to), { ...meta, role: 'destination' });
+  }
+  return (rows || []).map((row) => {
+    const migration = index.get(coinChainKey(row.coin, row.chain));
+    return migration ? { ...row, migration } : row;
+  });
+}
+
+export function groupWhaleWatchRows(rows) {
+  const groups = new Map();
+  const independents = [];
+  for (const row of rows || []) {
+    const id = row.migration?.id;
+    if (!id) {
+      independents.push(row);
+      continue;
+    }
+    if (!groups.has(id)) {
+      groups.set(id, {
+        type: 'migration',
+        id,
+        coin: row.coin,
+        from: row.migration.from,
+        to: row.migration.to,
+        legs: [],
+      });
+    }
+    groups.get(id).legs.push(row);
+  }
+  return { groups: [...groups.values()], independents };
+}
+
+export function annotateChainFlows(flows, alerts) {
+  const index = new Map();
+  for (const leg of migrationLegsFromAlerts(alerts)) {
+    const meta = { id: leg.id, coin: leg.coin, from: leg.from, to: leg.to, label: `${leg.coin} ${leg.label}` };
+    index.set(coinChainKey(leg.coin, leg.from), meta);
+    index.set(coinChainKey(leg.coin, leg.to), meta);
+  }
+  return (flows || []).map((flow) => {
+    const migrationLegs = [];
+    for (const coin of Object.keys(flow.deltas || {})) {
+      const meta = index.get(coinChainKey(coin, flow.chain));
+      if (meta) migrationLegs.push({ ...meta, delta: flow.deltas[coin] });
+    }
+    return migrationLegs.length ? { ...flow, migrationLegs } : flow;
+  });
+}
+

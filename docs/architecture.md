@@ -16,6 +16,7 @@ Backend (optional, lite VPS)
   |- jobs/stress.js (cron, 10 min, runs after fetch): derive.js computePegStress + generateAlerts -> stress_series + labels + alert_events
   |- jobs/ai.js (cron, gated by AI_CADENCE_MIN): student-explainable narrative from snapshots + stress_series + alert_events
   |- server.js: /api/healthz, /api/ai, /api/history, /api/stress, /api/labels, /api/alerts
+  |- job_runs: last fetch / stress / ai cycle (run id, ok, error, source timestamp)
 ```
 
 The frontend makes its live-data calls from the visitor's own IP, so no single origin is hammered and no API keys are needed. It never depends on the backend for the core dashboard.

@@ -22,7 +22,7 @@ the browser.
   crontab entry is only a cheap check; the model is called at most once per
   `AI_CADENCE_MIN` (default 120 minutes).
 - **`server.js`**: Fastify API on `127.0.0.1:8787`.
-  - `GET /api/healthz` - liveness, last market sync, last AI run, alert event count
+  - `GET /api/healthz` - liveness, last market sync, last AI run, alert event count, per-job run status
   - `GET /api/ai` - latest narrative `{ intelligence: { headline, narrative, implications, model, ts, nextUpdateAt, cadenceMin } }`
   - `GET /api/history?coin=USDT[&chain=Ethereum][&days=30]` - daily supply series from the stored dataset
   - `GET /api/alerts?[coin=DAI][&days=30][&state=open|resolved|all]` - canonical alert lifecycle
@@ -86,6 +86,18 @@ crontab -e      # paste the lines from deploy/crontab.txt
 origin, so there is zero CORS. Slashless `/research` 301s to `/research/` before
 the SPA fallback. The frontend reads `/api/healthz`, `/api/ai`, and `/api/alerts`
 on the same origin.
+
+## After pulling a new release (deployer)
+
+These origin steps are not done by a git push. After building and copying
+`dist/` (including `dist/research/`) to `/opt/stablesense/dist`:
+
+1. Install the repo nginx site: `sudo cp backend/deploy/nginx.conf /etc/nginx/sites-available/stablesense` then `sudo nginx -t && sudo systemctl reload nginx`. Confirm `curl -sI https://stablesense.withkeshav.com/research` returns **301** to `/research/`.
+2. Confirm crontab matches `backend/deploy/crontab.txt` (fetch every 10 min, stress 60s later, ai every 30 min). Missing fetch is why `lastMarketSync` goes stale while the browser still looks current.
+3. Restart the API: `sudo systemctl restart stablesense-backend`.
+4. Run one cycle: `cd /opt/stablesense/backend && node jobs/fetch.js && node jobs/stress.js`.
+5. Check `GET /api/healthz`: `jobs.fetch.ok` and `jobs.stress.ok` should be true, `lastMarketSync` recent, `alertEventCount` > 0 when rules fire. `jobs.*.error` names a failed run.
+6. Purge CDN/browser caches for `/research` if an old dashboard HTML is still served on the slashless URL.
 
 ## Notes
 

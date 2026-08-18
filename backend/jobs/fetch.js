@@ -1,6 +1,7 @@
 import { getActiveCoins } from '../../src/utils/coin-config.js';
 import { loadEnv } from '../lib/env.js';
 import db from '../lib/db.js';
+import { finishJob, startJob } from '../lib/job-run.js';
 
 loadEnv();
 
@@ -13,6 +14,8 @@ async function getJson(url) {
   return res.json();
 }
 
+const job = startJob('fetch');
+try {
 const coins = getActiveCoins();
 const now = Date.now();
 
@@ -84,3 +87,10 @@ if (typeof total === 'number' && total > 0) {
 }
 
 console.log('[fetch] done');
+  const snap = db.prepare('SELECT MAX(ts) AS ts FROM snapshots').get();
+  finishJob(job, { ok: true, sourceTs: snap?.ts ?? now });
+} catch (err) {
+  finishJob(job, { ok: false, error: err });
+  console.error(`[fetch] failed: ${err.message || err}`);
+  process.exit(1);
+}

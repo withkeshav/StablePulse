@@ -2,7 +2,7 @@ import { useMemo, useState } from 'preact/hooks';
 import { fmtB, fmtPct, fmtPrice, pctChange, bps } from '../../utils/formatters.js';
 import { STABLECOIN_REGISTRY, getActiveCoins } from '../../utils/coin-config.js';
 import { getAssetMeta } from '../../utils/asset-meta.js';
-import { buildShareSeries, buildSupplySeries, buildWhaleWatchRows, dedupeTickers, pegChartOptions, pegRefLine, toPercentFromFirst } from '../../lib/derive.js';
+import { annotateWhaleRows, buildShareSeries, buildSupplySeries, buildWhaleWatchRows, dedupeTickers, pegChartOptions, pegRefLine, toPercentFromFirst } from '../../lib/derive.js';
 import ChartWrapper from '../ui/ChartWrapper.jsx';
 import { StabilityGauge } from '../Sections/SignalHero.jsx';
 
@@ -14,7 +14,7 @@ function coinStabilityScore(price, warnBps, critBps) {
   return Math.min(99, 92 + Math.round((warnBps - drift) / 2));
 }
 
-export default function CoinTab({ coin, data, setActiveTab }) {
+export default function CoinTab({ coin, data, setActiveTab, alerts = [] }) {
   const symbol = (coin || '').toUpperCase();
   const cfg = STABLECOIN_REGISTRY[symbol];
   const meta = getAssetMeta(symbol);
@@ -110,9 +110,9 @@ export default function CoinTab({ coin, data, setActiveTab }) {
   );
 
   const whaleRows = useMemo(() => {
-    const allRows = buildWhaleWatchRows({ [symbol]: detail });
+    const allRows = annotateWhaleRows(buildWhaleWatchRows({ [symbol]: detail }), alerts);
     return allRows.filter((r) => r.coin === symbol).slice(0, 5);
-  }, [symbol, detail]);
+  }, [symbol, detail, alerts]);
 
   const chartOptions = useMemo(() => ({ responsive: true, maintainAspectRatio: false }), []);
   const priceChartOpts = useMemo(() => {
@@ -410,6 +410,7 @@ export default function CoinTab({ coin, data, setActiveTab }) {
               {whaleRows.map((row, idx) => (
                 <div class="whale-mobile-card" key={`cw-${idx}`}>
                   <div class="wm-main">{row.chain}</div>
+                  {row.migration ? <p class="whale-mig-note">Leg of {row.migration.label} migration</p> : null}
                   <div><div class="wm-label">Supply Delta</div><div class="wm-val">{fmtB(row.delta)}</div></div>
                   <div><div class="wm-label">Z-score</div><div class="wm-val" title={`Raw z: ${row.z.toFixed(1)}σ`}>{row.displayZ >= 10 ? '>10σ' : `${row.displayZ.toFixed(1)}σ`}</div></div>
                   <div><div class="wm-label">Share of tracked</div><div class="wm-val">{fmtPct(row.shareOfTracked)}</div></div>
@@ -422,7 +423,10 @@ export default function CoinTab({ coin, data, setActiveTab }) {
                 <tbody>
                   {whaleRows.map((row, idx) => (
                     <tr key={`tw-${idx}`}>
-                      <td class="td-name">{row.chain}</td>
+                      <td class="td-name">
+                        {row.chain}
+                        {row.migration ? <div class="whale-mig-note">Leg of {row.migration.label} migration</div> : null}
+                      </td>
                       <td class="mono">{fmtB(row.delta)}</td>
                       <td class="mono" title={`Raw z: ${row.z.toFixed(1)}σ`}>{row.displayZ >= 10 ? '>10σ' : `${row.displayZ.toFixed(1)}σ`}</td>
                       <td class="mono">{fmtPct(row.shareOfTracked)}</td>

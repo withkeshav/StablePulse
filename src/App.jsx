@@ -267,6 +267,7 @@ export default function App() {
                       key={activeTab}
                       coin={activeTab}
                       data={data}
+                      alerts={alerts}
                       setActiveTab={setTab}
                     />
                   ) : null}

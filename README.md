@@ -1,8 +1,8 @@
 # StableSense
 
-![Version](https://img.shields.io/badge/version-3.6.0-2A6FDB)
+![Version](https://img.shields.io/badge/version-3.6.1-2A6FDB)
 ![License: Source-Available](https://img.shields.io/badge/license-source--available-blue)
-![Tests](https://img.shields.io/badge/tests-147%20passing-green)
+![Tests](https://img.shields.io/badge/tests-150%20passing-green)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-339933)
 
 Stablecoin intelligence platform covering **USDT, USDC, DAI, USDe and PYUSD**: peg stress monitoring, cross-chain mint/burn flows, whale-watch anomaly detection, AI-generated market narratives, an in-app Research entry, and a built-in learning tab that explains how stablecoins and pegs actually work.
@@ -146,7 +146,7 @@ AI runs on the **backend** (`backend/jobs/ai.js`); keys never reach the browser.
 1. `npm run build` and serve `dist/` from nginx.
 2. Run the backend service (`backend/deploy/stablesense-backend.service`) on the same host, proxied under `/api` (`backend/deploy/nginx.conf`).
 3. Add crontab entries for the fetch, stress, and AI jobs (`backend/deploy/crontab.txt`).
-4. nginx must 301 `/research` to `/research/` before the SPA fallback (see `backend/deploy/nginx.conf`).
+4. nginx must 301 `/research` to `/research/` before the SPA fallback (see `backend/deploy/nginx.conf`). The SPA HTML also redirects slashless `/research` if that 301 is missing.
 
 ### Static anywhere (core dashboard only)
 

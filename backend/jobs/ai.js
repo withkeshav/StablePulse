@@ -1,6 +1,7 @@
 import { getActiveCoins } from '../../src/utils/coin-config.js';
 import { loadEnv } from '../lib/env.js';
 import db from '../lib/db.js';
+import { finishJob, startJob } from '../lib/job-run.js';
 
 loadEnv();
 
@@ -146,6 +147,8 @@ if (!process.env.OPENAI_API_KEY) {
   process.exit(1);
 }
 
+const job = startJob('ai');
+try {
 let content;
 let modelUsed = MODEL;
 try {
@@ -153,16 +156,22 @@ try {
 } catch (err) {
   console.error(`[ai] primary model failed: ${err.message}`);
   if (!FALLBACK_MODEL || FALLBACK_MODEL === MODEL) {
-    console.error('[ai] no fallback available; aborting');
-    process.exit(1);
+    throw err;
   }
   modelUsed = FALLBACK_MODEL;
   content = await callModel(FALLBACK_MODEL);
 }
 
 const parsed = parse(content);
+const savedAt = Date.now();
 db.prepare(
   'INSERT INTO intelligence (ts, headline, narrative, implications, model, meta) VALUES (?, ?, ?, ?, ?, ?)'
-).run(Date.now(), parsed.headline, parsed.narrative, parsed.implications, modelUsed, JSON.stringify({ source: 'cron' }));
+).run(savedAt, parsed.headline, parsed.narrative, parsed.implications, modelUsed, JSON.stringify({ source: 'cron' }));
 
 console.log(`[ai] saved narrative (${modelUsed}): ${parsed.headline}`);
+  finishJob(job, { ok: true, sourceTs: savedAt });
+} catch (err) {
+  finishJob(job, { ok: false, error: err });
+  console.error(`[ai] failed: ${err.message || err}`);
+  process.exit(1);
+}

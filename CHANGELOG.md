@@ -4,6 +4,20 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.6.1] - 2026-08-18
+
+### Fixed
+- **Slashless `/research`:** the SPA HTML now redirects `/research` to `/research/` so a shared link does not fall through to the dashboard when origin nginx has not picked up the 301 yet.
+- **Migration context:** Whale Watch and Mint/Burn label matched opposite legs as one Polygon → Ethereum style movement instead of two independent risks.
+- **Mobile Signal Card:** the sheet opens at the title/close row, keeps Download reachable, hides bottom nav while open, and collapses the large preview behind "Preview card".
+- **Mobile supply chart:** phones default to the two largest series with a Compare all control and fewer x-axis ticks.
+
+### Added
+- Backend `job_runs` table and `/api/healthz.jobs` so a deployed fetch/stress/ai cycle is observable (run id, finish time, last error, source timestamp).
+
+### Docs
+- Backend README lists the origin nginx + cron steps the deployer must run after this release. Local agent notes stay unpublished.
+
 ## [3.6.0] - 2026-08-18
 
 ### Fixed

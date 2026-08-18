@@ -37,22 +37,33 @@ export default function CapitalFlows({ migrationPairs, chainFlows }) {
         </div>
         <div class="card-body p0">
           {(chainFlows || []).slice(0, 8).map((f) => (
-            <div class="chain-bar-row" key={f.chain}>
-              <div class="chain-bar-label">{f.chain}</div>
-              <div class="chain-bar-track">
-                {coins.map((c) => (
-                  <div
-                    key={c.symbol}
-                    class={`chain-bar-${c.symbol.toLowerCase()}`}
-                    style={{
-                      width: `${Math.min(100, Math.max(0, (Math.abs(f.deltas?.[c.symbol] || 0) / maxAbs) * 100))}%`,
-                      background: c.color,
-                    }}
-                    title={`${c.symbol}: ${fmtB(f.deltas?.[c.symbol] || 0)}`}
-                  ></div>
-                ))}
+            <div class="chain-flow-block" key={f.chain}>
+              <div class="chain-bar-row">
+                <div class="chain-bar-label">{f.chain}</div>
+                <div class="chain-bar-track">
+                  {coins.map((c) => (
+                    <div
+                      key={c.symbol}
+                      class={`chain-bar-${c.symbol.toLowerCase()}`}
+                      style={{
+                        width: `${Math.min(100, Math.max(0, (Math.abs(f.deltas?.[c.symbol] || 0) / maxAbs) * 100))}%`,
+                        background: c.color,
+                      }}
+                      title={`${c.symbol}: ${fmtB(f.deltas?.[c.symbol] || 0)}`}
+                    ></div>
+                  ))}
+                </div>
+                <div class="chain-bar-total">
+                  {f.migrationLegs?.length
+                    ? `Migration ${fmtB(Math.abs(f.totalDelta))}`
+                    : `${f.totalDelta >= 0 ? 'Mint' : 'Burn'} ${fmtB(Math.abs(f.totalDelta))}`}
+                </div>
               </div>
-              <div class="chain-bar-total">{f.totalDelta >= 0 ? 'Mint' : 'Burn'} {fmtB(Math.abs(f.totalDelta))}</div>
+              {f.migrationLegs?.length ? (
+                <p class="whale-mig-note chain-mig-note">
+                  Leg of {f.migrationLegs[0].label} migration
+                </p>
+              ) : null}
             </div>
           ))}
         </div>

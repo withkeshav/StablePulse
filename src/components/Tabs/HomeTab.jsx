@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'preact/hooks';
+import { useEffect, useMemo, useState } from 'preact/hooks';
 import { fmtB, fmtPrice } from '../../utils/formatters.js';
 import { getActiveCoins } from '../../utils/coin-config.js';
 import StatCard from '../ui/StatCard.jsx';
-import { buildMigrationPairs, buildSupplySeries, buildWhaleWatchRows, computePegStress, pegChartOptions, pegRefLine, rankChainFlows, toPercentFromFirst } from '../../lib/derive.js';
+import { annotateChainFlows, annotateWhaleRows, buildMigrationPairs, buildSupplySeries, buildWhaleWatchRows, computePegStress, pegChartOptions, pegRefLine, rankChainFlows, toPercentFromFirst } from '../../lib/derive.js';
 import SignalHero from '../Sections/SignalHero.jsx';
 import MarketPulse from '../Sections/MarketPulse.jsx';
 import CapitalFlows from '../Sections/CapitalFlows.jsx';
@@ -40,14 +40,31 @@ export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec
 
   const [supplyLog, setSupplyLog] = useState(false);
   const [supplyPct, setSupplyPct] = useState(false);
+  const [compareAll, setCompareAll] = useState(false);
+  const [narrow, setNarrow] = useState(false);
 
-  const chainFlows = useMemo(() => rankChainFlows(detailsByCoin), [detailsByCoin]);
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return undefined;
+    const mq = window.matchMedia('(max-width:768px)');
+    const apply = () => setNarrow(mq.matches);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
+
+  const chainFlows = useMemo(
+    () => annotateChainFlows(rankChainFlows(detailsByCoin), alerts),
+    [detailsByCoin, alerts]
+  );
   const migrationPairs = useMemo(() => buildMigrationPairs(chainFlows), [chainFlows]);
   const stress = useMemo(
     () => computePegStress({ pricesByCoin: priceByCoin, alerts, topChainFlow: chainFlows[0]?.totalDelta || 0 }),
     [priceByCoin, alerts, chainFlows]
   );
-  const whaleRows = useMemo(() => buildWhaleWatchRows(detailsByCoin), [detailsByCoin]);
+  const whaleRows = useMemo(
+    () => annotateWhaleRows(buildWhaleWatchRows(detailsByCoin), alerts),
+    [detailsByCoin, alerts]
+  );
 
   const supplyLabels = useMemo(() => {
     const any = coins.map((c) => supplySeriesByCoin[c.symbol]).find((s) => s.length);
@@ -62,9 +79,15 @@ export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec
   const supplyChartData = useMemo(
     () => {
       const transform = (series) => (supplyPct ? toPercentFromFirst(series).map((p) => p.value) : series.map((p) => p.value));
+      const ranked = [...coins].sort((a, b) => {
+        const av = (supplySeriesByCoin[a.symbol] || []).slice(-1)[0]?.value || 0;
+        const bv = (supplySeriesByCoin[b.symbol] || []).slice(-1)[0]?.value || 0;
+        return bv - av;
+      });
+      const visible = narrow && !compareAll ? ranked.slice(0, 2) : ranked;
       return {
         labels: supplyLabels,
-        datasets: coins.map((c) => ({
+        datasets: visible.map((c) => ({
           label: supplyPct ? `${c.symbol} %` : c.symbol,
           data: transform(supplySeriesByCoin[c.symbol]),
           borderColor: c.color,
@@ -72,7 +95,7 @@ export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec
         })),
       };
     },
-    [coins, supplyLabels, supplySeriesByCoin, supplyPct]
+    [coins, supplyLabels, supplySeriesByCoin, supplyPct, narrow, compareAll]
   );
 
   const supplyChartOptions = useMemo(() => {
@@ -81,8 +104,15 @@ export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec
       : supplyPct
         ? { ticks: { callback: (v) => (v >= 0 ? '+' : '') + Number(v).toFixed(1) + '%' } }
         : { ticks: { callback: (v) => fmtB(v) } };
-    return { responsive: true, maintainAspectRatio: false, scales: { y: yScale } };
-  }, [supplyLog, supplyPct]);
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: yScale,
+        x: { ticks: { autoSkip: true, maxTicksLimit: narrow ? 5 : 10 } },
+      },
+    };
+  }, [supplyLog, supplyPct, narrow]);
 
   const pegChartData = useMemo(
     () => {
@@ -185,6 +215,9 @@ export default function HomeTab({ data, alerts, setActiveTab, refreshIntervalSec
         onTogglePct={() => { setSupplyPct((v) => !v); if (!supplyPct) setSupplyLog(false); }}
         supplyLog={supplyLog}
         supplyPct={supplyPct}
+        compareAll={compareAll}
+        onToggleCompare={() => setCompareAll((v) => !v)}
+        narrow={narrow}
         onLearn={() => setActiveTab('learn')}
       />
       <SignalSummary

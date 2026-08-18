@@ -3,6 +3,10 @@
 <head>
   <script>
     (function () {
+      if (location.pathname === '/research') {
+        location.replace('/research/' + location.search + location.hash);
+        return;
+      }
       var key = 'stablesense:theme';
       var legacy = 'stablepulse:theme';
       var mode = 'light';

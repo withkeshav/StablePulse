@@ -9,6 +9,9 @@ export default function MarketPulse({
   onTogglePct,
   supplyLog,
   supplyPct,
+  compareAll = false,
+  onToggleCompare,
+  narrow = false,
   onLearn,
 }) {
   return (
@@ -21,6 +24,11 @@ export default function MarketPulse({
             <p class="panel-sub">Circulating value of tracked coins on this dashboard</p>
           </div>
           <div class="segmented chart-toggles" role="group" aria-label="Supply chart scale">
+            {narrow && onToggleCompare ? (
+              <button type="button" class={compareAll ? 'selected' : ''} onClick={onToggleCompare} aria-pressed={compareAll} title="Show every tracked coin on this chart">
+                {compareAll ? 'Top 2' : 'Compare all'}
+              </button>
+            ) : null}
             <button type="button" class={supplyPct ? 'selected' : ''} onClick={onTogglePct} aria-pressed={supplyPct} title="Show percent change from first point">%</button>
             <button type="button" class={supplyLog ? 'selected' : ''} onClick={onToggleLog} aria-pressed={supplyLog} title="Toggle logarithmic scale so small coins are visible">Log</button>
           </div>

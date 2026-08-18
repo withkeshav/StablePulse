@@ -2,8 +2,12 @@ import { getActiveCoins } from '../../src/utils/coin-config.js';
 import { loadEnv } from '../lib/env.js';
 import db from '../lib/db.js';
 import { computePegStress, generateAlerts } from '../../src/lib/derive.js';
+import { finishJob, startJob } from '../lib/job-run.js';
 
 loadEnv();
+
+const job = startJob('stress');
+try {
 
 // Materialize the latest snapshot rows into the {coin}Detail shape that
 // derive.js expects (chainBalances -> tokens[] -> circulating.peggedUSD).
@@ -234,3 +238,10 @@ for (const row of staleOpen) {
 console.log(`[alert_events] open=${eventRows.length} resolved=${resolved}`);
 
 console.log('[stress] done');
+  const sourceTs = alerts.reduce((max, a) => Math.max(max, a.observedAt || 0), 0) || now;
+  finishJob(job, { ok: true, sourceTs });
+} catch (err) {
+  finishJob(job, { ok: false, error: err });
+  console.error(`[stress] failed: ${err.message || err}`);
+  process.exit(1);
+}

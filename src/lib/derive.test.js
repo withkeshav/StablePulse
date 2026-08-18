@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  annotateChainFlows,
+  annotateWhaleRows,
   alertEventId,
   alertExplanation,
   buildAlertSparkSeries,
@@ -11,6 +13,7 @@ import {
   computePegStress,
   dedupeTickers,
   generateAlerts,
+  groupWhaleWatchRows,
   pairOpposingFlows,
   pegBand,
   pegChartOptions,
@@ -478,6 +481,8 @@ describe('generateAlerts', () => {
     expect(flows).toHaveLength(0);
     expect(nets).toHaveLength(0);
     expect(migrations[0].headline).toBe('DAI liquidity moved: Polygon → Ethereum');
+    expect(migrations[0].fromChain).toBe('Polygon');
+    expect(migrations[0].toChain).toBe('Ethereum');
     expect(migrations[0].grossFlow).toBe(391e6);
     expect(migrations[0].netSupplyDelta).toBe(0);
     expect(migrations[0].explanation).toMatch(/\$391M gross/);
@@ -632,5 +637,37 @@ describe('alertExplanation', () => {
   it('falls back gracefully for unknown or missing alerts', () => {
     expect(alertExplanation(null).whyItMatters).toBeTruthy();
     expect(alertExplanation({ rule: 'NOPE' }).whatToWatch).toBeTruthy();
+  });
+});
+
+describe('migration presentation helpers', () => {
+  const alerts = [{
+    id: 'migration-dai-x',
+    rule: 'MIGRATION',
+    coin: 'DAI',
+    fromChain: 'Polygon',
+    toChain: 'Ethereum',
+    chains: ['Polygon', 'Ethereum'],
+  }];
+
+  it('groups the DAI offsetting pair as one migration in whale watch', () => {
+    const rows = annotateWhaleRows([
+      { coin: 'DAI', chain: 'Ethereum', delta: 391e6, z: 3, displayZ: 3, shareOfTracked: 50 },
+      { coin: 'DAI', chain: 'Polygon', delta: -391e6, z: 3, displayZ: 3, shareOfTracked: 50 },
+    ], alerts);
+    expect(rows.every((r) => r.migration?.label === 'Polygon → Ethereum')).toBe(true);
+    const grouped = groupWhaleWatchRows(rows);
+    expect(grouped.groups).toHaveLength(1);
+    expect(grouped.groups[0].legs).toHaveLength(2);
+    expect(grouped.independents).toHaveLength(0);
+  });
+
+  it('labels mint/burn chain rows as migration legs instead of independent mint or burn', () => {
+    const flows = annotateChainFlows([
+      { chain: 'Ethereum', totalDelta: 391e6, deltas: { DAI: 391e6 } },
+      { chain: 'Polygon', totalDelta: -391e6, deltas: { DAI: -391e6 } },
+    ], alerts);
+    expect(flows[0].migrationLegs[0].label).toBe('DAI Polygon → Ethereum');
+    expect(flows[1].migrationLegs[0].label).toBe('DAI Polygon → Ethereum');
   });
 });
